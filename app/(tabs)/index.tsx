@@ -1,9 +1,11 @@
-import { View, Text, StyleSheet, ScrollView, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Colors } from '../../constants/Colors';
 import TopNav from '../../components/TopNav';
 import GreetingSection from '../../components/GreetingSection';
 import SearchBar from '../../components/SearchBar';
-import DishCard from '../../components/DishCard';
+import CategoryFilter from '../../components/CategoryFilter';
+import CategoryFilterActive from '../../components/CategoryFilterActive';
+import GridDishCard from '../../components/GridDishCard';
 
 export default function HomeScreen() {
   return (
@@ -14,25 +16,71 @@ export default function HomeScreen() {
 
       {/* Scrollable Content */}
       <ScrollView showsVerticalScrollIndicator={false}>
-        <Image 
-          source={require('../../assets/images/chef.png')} 
-          style={styles.chefImage} 
-        />
+        
+        {/* --- Responsive Top Layout --- */}
+        <View style={styles.topLayoutContainer}>
+          
+          <GreetingSection />
 
-        <GreetingSection />
-        <View style={styles.searchBar}>
-          <SearchBar />
+          {/* Full-Width Search Bar cleanly separated from the Greeting */}
+          <View style={styles.searchBarWrapper}>
+            <SearchBar />
+          </View>
+
         </View>
 
+        {/* Horizontal Breakfast Row */}
         <View style={styles.bodyContainer}>
-          <Text style={styles.sectionTitle}>| Breakfast For You</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
-            <DishCard name="Party Jollof" price="₦8,500" />
-            <DishCard name="Semo & Egusi" price="₦7,000" />
-            <DishCard name="Fried Rice" price="₦6,500" />
+          <View style={styles.headerRow}>
+            <Text style={styles.sectionTitle}>| Breakfast For You</Text>
+          </View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{paddingLeft: 20,}} >
+            <View style={styles.grid1}>
+              <GridDishCard category="Rice" name="Party Jollof" price="₦2,000" rating="5.0" />
+            </View>
+            <View style={styles.grid1}>
+              <GridDishCard category="Rice" name="Party Jollof" price="₦2,000" rating="5.0" />
+            </View>
+            <View style={styles.grid1}>
+              <GridDishCard category="Rice" name="Party Jollof" price="₦2,000" rating="5.0" />
+            </View>
+            <View style={styles.grid1}>
+              <GridDishCard category="Rice" name="Party Jollof" price="₦2,000" rating="5.0" />
+            </View>
           </ScrollView>
         </View>
-       
+
+        {/* Category Pills */}
+        <View style={styles.headerRow}>
+          <Text style={styles.sectionTitle}>| Others</Text>
+          <TouchableOpacity>
+            <Text style={styles.seeMoreText}>See More</Text>
+          </TouchableOpacity>
+        </View>
+
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scrollContainer}>
+          <CategoryFilterActive category='All' />
+          <CategoryFilter category='Rice' />
+          <CategoryFilter category='Swallow' />
+          <CategoryFilter category='Drink' />
+          <CategoryFilter category='Protein' />
+        </ScrollView>
+
+        {/* 2-Column Grid Row */}
+        <View style={styles.gridContainer}>
+          <View style={styles.grid}>
+            <GridDishCard category="Rice" name="Party Jollof" price="₦2,000" rating="5.0" />
+          </View>
+          <View style={styles.grid}>
+            <GridDishCard category="Swallow" name="Semo" price="₦1,000" rating="4.5" />
+          </View>
+          <View style={styles.grid}>
+          <GridDishCard category="Rice" name="Special Rice" price="₦3,000" rating="4.5" />
+          </View>
+          <View style={styles.grid}>
+          <GridDishCard category="Drink" name="Coca Cola" price="₦500" rating="3.0" />
+          </View>  
+        </View>
 
       </ScrollView>
 
@@ -45,35 +93,57 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.background,
   },
+  topLayoutContainer: {
+    marginBottom: 20,
+    zIndex: 5,
+  },
+  searchBarWrapper: {
+    paddingHorizontal: 10,
+    marginTop: 10, 
+    zIndex: 1,
+  },
   bodyContainer: {
-    padding: 20,
+    // paddingHorizontal: 20,
+    paddingTop: 10,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 15,
+    // paddingHorizontal: 20,
   },
   horizontalScroll: {
     flexDirection: 'row',
   },
-  chefImage: {
-    position: 'absolute',
-    top: 110,
-    left: 15,
-    right: 0,
-    zIndex: 10,
-    elevation: 8,
-    width: 110,
-    height: 190,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 5,
-      height: 8,
-    },
-    shadowOpacity: 0.2, 
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 20,
+    marginHorizontal: 25,
   },
-  searchBar: {
-    width: '100%',
-    paddingLeft: 120,
+  seeMoreText: {
+    color: Colors.primary,
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  scrollContainer: {
+    flexDirection: 'row',
+    marginHorizontal: 25,
+  },
+  gridContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    marginTop: 15, 
+  },
+  grid: {
+    width: '48.5%',
+  },
+  grid1: {
+    width: 300,
+    marginRight: 15, 
   }
 });

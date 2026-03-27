@@ -1,10 +1,22 @@
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/Colors';
+// import { LinearGradient } from 'expo-linear-gradient';
+// import { BlurView } from 'expo-blur';
 
 export default function TopNav() {
   return (
     <View style={styles.topNavContainer}>
+      {/* <BlurView intensity={50} tint="default" style={StyleSheet.absoluteFill} /> */}
+
+      {/* <LinearGradient 
+        colors={[Colors.primary, Colors.primary + '26']} 
+        start={{ x: 0, y: 0.45 }} // Keeps the top 45% completely solid red
+        end={{ x: 0, y: 1 }}   
+        style={StyleSheet.absoluteFill}
+      /> */}
+
+      {/* Foreground: Your Content */}
       <Ionicons name="menu" size={32} color="#FFF" />
       
       <View style={styles.locationContainer}>
@@ -38,11 +50,11 @@ export default function TopNav() {
 
 const styles = StyleSheet.create({
   topNavContainer: {
+    backgroundColor: Colors.primary,
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
-    backgroundColor: Colors.primary,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -51,17 +63,9 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
     borderBottomLeftRadius: 30,
     borderBottomRightRadius: 30,
-    // borderBottomColor: '#ffffff2e',
-    // borderBottomWidth: 2,
     zIndex: 10,
     elevation: 8,
-    // shadowColor: '#000',
-    // shadowOffset: {
-    //   width: 0,
-    //   height: 4,
-    // },
-    // shadowOpacity: 0.15,
-    // shadowRadius: 10,
+    overflow: 'hidden', 
   },
   locationContainer: {
     alignItems: 'center',
@@ -111,11 +115,11 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   divider: {
-    height: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.6)',
+    height: 2,
+    backgroundColor: 'rgba(255, 255, 255, 0.37)',
     marginBottom: 0,
     position: 'absolute',
-    top: 107,
+    top: 106,
     right: 0,
     left: 20,
     width: '90%',

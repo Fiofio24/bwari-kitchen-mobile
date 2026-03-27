@@ -4,4 +4,5 @@ export const Colors = {
   surface: '#FFFFFF',
   text: '#1A1A1A',
   textMuted: '#8E8E93',
+  star: '#ffd900',
 };
