@@ -6,6 +6,7 @@ import SearchBar from '../../components/SearchBar';
 import CategoryFilter from '../../components/CategoryFilter';
 import CategoryFilterActive from '../../components/CategoryFilterActive';
 import GridDishCard from '../../components/GridDishCard';
+import PromoSlider from '../../components/PromoSlider';
 
 export default function HomeScreen() {
   return (
@@ -28,6 +29,8 @@ export default function HomeScreen() {
           </View>
 
         </View>
+
+        <PromoSlider />
 
         {/* Horizontal Breakfast Row */}
         <View style={styles.bodyContainer}>
