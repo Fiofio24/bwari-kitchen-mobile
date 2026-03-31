@@ -63,7 +63,7 @@ const styles = StyleSheet.create({
   imagePlaceholder: {
     width: '100%',
     backgroundColor: '#EAEAEC',
-    borderRadius: 10,
+    // borderRadius: 10,
     marginBottom: 10,
     padding: 8,
     alignItems: 'flex-end',
@@ -73,7 +73,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   favoriteButton: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#ffffff95',
     width: 28,
     height: 28,
     borderRadius: 14,

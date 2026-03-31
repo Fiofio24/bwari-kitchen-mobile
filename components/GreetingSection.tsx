@@ -22,7 +22,7 @@ export default function GreetingSection({ userName }: GreetingProps) {
           <Text style={styles.subGreetingText}>What would you like for breakfast</Text>
         </View>
         <TouchableOpacity style={styles.menuButton}>
-          <Ionicons name="list" size={16} color="#000" />
+          <Ionicons name="restaurant" size={16} color="#000" />
           <Text style={styles.menuButtonText}>Menu</Text>
         </TouchableOpacity>
       </View>

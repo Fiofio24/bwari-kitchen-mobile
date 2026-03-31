@@ -8,6 +8,7 @@ import CategoryFilter from '../../components/CategoryFilter';
 import GridDishCard from '../../components/GridDishCard';
 import PromoSlider from '../../components/PromoSlider';
 import BottomNav from '../../components/BottomNav';
+import Sidebar from '../../components/Sidebar';
 
 const { width } = Dimensions.get('window');
 const SLIDER_CARD_WIDTH = Math.min(width * 0.75, 280); 
@@ -42,6 +43,8 @@ const DUMMY_DISHES = [
 export default function HomeScreen() {
   const [activeCategory, setActiveCategory] = useState('All');
 
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
   const filteredDishes = activeCategory === 'All' 
     ? DUMMY_DISHES 
     : DUMMY_DISHES.filter(dish => dish.category === activeCategory);
@@ -50,7 +53,7 @@ export default function HomeScreen() {
     <View style={styles.container}>
       <ScrollView 
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 500 }}>
+        contentContainerStyle={{ paddingBottom: 100 }}>
         
         <View style={styles.topLayoutContainer}>
           <GreetingSection userName={USER_PROFILE.name} />
@@ -132,9 +135,15 @@ export default function HomeScreen() {
         address={USER_PROFILE.address}
         cartCount={USER_PROFILE.cartCount}
         notificationCount={USER_PROFILE.notificationCount}
+        onOpenMenu={() => setIsSidebarOpen(true)} 
       />
 
       <BottomNav activeTab="Home" />
+
+      <Sidebar 
+        visible={isSidebarOpen} 
+        onClose={() => setIsSidebarOpen(false)} 
+      />
 
 
     </View>
