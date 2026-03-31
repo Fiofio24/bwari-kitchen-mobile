@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ImageBackground } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/Colors';
 
@@ -7,17 +7,24 @@ interface GridDishCardProps {
   price: string;
   rating: string;
   category: string;
+  image: string; // <-- New prop for the image URL
+  isRectangle?: boolean;
 }
 
-export default function GridDishCard({ name, price, rating, category }: GridDishCardProps) {
+export default function GridDishCard({ name, price, rating, category, image, isRectangle }: GridDishCardProps) {
   return (
     <View style={styles.cardContainer}>
       
-      <View style={styles.imagePlaceholder}>
+      {/* 1. Now using ImageBackground so the heart button floats on top */}
+      <ImageBackground 
+        source={{ uri: image }} 
+        style={[styles.imagePlaceholder, { aspectRatio: isRectangle ? 1.5 : 1 }]}
+        imageStyle={styles.imageRadius}
+      >
         <TouchableOpacity style={styles.favoriteButton}>
           <Ionicons name="heart-outline" size={18} color="#000" />
         </TouchableOpacity>
-      </View>
+      </ImageBackground>
       
       <View style={styles.titleRow}>
         <Text style={styles.dishName}>{category}</Text>
@@ -54,12 +61,16 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
   },
   imagePlaceholder: {
-    height: 150,
+    width: '100%',
     backgroundColor: '#EAEAEC',
     borderRadius: 10,
     marginBottom: 10,
     padding: 8,
     alignItems: 'flex-end',
+    justifyContent: 'flex-start',
+  },
+  imageRadius: {
+    borderRadius: 10,
   },
   favoriteButton: {
     backgroundColor: '#FFFFFF',
