@@ -1,14 +1,15 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../constants/Colors';
+import { useTheme } from '../context/ThemeContext'; // <-- 1. Import the hook
 
 interface BottomNavProps {
-  activeTab?: string; // Tells the nav which icon to highlight
+  activeTab?: string; 
 }
 
 export default function BottomNav({ activeTab = 'Home' }: BottomNavProps) {
-  
-  // Array of our navigation items to map through
+  // 2. Grab your dynamic colors
+  const { colors, isDark } = useTheme(); 
+
   const navItems = [
     { name: 'Home', icon: 'home', outlineIcon: 'home-outline' },
     { name: 'Menu', icon: 'restaurant', outlineIcon: 'restaurant-outline' },
@@ -17,24 +18,31 @@ export default function BottomNav({ activeTab = 'Home' }: BottomNavProps) {
   ];
 
   return (
-    <View style={styles.container}>
+    <View style={[
+      styles.container, 
+      // 3. Apply the dynamic background color here
+      { 
+        backgroundColor: colors.surface,
+        shadowColor: isDark ? '#000' : '#ccc' // Softer shadow in light mode, deep shadow in dark
+      }
+    ]}>
       {navItems.map((item) => {
         const isActive = activeTab === item.name;
         
         return (
           <TouchableOpacity 
             key={item.name} 
-            style={[styles.navItem, isActive && styles.activeNavItem]}
+            // Apply the primary color dynamically
+            style={[styles.navItem, isActive && { backgroundColor: colors.primary }]}
             activeOpacity={0.8}
           >
             <Ionicons 
-              // Cast to any to satisfy TypeScript for dynamic icon names
               name={isActive ? item.icon as any : item.outlineIcon as any} 
               size={24} 
-              color={isActive ? '#FFFFFF' : Colors.textMuted} 
+              // Adapt the inactive icon color to the theme
+              color={isActive ? '#FFFFFF' : colors.textMuted} 
             />
             
-            {/* Only show the text if this specific tab is active */}
             {isActive && (
               <Text style={styles.activeText}>{item.name}</Text>
             )}
@@ -51,7 +59,6 @@ const styles = StyleSheet.create({
     bottom: 20,
     left: 20,
     right: 20,
-    backgroundColor: '#FFFFFF',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -59,7 +66,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderRadius: 30,
     elevation: 10,
-    shadowColor: '#000',
     shadowOpacity: 0.15,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 5 },
@@ -72,9 +78,6 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 20,
-  },
-  activeNavItem: {
-    backgroundColor: Colors.primary, // Red pill background for active state
   },
   activeText: {
     color: '#FFFFFF',

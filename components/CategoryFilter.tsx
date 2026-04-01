@@ -1,7 +1,6 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Colors } from '../constants/Colors';
+import { useTheme } from '../context/ThemeContext'; // <-- 1. Import the hook
 
-// 1. We MUST declare isActive and onPress here so the component knows to accept them
 interface CategoryFilterProps {
   category: string;
   isActive: boolean;
@@ -9,15 +8,27 @@ interface CategoryFilterProps {
 }
 
 export default function CategoryFilter({ category, isActive, onPress }: CategoryFilterProps) {
+  // 2. Grab your dynamic colors and the isDark boolean
+  const { colors, isDark } = useTheme();
+
   return (
     <View style={styles.container}>   
         <TouchableOpacity 
-          // 2. Using ternary operator for bulletproof styling
-          style={[styles.pill, isActive ? styles.activePill : null]} 
+          style={[
+            styles.pill, 
+            // 3. Dynamic Background Logic
+            { backgroundColor: isActive ? colors.primary : (isDark ? colors.border : '#EAEAEC') },
+            isActive ? styles.activePill : null
+          ]} 
           onPress={onPress}
           activeOpacity={0.8}
         >
-          <Text style={[styles.pillText, isActive ? styles.activePillText : null]}>
+          <Text style={[
+            styles.pillText, 
+            // 4. Dynamic Text Logic
+            { color: isActive ? '#FFFFFF' : colors.text },
+            isActive ? styles.activePillText : null
+          ]}>
             {category}
           </Text>
         </TouchableOpacity>
@@ -34,22 +45,18 @@ const styles = StyleSheet.create({
   pill: {
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#EAEAEC',
     paddingVertical: 8,
     paddingHorizontal: 20,
     borderRadius: 20,
   },
   activePill: {
-    backgroundColor: Colors.primary, // Red background
     paddingHorizontal: 25,
   },
   pillText: {
-    color: '#1A1A1A',
     fontWeight: '600',
     fontSize: 14,
   },
   activePillText: {
-    color: '#FFFFFF', // White text when active
     fontWeight: 'bold',
   },
 });

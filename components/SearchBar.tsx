@@ -1,20 +1,47 @@
-import { View, TextInput, StyleSheet } from 'react-native';
+import { View, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../constants/Colors';
+import { useTheme } from '../context/ThemeContext'; 
 
-export default function SearchBar() {
+interface SearchBarProps {
+  onPress?: () => void;
+  autoFocus?: boolean;
+}
+
+export default function SearchBar({ onPress, autoFocus }: SearchBarProps) {
+  const { colors, isDark } = useTheme();
+
+  // If onPress is provided, we make the whole bar a button. Otherwise, it's a normal View.
+  const Container: any = onPress ? TouchableOpacity : View;
+
   return (
-    <View style={styles.searchContainer}>
-      <Ionicons name="search" size={20} color={Colors.textMuted} style={styles.searchIcon} />
+    <Container 
+      style={styles.searchContainer} 
+      activeOpacity={0.9} 
+      onPress={onPress}
+    >
+      <Ionicons name="search" size={20} color={colors.textMuted} style={styles.searchIcon} />
+      
       <TextInput 
         placeholder="Search food" 
-        placeholderTextColor={Colors.textMuted} 
-        style={styles.searchInput} 
+        placeholderTextColor={colors.textMuted} 
+        autoFocus={autoFocus}
+        // If it's acting as a button, disable typing so the touch event registers!
+        editable={!onPress} 
+        pointerEvents={onPress ? "none" : "auto"}
+        style={[
+          styles.searchInput, 
+          { 
+            backgroundColor: colors.surface,
+            color: colors.text,
+            shadowColor: isDark ? '#000' : '#ccc' 
+          }
+        ]} 
       />
-      <View style={styles.filterButton}>
+      
+      <TouchableOpacity style={[styles.filterButton, { backgroundColor: colors.primary }]}>
         <Ionicons name="options" size={20} color="#FFF" />
-      </View>
-    </View>
+      </TouchableOpacity>
+    </Container>
   );
 }
 
@@ -28,14 +55,12 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
     height: 50,
     width: '100%',
     borderRadius: 25,
     paddingHorizontal: 40,
     fontSize: 15,
     elevation: 2,
-    shadowColor: '#000',
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
@@ -45,7 +70,6 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   filterButton: {
-    backgroundColor: Colors.primary,
     height: 50,
     width: 50,
     borderRadius: 25,
