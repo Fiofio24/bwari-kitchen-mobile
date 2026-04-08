@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native'; 
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, useWindowDimensions } from 'react-native'; 
 import { Colors } from '../../constants/Colors';
 import { useRouter } from 'expo-router';
 import TopNav from '../../components/TopNav';
@@ -12,11 +12,7 @@ import BottomNav from '../../components/BottomNav';
 import Sidebar from '../../components/Sidebar';
 import DraggableOrderButton from '../../components/DraggableOrderButton';
 
-// 1. Import your new Theme Hook!
 import { useTheme } from '../../context/ThemeContext';
-
-const { width } = Dimensions.get('window');
-const SLIDER_CARD_WIDTH = Math.min(width * 0.75, 280); 
 
 const CATEGORIES = ['All', 'Rice', 'Swallow', 'Drink', 'Protein'];
 
@@ -57,12 +53,25 @@ const DUMMY_DISHES = [
 ];
 
 export default function HomeScreen() {
-  const router = useRouter(); // <-- Add this here!
+  const router = useRouter(); 
   const [activeCategory, setActiveCategory] = useState('All');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-
-  // 2. Extract your dynamic colors!
   const { colors } = useTheme();
+  
+  // 1. Get the exact live width of the user's screen
+  const { width } = useWindowDimensions();
+
+  // 2. The Slider Math
+  const SLIDER_CARD_WIDTH = Math.min(width * 0.75, 280);
+
+  // 3. The Perfect Grid Math
+  const GRID_PADDING = 20; // The space on the far left and far right
+  const GRID_GAP = 15;     // The space between the cards
+  const NUM_COLUMNS = width > 600 ? 3 : 2; // 3 columns for tablets, 2 for phones
+  
+  // Total Width - (Side Paddings) - (Gaps between columns) / Number of Columns
+  const CARD_WIDTH = (width - (GRID_PADDING * 2) - (GRID_GAP * (NUM_COLUMNS - 1))) / NUM_COLUMNS;
+
 
   const getMealTime = () => {
     const currentHour = new Date().getHours();
@@ -85,14 +94,12 @@ export default function HomeScreen() {
     : DUMMY_DISHES.filter(dish => dish.category === activeCategory);
 
   return (
-    // 3. Apply the dynamic background color here
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
         
         <View style={styles.topLayoutContainer}>
           <GreetingSection userName={USER_PROFILE.name} />
           <View style={styles.searchBarWrapper}>
-            {/* Tell the bar to act as a button that opens the search page! */}
             <SearchBar onPress={() => router.push('/search')} />
           </View>
         </View>
@@ -101,7 +108,6 @@ export default function HomeScreen() {
 
         <View style={styles.bodyContainer}>
           <View style={styles.headerRow}>
-            {/* 4. Apply the dynamic text color here */}
             <Text style={[styles.sectionTitle, { color: colors.text }]}>| {currentMealTitle} For You</Text>
           </View>
           
@@ -113,7 +119,7 @@ export default function HomeScreen() {
             decelerationRate="fast"
           >
             {currentMealDishes.map((dish) => (
-              <View style={styles.grid1} key={dish.id}>
+              <View style={[styles.grid1, { width: SLIDER_CARD_WIDTH }]} key={dish.id}>
                 <GridDishCard 
                   isRectangle 
                   category={dish.category} 
@@ -128,7 +134,6 @@ export default function HomeScreen() {
         </View>
 
         <View style={styles.headerRow}>
-          {/* 5. Apply the dynamic text color here */}
           <Text style={[styles.sectionTitle, { color: colors.text }]}>| Others</Text>
           <TouchableOpacity>
             <Text style={styles.seeMoreText}>See More</Text>
@@ -149,7 +154,8 @@ export default function HomeScreen() {
         <View style={styles.gridContainer}>
           {filteredDishes.length > 0 ? (
             filteredDishes.map((dish) => (
-              <View style={styles.grid} key={dish.id}>
+              // 4. Apply the exact calculated width to each card wrapper!
+              <View style={[styles.grid, { width: CARD_WIDTH }]} key={dish.id}>
                 <GridDishCard 
                   category={dish.category} 
                   name={dish.name} 
@@ -184,7 +190,7 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 }, // Removed static background color
+  container: { flex: 1 }, 
   topLayoutContainer: { marginBottom: 20, zIndex: 5, },
   searchBarWrapper: { paddingHorizontal: 10, marginTop: 10, zIndex: 1, },
   bodyContainer: { paddingTop: 10, },
@@ -193,8 +199,10 @@ const styles = StyleSheet.create({
   seeMoreText: { color: Colors.primary, fontWeight: 'bold', fontSize: 14, },
   breakfastScroll: { paddingLeft: 20, },
   scrollContainer: { flexDirection: 'row', marginHorizontal: 15, },
-  gridContainer: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-start', gap: 15, paddingHorizontal: 20, paddingBottom: 20, marginTop: 5, },
-  grid: { minWidth: 150, maxWidth: 200, flexGrow: 1, },
-  grid1: { width: SLIDER_CARD_WIDTH, marginRight: 15, },
-  emptyText: { width: '100%', textAlign: 'center', marginTop: 20 } // Removed static text color
+  gridContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 15, paddingHorizontal: 20, paddingBottom: 20, marginTop: 5, },
+  
+  // 5. Removed minWidth/maxWidth! We now control the exact width mathematically above.
+  grid: {  }, 
+  grid1: { marginRight: 15, },
+  emptyText: { width: '100%', textAlign: 'center', marginTop: 20 } 
 });

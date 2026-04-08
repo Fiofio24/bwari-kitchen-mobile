@@ -1,14 +1,20 @@
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '../context/ThemeContext'; // <-- 1. Import the hook
+import { useTheme } from '../context/ThemeContext'; 
 
 interface BottomNavProps {
   activeTab?: string; 
 }
 
 export default function BottomNav({ activeTab = 'Home' }: BottomNavProps) {
-  // 2. Grab your dynamic colors
   const { colors, isDark } = useTheme(); 
+
+  const shadowStyle = isDark 
+    ? { elevation: 0 } 
+    : Platform.select({
+        ios: { shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 10, shadowOffset: { width: 0, height: 5 } },
+        android: { elevation: 15, shadowColor: '#000' } 
+      });
 
   const navItems = [
     { name: 'Home', icon: 'home', outlineIcon: 'home-outline' },
@@ -20,11 +26,9 @@ export default function BottomNav({ activeTab = 'Home' }: BottomNavProps) {
   return (
     <View style={[
       styles.container, 
-      // 3. Apply the dynamic background color here
-      { 
-        backgroundColor: colors.surface,
-        shadowColor: isDark ? '#000' : '#ccc' // Softer shadow in light mode, deep shadow in dark
-      }
+      // The Fix: Syncing background and border radius!
+      { backgroundColor: colors.surface, borderRadius: 30 },
+      shadowStyle
     ]}>
       {navItems.map((item) => {
         const isActive = activeTab === item.name;
@@ -32,14 +36,12 @@ export default function BottomNav({ activeTab = 'Home' }: BottomNavProps) {
         return (
           <TouchableOpacity 
             key={item.name} 
-            // Apply the primary color dynamically
             style={[styles.navItem, isActive && { backgroundColor: colors.primary }]}
             activeOpacity={0.8}
           >
             <Ionicons 
               name={isActive ? item.icon as any : item.outlineIcon as any} 
               size={24} 
-              // Adapt the inactive icon color to the theme
               color={isActive ? '#FFFFFF' : colors.textMuted} 
             />
             
@@ -65,10 +67,6 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 30,
-    elevation: 10,
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 5 },
     zIndex: 20,
   },
   navItem: {

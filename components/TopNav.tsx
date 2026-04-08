@@ -1,20 +1,24 @@
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/Colors';
+import { useSafeAreaInsets } from 'react-native-safe-area-context'; 
 
 interface TopNavProps {
   address: string;
   cartCount: number;
   notificationCount: number;
-  onOpenMenu: () => void; // <-- Added to interface
+  onOpenMenu: () => void; 
 }
 
-// Ensure onOpenMenu is destructured right here in the function arguments!
 export default function TopNav({ address, cartCount, notificationCount, onOpenMenu }: TopNavProps) {
+  const insets = useSafeAreaInsets();
+  
+  // Dynamically calculate the top padding!
+  const paddingTop = Platform.OS === 'web' ? 50 : insets.top + 10;
+
   return (
-    <View style={styles.topNavContainer}>
+    <View style={[styles.topNavContainer, { paddingTop }]}>
       
-      {/* Menu Icon wrapped in TouchableOpacity */}
       <TouchableOpacity onPress={onOpenMenu} activeOpacity={0.7}>
         <Ionicons name="menu" size={32} color="#ffffff" />
       </TouchableOpacity>
@@ -58,7 +62,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: 50,
     paddingHorizontal: 20,
     paddingBottom: 20,
     borderBottomLeftRadius: 30,

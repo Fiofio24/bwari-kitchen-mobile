@@ -1,7 +1,8 @@
 import React, { useRef, useEffect } from 'react';
-import { Animated, PanResponder, StyleSheet, Dimensions, TouchableOpacity } from 'react-native';
+import { Animated, PanResponder, StyleSheet, Dimensions, TouchableOpacity, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/Colors';
+import { useTheme } from '../context/ThemeContext'; 
 
 const { width, height } = Dimensions.get('window');
 const BUTTON_SIZE = 60;
@@ -12,7 +13,6 @@ interface DraggableOrderButtonProps {
 }
 
 export default function DraggableOrderButton({ onPress }: DraggableOrderButtonProps) {
-  // 1. Pan animation for dragging (Existing)
   const pan = useRef(
     new Animated.ValueXY({ 
       x: width - BUTTON_SIZE - EDGE_PADDING, 
@@ -20,38 +20,41 @@ export default function DraggableOrderButton({ onPress }: DraggableOrderButtonPr
     })
   ).current;
 
-  // 2. Glow animation for the "alive" pulse (NEW)
   const glowAnim = useRef(new Animated.Value(0)).current;
+  const { isDark } = useTheme(); 
 
-// 3. Start the continuous radar pulse loop (Bulletproof recursive method)
+  const shadowStyle = isDark 
+    ? { elevation: 0 } 
+    : Platform.select({
+        ios: { shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 10, shadowOffset: { width: 0, height: 5 } },
+        android: { elevation: 10, shadowColor: '#000' }
+      });
+
   useEffect(() => {
     const startPulse = () => {
-      glowAnim.setValue(0); // Force reset to center
+      glowAnim.setValue(0); 
       Animated.timing(glowAnim, {
         toValue: 1,
         duration: 1500, 
         useNativeDriver: true,
       }).start(({ finished }) => {
-        // The exact millisecond the animation finishes, start it again!
         if (finished) {
           startPulse();
         }
       });
     };
 
-    startPulse(); // Kick off the infinite loop
+    startPulse(); 
   }, [glowAnim]);
 
-  // Interpolate the glow to continuously shoot outwards
   const glowScale = glowAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [1, 1.7], // Starts at normal size, explodes outward to over double its size!
+    outputRange: [1, 1.7], 
   });
 
-  // Interpolate the opacity to fade out completely as it expands
   const glowOpacity = glowAnim.interpolate({
     inputRange: [0, 0.8, 1],
-    outputRange: [0.6, 0, 0], // Starts visible, fades to 0% right before it hits max size
+    outputRange: [0.6, 0, 0], 
   });
 
   const panResponder = useRef(
@@ -107,7 +110,6 @@ export default function DraggableOrderButton({ onPress }: DraggableOrderButtonPr
         },
       ]}
     >
-      {/* 4. The Glowing Halo Layer (Placed behind the button) */}
       <Animated.View 
         style={[
           styles.halo,
@@ -118,9 +120,13 @@ export default function DraggableOrderButton({ onPress }: DraggableOrderButtonPr
         ]} 
       />
 
-      {/* The Actual Button */}
       <TouchableOpacity 
-        style={styles.button} 
+        style={[
+          styles.button,
+          // The Fix: Syncing the red background with the round edge
+          { backgroundColor: Colors.primary, borderRadius: BUTTON_SIZE / 2 },
+          shadowStyle
+        ]} 
         activeOpacity={0.8}
         disabled={true} 
       >
@@ -135,7 +141,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     zIndex: 50, 
     justifyContent: 'center',
-    alignItems: 'center', // Ensures the halo and button are perfectly centered
+    alignItems: 'center', 
     width: BUTTON_SIZE,
     height: BUTTON_SIZE,
   },
@@ -144,7 +150,7 @@ const styles = StyleSheet.create({
     width: BUTTON_SIZE,
     height: BUTTON_SIZE,
     borderRadius: BUTTON_SIZE / 2,
-    backgroundColor: Colors.primary, // Uses your red theme color for the glow
+    backgroundColor: Colors.primary, 
   },
   button: {
     width: BUTTON_SIZE,
@@ -153,12 +159,5 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 10,
-    shadowColor: '#000',
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 5 },
-    borderWidth: 2,
-    borderColor: '#d30000', 
   },
 });

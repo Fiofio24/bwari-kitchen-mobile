@@ -1,6 +1,6 @@
-import { View, Text, StyleSheet, TouchableOpacity, ImageBackground } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ImageBackground, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '../context/ThemeContext'; // <-- 1. Import the hook
+import { useTheme } from '../context/ThemeContext'; 
 
 interface GridDishCardProps {
   name: string;
@@ -12,14 +12,22 @@ interface GridDishCardProps {
 }
 
 export default function GridDishCard({ name, price, rating, category, image, isRectangle }: GridDishCardProps) {
-  // 2. Grab your dynamic colors and theme state
   const { colors, isDark } = useTheme();
+
+  // Clean in dark mode, perfectly rounded shadow in light mode!
+  const shadowStyle = isDark 
+    ? { elevation: 0 } // No borders, no shadows. Perfectly clean.
+    : Platform.select({
+        ios: { shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 5, shadowOffset: { width: 0, height: 2 } },
+        android: { elevation: 4, shadowColor: '#000' } 
+      });
 
   return (
     <View style={[
       styles.cardContainer, 
-      // 3. Apply dynamic background and shadow
-      { backgroundColor: colors.surface, shadowColor: isDark ? '#000' : '#ccc' }
+      // The Fix: Syncing background and border radius exactly together!
+      { backgroundColor: colors.surface, borderRadius: 15 }, 
+      shadowStyle
     ]}>
       
       <ImageBackground 
@@ -27,7 +35,6 @@ export default function GridDishCard({ name, price, rating, category, image, isR
         style={[
           styles.imagePlaceholder, 
           { aspectRatio: isRectangle ? 1.5 : 1 },
-          // 4. Darken the loading placeholder in dark mode
           { backgroundColor: isDark ? colors.border : '#EAEAEC' }
         ]}
         imageStyle={styles.imageRadius}
@@ -65,9 +72,6 @@ const styles = StyleSheet.create({
     padding: 10,
     marginBottom: 15,
     width: '100%',
-    elevation: 3,
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
   },
   imagePlaceholder: {
     width: '100%',
