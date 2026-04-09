@@ -9,11 +9,17 @@ interface BottomNavProps {
 export default function BottomNav({ activeTab = 'Home' }: BottomNavProps) {
   const { colors, isDark } = useTheme(); 
 
+  // THE FIX: Added standard CSS boxShadow for the web platform
   const shadowStyle = isDark 
-    ? { elevation: 0 } 
+    ? Platform.select({
+        ios: { shadowOpacity: 0 },
+        android: { elevation: 0 },
+        web: { boxShadow: 'none' } as any
+      })
     : Platform.select({
         ios: { shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 10, shadowOffset: { width: 0, height: 5 } },
-        android: { elevation: 15, shadowColor: '#000' } 
+        android: { elevation: 15, shadowColor: '#000' },
+        web: { boxShadow: '0px 5px 15px rgba(0, 0, 0, 0.15)' } as any
       });
 
   const navItems = [
@@ -26,7 +32,6 @@ export default function BottomNav({ activeTab = 'Home' }: BottomNavProps) {
   return (
     <View style={[
       styles.container, 
-      // The Fix: Syncing background and border radius!
       { backgroundColor: colors.surface, borderRadius: 30 },
       shadowStyle
     ]}>

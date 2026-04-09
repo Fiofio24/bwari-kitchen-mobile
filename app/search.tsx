@@ -78,20 +78,80 @@ export default function SearchScreen() {
 
 // Compact styling for the search page!
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 15, paddingBottom: 20, zIndex: 10 },
-  backButton: { padding: 5, marginRight: -10 },
-  searchWrapper: { flex: 1 },
-  scrollContent: { paddingHorizontal: 20, paddingBottom: 40 },
-  section: { marginBottom: 30 },
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
-  sectionTitle: { fontSize: 18, fontWeight: 'bold' },
-  clearText: { fontSize: 14, fontWeight: 'bold' },
-  tagsContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  tag: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, paddingHorizontal: 15, borderRadius: 20 },
-  tagIcon: { marginRight: 5 },
-  tagText: { fontSize: 14, fontWeight: '500' },
-  trendingRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 15 },
-  trendingIconBox: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center', marginRight: 15 },
-  trendingText: { flex: 1, fontSize: 16, fontWeight: '500' },
+  container: { 
+    flex: 1 
+  },
+  header: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    paddingHorizontal: 15, 
+    paddingBottom: 20, 
+    zIndex: 10 
+  },
+  backButton: { 
+    padding: 5, 
+    marginRight: -10 
+  },
+  searchWrapper: { 
+    flex: 1, 
+    // marginTop: 0 
+  },
+  scrollContent: { 
+    paddingHorizontal: 20, 
+    paddingBottom: 40 
+  },
+  section: { 
+    marginBottom: 30 
+  },
+  sectionHeader: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    marginBottom: 15 
+  },
+  sectionTitle: { 
+    fontSize: 18, 
+    fontWeight: 'bold' 
+  },
+  clearText: { 
+    fontSize: 14, 
+    fontWeight: 'bold' 
+  },
+  tagsContainer: { 
+    flexDirection: 'row', 
+    flexWrap: 'wrap',
+    gap: 10 
+  },
+  tag: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    paddingVertical: 8, 
+    paddingHorizontal: 15, 
+    borderRadius: 20 
+  },
+  tagIcon: { 
+    marginRight: 5 
+  },
+  tagText: { 
+    fontSize: 14, 
+    fontWeight: '500' 
+  },
+  trendingRow: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    marginBottom: 15 
+  },
+  trendingIconBox: { 
+    width: 40, 
+    height: 40, 
+    borderRadius: 20, 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    marginRight: 15 
+  },
+  trendingText: { 
+    flex: 1, 
+    fontSize: 16, 
+    fontWeight: '500' 
+  },
 });

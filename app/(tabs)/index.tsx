@@ -11,6 +11,7 @@ import PromoSlider from '../../components/PromoSlider';
 import BottomNav from '../../components/BottomNav';
 import Sidebar from '../../components/Sidebar';
 import DraggableOrderButton from '../../components/DraggableOrderButton';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '../../context/ThemeContext';
 
@@ -18,7 +19,6 @@ const CATEGORIES = ['All', 'Rice', 'Swallow', 'Drink', 'Protein'];
 
 const USER_PROFILE = {
   name: "User",
-  address: "No 6 Kuje Street...",
   cartCount: 3,
   notificationCount: 1,
 };
@@ -56,22 +56,25 @@ export default function HomeScreen() {
   const router = useRouter(); 
   const [activeCategory, setActiveCategory] = useState('All');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  
+  // THE NEW STATE: Now the address is dynamic!
+  const [currentAddress, setCurrentAddress] = useState("No 6 Kuje Street...");
+  
+  const [isScrolled, setIsScrolled] = useState(false);
+  const insets = useSafeAreaInsets();
+  const shadowTripwire = 120 + insets.top; 
+  
   const { colors } = useTheme();
   
-  // 1. Get the exact live width of the user's screen
   const { width } = useWindowDimensions();
-
-  // 2. The Slider Math
-  const SLIDER_CARD_WIDTH = Math.min(width * 0.75, 280);
-
-  // 3. The Perfect Grid Math
-  const GRID_PADDING = 20; // The space on the far left and far right
-  const GRID_GAP = 15;     // The space between the cards
-  const NUM_COLUMNS = width > 600 ? 3 : 2; // 3 columns for tablets, 2 for phones
-  
-  // Total Width - (Side Paddings) - (Gaps between columns) / Number of Columns
-  const CARD_WIDTH = (width - (GRID_PADDING * 2) - (GRID_GAP * (NUM_COLUMNS - 1))) / NUM_COLUMNS;
-
+  const MAX_SLIDER_WIDTH = 280; 
+  const SLIDER_CARD_WIDTH = Math.min(width * 0.75, MAX_SLIDER_WIDTH);
+  const MAX_GRID_WIDTH = 200; 
+  const GRID_PADDING = 20; 
+  const GRID_GAP = 15;     
+  const AVAILABLE_WIDTH = width - (GRID_PADDING * 2);
+  const NUM_COLUMNS = Math.max(2, Math.ceil(AVAILABLE_WIDTH / (MAX_GRID_WIDTH + GRID_GAP)));
+  const CARD_WIDTH = (AVAILABLE_WIDTH - (GRID_GAP * (NUM_COLUMNS - 1))) / NUM_COLUMNS;
 
   const getMealTime = () => {
     const currentHour = new Date().getHours();
@@ -81,21 +84,27 @@ export default function HomeScreen() {
   };
 
   const currentMealTitle = getMealTime();
-
   let currentMealDishes = BREAKFAST_DISHES;
-  if (currentMealTitle === 'Lunch') {
-    currentMealDishes = LUNCH_DISHES;
-  } else if (currentMealTitle === 'Dinner') {
-    currentMealDishes = DINNER_DISHES;
-  }
+  if (currentMealTitle === 'Lunch') currentMealDishes = LUNCH_DISHES;
+  else if (currentMealTitle === 'Dinner') currentMealDishes = DINNER_DISHES;
 
   const filteredDishes = activeCategory === 'All' 
     ? DUMMY_DISHES 
     : DUMMY_DISHES.filter(dish => dish.category === activeCategory);
 
+  const handleScroll = (event: any) => {
+    const offsetY = event.nativeEvent.contentOffset.y;
+    setIsScrolled(offsetY > shadowTripwire);
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
+      <ScrollView 
+        showsVerticalScrollIndicator={false} 
+        contentContainerStyle={{ paddingBottom: 100 }}
+        onScroll={handleScroll}
+        scrollEventThrottle={16} 
+      >
         
         <View style={styles.topLayoutContainer}>
           <GreetingSection userName={USER_PROFILE.name} />
@@ -108,61 +117,34 @@ export default function HomeScreen() {
 
         <View style={styles.bodyContainer}>
           <View style={styles.headerRow}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>| {currentMealTitle} For You</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>{currentMealTitle} For You</Text>
           </View>
           
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={false} 
-            style={styles.breakfastScroll}
-            snapToInterval={SLIDER_CARD_WIDTH + 15}
-            decelerationRate="fast"
-          >
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.breakfastScroll} snapToInterval={SLIDER_CARD_WIDTH + 15} decelerationRate="fast">
             {currentMealDishes.map((dish) => (
               <View style={[styles.grid1, { width: SLIDER_CARD_WIDTH }]} key={dish.id}>
-                <GridDishCard 
-                  isRectangle 
-                  category={dish.category} 
-                  name={dish.name} 
-                  price={dish.price} 
-                  rating={dish.rating}
-                  image={dish.image} 
-                />
+                <GridDishCard isRectangle category={dish.category} name={dish.name} price={dish.price} rating={dish.rating} image={dish.image} />
               </View>
             ))}
           </ScrollView>
         </View>
 
         <View style={styles.headerRow}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>| Others</Text>
-          <TouchableOpacity>
-            <Text style={styles.seeMoreText}>See More</Text>
-          </TouchableOpacity>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Others</Text>
+          <TouchableOpacity><Text style={styles.seeMoreText}>See More</Text></TouchableOpacity>
         </View>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scrollContainer}>
           {CATEGORIES.map((category) => (
-            <CategoryFilter 
-              key={category} 
-              category={category} 
-              isActive={activeCategory === category} 
-              onPress={() => setActiveCategory(category)} 
-            />
+            <CategoryFilter key={category} category={category} isActive={activeCategory === category} onPress={() => setActiveCategory(category)} />
           ))}
         </ScrollView>
 
         <View style={styles.gridContainer}>
           {filteredDishes.length > 0 ? (
             filteredDishes.map((dish) => (
-              // 4. Apply the exact calculated width to each card wrapper!
               <View style={[styles.grid, { width: CARD_WIDTH }]} key={dish.id}>
-                <GridDishCard 
-                  category={dish.category} 
-                  name={dish.name} 
-                  price={dish.price} 
-                  rating={dish.rating}
-                  image={dish.image}
-                />
+                <GridDishCard category={dish.category} name={dish.name} price={dish.price} rating={dish.rating} image={dish.image} />
               </View>
             ))
           ) : (
@@ -173,16 +155,18 @@ export default function HomeScreen() {
       </ScrollView>
 
       <TopNav 
-        address={USER_PROFILE.address}
+        // 1. Pass the dynamic address
+        address={currentAddress}
+        // 2. Pass the function to change it!
+        onAddressChange={setCurrentAddress}
         cartCount={USER_PROFILE.cartCount}
         notificationCount={USER_PROFILE.notificationCount}
         onOpenMenu={() => setIsSidebarOpen(true)}
+        isScrolled={isScrolled} 
       />
 
       <BottomNav activeTab="Home" />
-
       <DraggableOrderButton onPress={() => console.log('Order Button Tapped!')} />
-
       <Sidebar visible={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
 
     </View>
@@ -194,14 +178,12 @@ const styles = StyleSheet.create({
   topLayoutContainer: { marginBottom: 20, zIndex: 5, },
   searchBarWrapper: { paddingHorizontal: 10, marginTop: 10, zIndex: 1, },
   bodyContainer: { paddingTop: 10, },
-  sectionTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 15, },
+  sectionTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 15, borderLeftWidth: 5, borderLeftColor: Colors.primary, paddingLeft: 10, },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 20, marginHorizontal: 25, },
   seeMoreText: { color: Colors.primary, fontWeight: 'bold', fontSize: 14, },
   breakfastScroll: { paddingLeft: 20, },
   scrollContainer: { flexDirection: 'row', marginHorizontal: 15, },
   gridContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 15, paddingHorizontal: 20, paddingBottom: 20, marginTop: 5, },
-  
-  // 5. Removed minWidth/maxWidth! We now control the exact width mathematically above.
   grid: {  }, 
   grid1: { marginRight: 15, },
   emptyText: { width: '100%', textAlign: 'center', marginTop: 20 } 

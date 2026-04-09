@@ -23,11 +23,17 @@ export default function DraggableOrderButton({ onPress }: DraggableOrderButtonPr
   const glowAnim = useRef(new Animated.Value(0)).current;
   const { isDark } = useTheme(); 
 
+  // THE FIX: Added standard CSS boxShadow for the web platform
   const shadowStyle = isDark 
-    ? { elevation: 0 } 
+    ? Platform.select({
+        ios: { shadowOpacity: 0 },
+        android: { elevation: 0 },
+        web: { boxShadow: 'none' } as any
+      })
     : Platform.select({
         ios: { shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 10, shadowOffset: { width: 0, height: 5 } },
-        android: { elevation: 10, shadowColor: '#000' }
+        android: { elevation: 10, shadowColor: '#000' },
+        web: { boxShadow: '0px 5px 15px rgba(0, 0, 0, 0.3)' } as any
       });
 
   useEffect(() => {
@@ -123,7 +129,6 @@ export default function DraggableOrderButton({ onPress }: DraggableOrderButtonPr
       <TouchableOpacity 
         style={[
           styles.button,
-          // The Fix: Syncing the red background with the round edge
           { backgroundColor: Colors.primary, borderRadius: BUTTON_SIZE / 2 },
           shadowStyle
         ]} 

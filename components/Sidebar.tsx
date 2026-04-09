@@ -49,7 +49,7 @@ export default function Sidebar({ visible, onClose }: SidebarProps) {
         setIsRendering(false);
       });
     }
-  }, [visible]);
+  }, [visible, slideAnim, fadeAnim]);
 
   const menuItems = [
     { name: 'Profile', icon: 'person-outline' },
@@ -67,7 +67,7 @@ export default function Sidebar({ visible, onClose }: SidebarProps) {
       <TouchableWithoutFeedback onPress={onClose}>
         {/* 3. Using the AnimatedBlurView with the Android experimental fix */}
         <AnimatedBlurView 
-          intensity={10} 
+          intensity={20} 
           tint="dark" 
           experimentalBlurMethod="dimezisBlurView"
           style={[StyleSheet.absoluteFill, { opacity: fadeAnim, backgroundColor: 'rgba(0,0,0,0.2)' }]} 
@@ -155,7 +155,7 @@ const styles = StyleSheet.create({
   header: { 
     paddingBottom: 30, 
     paddingHorizontal: 20, 
-    borderBottomRightRadius: 30,
+    // borderBottomRightRadius: 30,
   },
   profileInfo: { 
     flexDirection: 'row', 
