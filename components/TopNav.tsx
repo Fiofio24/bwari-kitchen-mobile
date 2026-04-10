@@ -1,12 +1,21 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Platform, Modal, TextInput, KeyboardAvoidingView, TouchableWithoutFeedback, Animated, Easing, Keyboard } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform, Modal, TextInput, TouchableWithoutFeedback, Animated, Easing, Keyboard, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/Colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context'; 
 import { useTheme } from '../context/ThemeContext';
 import { BlurView } from 'expo-blur';
+import { useRouter } from 'expo-router';
 
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
+
+const SAVED_ADDRESSES = [
+  { id: '1', title: 'Home', address: 'No 6 Kuje St', icon: 'home' },
+  { id: '2', title: 'Work', address: 'Central Business Dist', icon: 'briefcase' },
+  { id: '3', title: 'School', address: 'Bwari Campus', icon: 'school' },
+  { id: '4', title: 'Gym', address: 'Wuse Zone 5', icon: 'barbell' },
+  { id: '5', title: 'Friend', address: 'Gwarinpa Estate', icon: 'people' },
+];
 
 interface TopNavProps {
   address: string;
@@ -20,14 +29,12 @@ interface TopNavProps {
 export default function TopNav({ address, onAddressChange, cartCount, notificationCount, onOpenMenu, isScrolled }: TopNavProps) {
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useTheme();
+  const router = useRouter(); 
   
   const [isVisible, setIsVisible] = useState(false);
-  const [inputText, setInputText] = useState(address);
-  
-  // 1. THE FIX: Local state for an instant visual update!
+  const [inputText, setInputText] = useState(''); 
   const [displayAddress, setDisplayAddress] = useState(address);
 
-  // Keep local state synced if the parent changes it externally
   useEffect(() => {
     setDisplayAddress(address);
   }, [address]);
@@ -53,7 +60,7 @@ export default function TopNav({ address, onAddressChange, cartCount, notificati
     setIsVisible(true);
     slideAnim.setValue(500);
     fadeAnim.setValue(0);
-    setInputText(displayAddress); // Reset input to current address when opening
+    setInputText(''); 
     
     setTimeout(() => {
       Animated.parallel([
@@ -71,27 +78,33 @@ export default function TopNav({ address, onAddressChange, cartCount, notificati
     ]).start(() => {
       setIsVisible(false); 
       if (onCloseComplete) {
-        // 2. THE FIX: A tiny 50ms buffer lets Android clear the Modal from memory 
-        // completely before running the heavy parent state update. No more glitching!
         setTimeout(() => onCloseComplete(), 50);
       }
     });
   };
 
-  const handleSaveAddress = () => {
+  const handleSaveCustomAddress = () => {
     if (inputText.trim().length > 0) {
-      setDisplayAddress(inputText); // INSTANT visual update in the header!
-      closeModal(() => onAddressChange(inputText)); // Delayed parent update
-    } else {
-      closeModal();
+      setDisplayAddress(inputText); 
+      closeModal(() => onAddressChange(inputText)); 
     }
   };
 
-  const handleSelectQuickAddress = (quickAddress: string) => {
-    setInputText(quickAddress);
-    setDisplayAddress(quickAddress); // INSTANT visual update in the header!
-    closeModal(() => onAddressChange(quickAddress)); // Delayed parent update
+  const handleSelectAddress = (fullAddressText: string) => {
+    setDisplayAddress(fullAddressText); 
+    closeModal(() => onAddressChange(fullAddressText)); 
   };
+
+  const handleManageAddresses = () => {
+    closeModal(() => {
+      console.log("Routing to /profile/addresses");
+    });
+  };
+
+  const filteredAddresses = SAVED_ADDRESSES.filter(item => 
+    item.title.toLowerCase().includes(inputText.toLowerCase()) || 
+    item.address.toLowerCase().includes(inputText.toLowerCase())
+  );
 
   return (
     <>
@@ -105,27 +118,46 @@ export default function TopNav({ address, onAddressChange, cartCount, notificati
           <Text style={styles.deliverToText}>Deliver to</Text>
           <View style={styles.addressRow}>
             <Ionicons name="location" size={14} color="#FFC107" />
-            {/* 3. Render the instantly-updating local state instead of the slow parent state */}
             <Text style={styles.addressText} numberOfLines={1} ellipsizeMode="tail">
-              {displayAddress.length > 18 ? displayAddress.substring(0, 18) + '...' : displayAddress}
+              {displayAddress}
             </Text>
             <Ionicons name="chevron-down" size={14} color="#FFF" style={styles.chevronIcon} />
           </View>
         </TouchableOpacity>
 
         <View style={styles.headerIcons}>
-          <View style={styles.iconWrapper}>
+          
+          <TouchableOpacity 
+            style={styles.iconWrapper} 
+            activeOpacity={0.7} 
+            onPress={() => {
+              closeModal(); 
+              router.push('/cart');
+            }}
+          >
             <Ionicons name="cart-outline" size={26} color="#FFF" />
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>{cartCount}</Text>
-            </View>
-          </View>
+            
+            {/* THE FIX: Only render the badge if cartCount is greater than 0! */}
+            {cartCount > 0 && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{cartCount}</Text>
+              </View>
+            )}
+            
+          </TouchableOpacity>
+
           <View style={[styles.iconWrapper, styles.bellIcon]}>
             <Ionicons name="notifications-outline" size={26} color="#FFF" />
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>{notificationCount}</Text>
-            </View>
+            
+            {/* You can do the same for notifications if you want! */}
+            {notificationCount > 0 && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{notificationCount}</Text>
+              </View>
+            )}
+            
           </View>
+
         </View>
 
         <View style={styles.dividerWrapper}>
@@ -149,6 +181,29 @@ export default function TopNav({ address, onAddressChange, cartCount, notificati
           />
         </TouchableWithoutFeedback>
 
+        {/* THE NEW FEATURE: Floating Current Address Box */}
+        <Animated.View 
+          style={[
+            styles.floatingAddressBox, 
+            { 
+              opacity: fadeAnim, 
+              top: insets.top + 20, 
+              backgroundColor: isDark ? 'rgba(30,30,30,0.85)' : 'rgba(255,255,255,0.95)',
+              borderColor: colors.border
+            }
+          ]}
+          pointerEvents="none" // Ensures taps go right through it to close the modal!
+        >
+          <Text style={[styles.floatingLabel, { color: colors.textMuted }]}>Current Delivery Address</Text>
+          <View style={styles.floatingAddressRow}>
+            <Ionicons name="location" size={16} color={Colors.primary} />
+            {/* We use the RAW `address` prop here to show exactly what is currently active */}
+            <Text style={[styles.floatingAddressText, { color: colors.text }]} numberOfLines={1} ellipsizeMode="tail">
+              {address}
+            </Text>
+          </View>
+        </Animated.View>
+
         <View style={styles.modalContentWrapper} pointerEvents="box-none">
           <Animated.View 
             style={[
@@ -162,37 +217,69 @@ export default function TopNav({ address, onAddressChange, cartCount, notificati
           >
             
             <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>Delivery Address</Text>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Quick Settings</Text>
               <TouchableOpacity onPress={() => closeModal()}>
                 <Ionicons name="close-circle" size={28} color={colors.textMuted} />
               </TouchableOpacity>
             </View>
 
             <View style={[styles.inputContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-              <Ionicons name="location-outline" size={20} color={Colors.primary} />
+              <Ionicons name="search" size={20} color={colors.textMuted} />
               <TextInput 
                 style={[styles.input, { color: colors.text }]}
                 value={inputText}
                 onChangeText={setInputText}
-                placeholder="Enter new delivery address..."
+                placeholder="Search saved addresses..."
                 placeholderTextColor={colors.textMuted}
+                autoCorrect={false}
               />
+              {inputText.length > 0 && filteredAddresses.length === 0 && (
+                <TouchableOpacity onPress={handleSaveCustomAddress} style={styles.miniSaveBtn}>
+                  <Text style={styles.miniSaveText}>Save Custom</Text>
+                </TouchableOpacity>
+              )}
             </View>
 
-            <TouchableOpacity style={[styles.saveButton, { backgroundColor: Colors.primary }]} onPress={handleSaveAddress} activeOpacity={0.8}>
-              <Text style={styles.saveButtonText}>Confirm Location</Text>
-            </TouchableOpacity>
+            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 250 }}>
+              
+              {inputText.length === 0 && (
+                <TouchableOpacity style={styles.currentLocationBtn} onPress={() => handleSelectAddress("Current GPS Location")} activeOpacity={0.7}>
+                  <Ionicons name="locate" size={22} color={Colors.primary} />
+                  <Text style={[styles.currentLocationText, { color: Colors.primary }]}>Use Current Location</Text>
+                </TouchableOpacity>
+              )}
 
-            <Text style={[styles.savedTitle, { color: colors.textMuted }]}>Saved Addresses</Text>
-            
-            <TouchableOpacity style={[styles.quickAddressRow, { borderBottomColor: colors.border }]} onPress={() => handleSelectQuickAddress("Home: No 6 Kuje St")}>
-              <Ionicons name="home" size={20} color={colors.textMuted} />
-              <Text style={[styles.quickAddressText, { color: colors.text }]}>Home: No 6 Kuje St</Text>
-            </TouchableOpacity>
+              {inputText.length === 0 && (
+                <Text style={[styles.savedTitle, { color: colors.textMuted }]}>Saved Addresses</Text>
+              )}
 
-            <TouchableOpacity style={[styles.quickAddressRow, { borderBottomColor: colors.border }]} onPress={() => handleSelectQuickAddress("Work: Central Business Dist")}>
-              <Ionicons name="briefcase" size={20} color={colors.textMuted} />
-              <Text style={[styles.quickAddressText, { color: colors.text }]}>Work: Central Business Dist</Text>
+              {filteredAddresses.map((item) => (
+                <TouchableOpacity 
+                  key={item.id}
+                  style={[styles.quickAddressRow, { borderBottomColor: colors.border }]} 
+                  onPress={() => handleSelectAddress(`${item.title}: ${item.address}`)}
+                >
+                  <View style={[styles.iconBox, { backgroundColor: 'rgba(150,150,150,0.1)' }]}>
+                    <Ionicons name={item.icon as any} size={20} color={colors.textMuted} />
+                  </View>
+                  <View style={styles.addressTextStack}>
+                    <Text style={[styles.quickAddressTitle, { color: colors.text }]}>{item.title}</Text>
+                    <Text style={[styles.quickAddressDetail, { color: colors.textMuted }]}>{item.address}</Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+
+              {inputText.length > 0 && filteredAddresses.length === 0 && (
+                <Text style={[styles.noResultsText, { color: colors.textMuted }]}>
+                  No saved addresses match &quot;{inputText}&quot;.
+                </Text>
+              )}
+              
+            </ScrollView>
+
+            <TouchableOpacity style={[styles.manageBtn, { borderTopColor: colors.border }]} onPress={handleManageAddresses} activeOpacity={0.7}>
+              <Text style={[styles.manageBtnText, { color: colors.text }]}>Manage Addresses</Text>
+              <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
             </TouchableOpacity>
 
           </Animated.View>
@@ -203,29 +290,22 @@ export default function TopNav({ address, onAddressChange, cartCount, notificati
 }
 
 const styles = StyleSheet.create({
-  // ... (Keep all your existing styles exactly the same!) ...
-  topNavContainer: { 
-    backgroundColor: Colors.primary, 
-    position: 'absolute', 
-    top: 0, 
-    left: 0, 
-    right: 0, 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'center', 
-    paddingHorizontal: 20, 
-    paddingBottom: 15, 
-    borderBottomLeftRadius: 30, 
-    borderBottomRightRadius: 30, 
-    zIndex: 10, 
-  },
-  locationContainer: { 
-    alignItems: 'center', 
-    maxWidth: '50%', 
-  },
+  topNavContainer: { backgroundColor: Colors.primary, position: 'absolute', top: 0, left: 0, right: 0, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingBottom: 15, borderBottomLeftRadius: 30, borderBottomRightRadius: 30, zIndex: 10, },
+  locationContainer: { alignItems: 'center', maxWidth: '50%', },
   deliverToText: { color: '#FFCCCC', fontSize: 12, },
-  addressRow: { flexDirection: 'row', alignItems: 'center', marginTop: 2, },
-  addressText: { color: '#FFFFFF', fontWeight: 'bold', fontSize: 14, marginLeft: 4, },
+  addressRow: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    marginTop: 2, 
+    maxWidth: '100%',
+  },
+  addressText: { 
+    color: '#FFFFFF', 
+    fontWeight: 'bold', 
+    fontSize: 14, 
+    marginLeft: 4,
+    flexShrink: 1, 
+  },
   chevronIcon: { marginLeft: 4, },
   headerIcons: { flexDirection: 'row', alignItems: 'center', },
   iconWrapper: { position: 'relative', },
@@ -234,15 +314,34 @@ const styles = StyleSheet.create({
   badgeText: { color: Colors.primary, fontSize: 10, fontWeight: 'bold', },
   dividerWrapper: { position: 'absolute', bottom: 0, left: 0, right: 0, alignItems: 'center', zIndex: 100, },
   divider: { width: '90%', height: 1, backgroundColor: 'rgba(255, 255, 255, 0.25)', },
+  
+  // Floating Address Box Styles
+  floatingAddressBox: { position: 'absolute', alignSelf: 'center', width: '85%', padding: 15, borderRadius: 20, borderWidth: 1, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 10, elevation: 10, zIndex: 50 },
+  floatingLabel: { fontSize: 11, fontWeight: 'bold', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 1 },
+  floatingAddressRow: { flexDirection: 'row', alignItems: 'center' },
+  floatingAddressText: { fontSize: 16, fontWeight: 'bold', marginLeft: 6 },
+  
   modalContentWrapper: { flex: 1, justifyContent: 'flex-end', },
-  modalSheet: { borderTopLeftRadius: 30, borderTopRightRadius: 30, paddingHorizontal: 25, paddingTop: 25, minHeight: 350, },
+  modalSheet: { borderTopLeftRadius: 30, borderTopRightRadius: 30, paddingHorizontal: 25, paddingTop: 25, },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, },
   modalTitle: { fontSize: 20, fontWeight: 'bold', },
-  inputContainer: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: 15, paddingHorizontal: 15, height: 55, marginBottom: 20, },
+  inputContainer: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: 15, paddingHorizontal: 15, height: 50, marginBottom: 15, },
   input: { flex: 1, marginLeft: 10, fontSize: 16, },
-  saveButton: { height: 55, borderRadius: 15, justifyContent: 'center', alignItems: 'center', marginBottom: 30, },
-  saveButtonText: { color: '#FFF', fontSize: 16, fontWeight: 'bold', },
-  savedTitle: { fontSize: 14, fontWeight: '600', marginBottom: 10, },
-  quickAddressRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 15, borderBottomWidth: 1, },
-  quickAddressText: { fontSize: 16, marginLeft: 15, },
+  miniSaveBtn: { backgroundColor: Colors.primary, paddingHorizontal: 15, paddingVertical: 6, borderRadius: 10, },
+  miniSaveText: { color: '#FFF', fontWeight: 'bold', fontSize: 12 },
+  
+  currentLocationBtn: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, marginBottom: 20, },
+  currentLocationText: { fontSize: 16, fontWeight: 'bold', marginLeft: 10, },
+  
+  savedTitle: { fontSize: 14, fontWeight: 'bold', marginBottom: 5, letterSpacing: 0.5 },
+  quickAddressRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, },
+  iconBox: { width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center', },
+  addressTextStack: { marginLeft: 15, justifyContent: 'center' },
+  quickAddressTitle: { fontSize: 16, fontWeight: 'bold' },
+  quickAddressDetail: { fontSize: 12, marginTop: 2 },
+  
+  noResultsText: { textAlign: 'center', marginTop: 20, fontStyle: 'italic' },
+  
+  manageBtn: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 20, marginTop: 5, borderTopWidth: 1, },
+  manageBtnText: { fontSize: 16, fontWeight: 'bold' },
 });

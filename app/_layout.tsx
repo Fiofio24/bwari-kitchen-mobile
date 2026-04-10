@@ -2,13 +2,15 @@ import { useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context'; 
-import { ThemeProvider, useTheme } from '../context/ThemeContext'; 
+// Removed useTheme from the import since we don't need it in this file anymore
+import { ThemeProvider } from '../context/ThemeContext'; 
 import * as SplashScreen from 'expo-splash-screen';
+import { CartProvider } from '../context/CartContext';
 
 SplashScreen.preventAutoHideAsync();
 
 function RootContent() {
-  const { isDark } = useTheme();
+  // Removed the unused `const { isDark } = useTheme();` line here
   const [appIsReady, setAppIsReady] = useState(false);
 
   useEffect(() => {
@@ -58,7 +60,10 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <ThemeProvider>
-        <RootContent />
+        {/* THE BRAIN: Wrapping the entire app! */}
+        <CartProvider> 
+          <RootContent />
+        </CartProvider>
       </ThemeProvider>
     </SafeAreaProvider>
   );

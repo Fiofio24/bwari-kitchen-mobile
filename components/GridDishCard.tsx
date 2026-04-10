@@ -9,9 +9,12 @@ interface GridDishCardProps {
   category: string;
   image: string; 
   isRectangle?: boolean;
+  // THE NEW LINK: Accept the onAdd function from the Home screen!
+  onAdd?: () => void;
 }
 
-export default function GridDishCard({ name, price, rating, category, image, isRectangle }: GridDishCardProps) {
+// Don't forget to extract onAdd from the props here!
+export default function GridDishCard({ name, price, rating, category, image, isRectangle, onAdd }: GridDishCardProps) {
   const { colors, isDark } = useTheme();
 
   const shadowStyle = isDark 
@@ -23,7 +26,6 @@ export default function GridDishCard({ name, price, rating, category, image, isR
     : Platform.select({
         ios: { shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 5, shadowOffset: { width: 0, height: 2 } },
         android: { elevation: 4, shadowColor: '#000' },
-        // The Web Fix!
         web: { boxShadow: '0px 2px 5px rgba(0, 0, 0, 0.1)' } as any 
       });
 
@@ -34,7 +36,6 @@ export default function GridDishCard({ name, price, rating, category, image, isR
       shadowStyle
     ]}>
       
-      {/* 1. TOP SECTION: Edge-to-edge image */}
       <View 
         style={[
           styles.imagePlaceholder, 
@@ -52,7 +53,6 @@ export default function GridDishCard({ name, price, rating, category, image, isR
         </TouchableOpacity>
       </View>
       
-      {/* 2. BOTTOM SECTION: Text and buttons wrapped in their own padded box */}
       <View style={styles.contentContainer}>
         <View style={styles.titleRow}>
           <Text style={[styles.dishName, { color: colors.text }]}>{category}</Text>
@@ -66,10 +66,17 @@ export default function GridDishCard({ name, price, rating, category, image, isR
         
         <View style={styles.priceRow}>
           <Text style={[styles.dishPrice, { color: colors.primary }]}>{price}</Text>
-          <TouchableOpacity style={[styles.addButton, { backgroundColor: colors.primary }]} activeOpacity={0.8}>
+          
+          {/* THE NEW LINK: Fire the onAdd function when tapped! */}
+          <TouchableOpacity 
+            style={[styles.addButton, { backgroundColor: colors.primary }]} 
+            activeOpacity={0.8}
+            onPress={onAdd}
+          >
             <Ionicons name="add" size={16} color="#FFF" />
             <Text style={styles.addButtonText}>Add</Text>
           </TouchableOpacity>
+          
         </View>
       </View>
 
@@ -78,78 +85,17 @@ export default function GridDishCard({ name, price, rating, category, image, isR
 }
 
 const styles = StyleSheet.create({
-  cardContainer: {
-    borderRadius: 15,
-    marginBottom: 15,
-    width: '100%',
-    // padding was removed from here!
-  },
-  imagePlaceholder: {
-    width: '100%',
-    padding: 10, // Keeps the heart button from hitting the edges
-    alignItems: 'flex-end',
-    justifyContent: 'flex-start',
-    borderTopLeftRadius: 15, // Match the card's outer curves perfectly
-    borderTopRightRadius: 15,
-    overflow: 'hidden', // Safely clips the absolute image to the top curves
-  },
-  contentContainer: {
-    padding: 12, // The padding lives here now!
-    paddingTop: 10,
-  },
-  favoriteButton: {
-    backgroundColor: '#ffffff95',
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 2,
-    zIndex: 10, 
-  },
-  titleRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  dishName: {
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  ratingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  ratingText: {
-    fontWeight: 'bold',
-    fontSize: 12,
-    marginRight: 2,
-  },
-  subText: {
-    fontSize: 12,
-    marginTop: 2,
-    marginBottom: 8,
-  },
-  priceRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  dishPrice: {
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  addButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-    borderRadius: 12,
-  },
-  addButtonText: {
-    color: '#FFFFFF',
-    fontWeight: 'bold',
-    fontSize: 12,
-    marginLeft: 2,
-  },
+  cardContainer: { borderRadius: 15, marginBottom: 15, width: '100%' },
+  imagePlaceholder: { width: '100%', padding: 10, alignItems: 'flex-end', justifyContent: 'flex-start', borderTopLeftRadius: 15, borderTopRightRadius: 15, overflow: 'hidden' },
+  contentContainer: { padding: 12, paddingTop: 10 },
+  favoriteButton: { backgroundColor: '#ffffff95', width: 28, height: 28, borderRadius: 14, justifyContent: 'center', alignItems: 'center', elevation: 2, zIndex: 10 },
+  titleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  dishName: { fontWeight: 'bold', fontSize: 16 },
+  ratingRow: { flexDirection: 'row', alignItems: 'center' },
+  ratingText: { fontWeight: 'bold', fontSize: 12, marginRight: 2 },
+  subText: { fontSize: 12, marginTop: 2, marginBottom: 8 },
+  priceRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  dishPrice: { fontWeight: 'bold', fontSize: 16 },
+  addButton: { flexDirection: 'row', alignItems: 'center', paddingVertical: 4, paddingHorizontal: 10, borderRadius: 12 },
+  addButtonText: { color: '#FFFFFF', fontWeight: 'bold', fontSize: 12, marginLeft: 2 },
 });

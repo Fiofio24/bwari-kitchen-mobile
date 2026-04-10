@@ -14,12 +14,14 @@ import DraggableOrderButton from '../../components/DraggableOrderButton';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '../../context/ThemeContext';
+// 1. Import the Brain!
+import { useCart } from '../../context/CartContext';
 
 const CATEGORIES = ['All', 'Rice', 'Swallow', 'Drink', 'Protein'];
 
 const USER_PROFILE = {
   name: "User",
-  cartCount: 3,
+  // We deleted cartCount from here because the Context handles it now!
   notificationCount: 1,
 };
 
@@ -54,16 +56,17 @@ const DUMMY_DISHES = [
 
 export default function HomeScreen() {
   const router = useRouter(); 
+  
+  // 2. Extract the variables we need from the Context
+  const { cartCount, addToCart } = useCart();
+  
   const [activeCategory, setActiveCategory] = useState('All');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  
-  // THE NEW STATE: Now the address is dynamic!
   const [currentAddress, setCurrentAddress] = useState("No 6 Kuje Street...");
-  
   const [isScrolled, setIsScrolled] = useState(false);
+  
   const insets = useSafeAreaInsets();
   const shadowTripwire = 120 + insets.top; 
-  
   const { colors } = useTheme();
   
   const { width } = useWindowDimensions();
@@ -97,6 +100,20 @@ export default function HomeScreen() {
     setIsScrolled(offsetY > shadowTripwire);
   };
 
+  // 3. Helper function to format data and send it to the cart!
+  const handleAddToCart = (dish: any) => {
+    const numericPrice = parseInt(dish.price.replace(/[₦,]/g, ''), 10);
+    
+    addToCart({
+      id: dish.id,
+      name: `${dish.category} Package`, // e.g., "Rice Package"
+      contents: dish.name,              // e.g., "Party Jollof & Chicken"
+      price: numericPrice,
+      quantity: 1,
+      image: dish.image
+    });
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView 
@@ -123,7 +140,16 @@ export default function HomeScreen() {
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.breakfastScroll} snapToInterval={SLIDER_CARD_WIDTH + 15} decelerationRate="fast">
             {currentMealDishes.map((dish) => (
               <View style={[styles.grid1, { width: SLIDER_CARD_WIDTH }]} key={dish.id}>
-                <GridDishCard isRectangle category={dish.category} name={dish.name} price={dish.price} rating={dish.rating} image={dish.image} />
+                {/* 4. Pass the add function to the card */}
+                <GridDishCard 
+                  category={dish.category} 
+                  name={dish.name} 
+                  price={dish.price} 
+                  rating={dish.rating} 
+                  image={dish.image} 
+                  isRectangle 
+                  onAdd={() => handleAddToCart(dish)} 
+                />
               </View>
             ))}
           </ScrollView>
@@ -144,7 +170,15 @@ export default function HomeScreen() {
           {filteredDishes.length > 0 ? (
             filteredDishes.map((dish) => (
               <View style={[styles.grid, { width: CARD_WIDTH }]} key={dish.id}>
-                <GridDishCard category={dish.category} name={dish.name} price={dish.price} rating={dish.rating} image={dish.image} />
+                {/* 5. Pass the add function to the card */}
+                <GridDishCard 
+                  category={dish.category} 
+                  name={dish.name} 
+                  price={dish.price} 
+                  rating={dish.rating} 
+                  image={dish.image} 
+                  onAdd={() => handleAddToCart(dish)} 
+                />
               </View>
             ))
           ) : (
@@ -155,11 +189,9 @@ export default function HomeScreen() {
       </ScrollView>
 
       <TopNav 
-        // 1. Pass the dynamic address
         address={currentAddress}
-        // 2. Pass the function to change it!
         onAddressChange={setCurrentAddress}
-        cartCount={USER_PROFILE.cartCount}
+        cartCount={cartCount} // 6. Badge now updates automatically!
         notificationCount={USER_PROFILE.notificationCount}
         onOpenMenu={() => setIsSidebarOpen(true)}
         isScrolled={isScrolled} 
@@ -178,7 +210,7 @@ const styles = StyleSheet.create({
   topLayoutContainer: { marginBottom: 20, zIndex: 5, },
   searchBarWrapper: { paddingHorizontal: 10, marginTop: 10, zIndex: 1, },
   bodyContainer: { paddingTop: 10, },
-  sectionTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 15, borderLeftWidth: 5, borderLeftColor: Colors.primary, paddingLeft: 10, },
+  sectionTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 15, borderLeftWidth: 3.5, borderLeftColor: Colors.primary, paddingLeft: 5, },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 20, marginHorizontal: 25, },
   seeMoreText: { color: Colors.primary, fontWeight: 'bold', fontSize: 14, },
   breakfastScroll: { paddingLeft: 20, },
