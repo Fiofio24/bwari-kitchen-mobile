@@ -83,7 +83,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           item.id === newItem.id ? { ...item, quantity: item.quantity + newItem.quantity, isAvailable: isActuallyAvailable } : item
         );
       }
-      return [...prev, { ...newItem, isAvailable: isActuallyAvailable }]; 
+      // THE FIX: Prepend the new item to the top of the list!
+      return [{ ...newItem, isAvailable: isActuallyAvailable }, ...prev];
     });
   };
 

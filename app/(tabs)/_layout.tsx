@@ -1,30 +1,30 @@
 import { Tabs } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../constants/Colors';
+import { View } from 'react-native';
+import BottomNav from '../../components/BottomNav';
+import DraggableOrderButton from '../../components/DraggableOrderButton';
 
 export default function TabLayout() {
   return (
-    <Tabs
-      screenOptions={{
-        headerShown: false, 
-        tabBarStyle: {
-          backgroundColor: Colors.surface,
-          borderTopWidth: 0,
-          elevation: 10,
-          height: 60,
-          paddingBottom: 10,
-        },
-        tabBarActiveTintColor: Colors.primary,
-        tabBarInactiveTintColor: Colors.textMuted,
-      }}>
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <Ionicons name="home" size={24} color={color} />,
-          tabBarStyle: { display: 'none'},
+    <View style={{ flex: 1 }}>
+      <Tabs
+        // THE MAGIC TRICK: We tell Expo to replace its default navigation bar
+        // with our custom animated BottomNav component!
+        tabBar={(props) => <BottomNav {...props} />}
+        screenOptions={{ 
+          headerShown: false,
+          // This makes the pages fade smoothly when switching instead of snapping
+          animation: 'fade' 
         }}
-      />
-    </Tabs>
+      >
+        {/* We list all the screens that belong to the bottom nav here */}
+        <Tabs.Screen name="index" />
+        <Tabs.Screen name="menu" />
+        <Tabs.Screen name="favorite" />
+        <Tabs.Screen name="profile" />
+      </Tabs>
+
+      {/* Placing this here means it floats above ALL tab screens and NEVER reloads! */}
+      <DraggableOrderButton onPress={() => console.log('Order Button Tapped!')} />
+    </View>
   );
 }

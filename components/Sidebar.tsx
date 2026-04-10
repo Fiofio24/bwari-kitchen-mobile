@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated, Dimensions, TouchableWithoutFeedback, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated, Dimensions, TouchableWithoutFeedback, Platform, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur'; 
 import { useTheme } from '../context/ThemeContext'; 
@@ -8,7 +8,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 const { width } = Dimensions.get('window');
 const SIDEBAR_WIDTH = width * 0.75; 
 
-// 1. We create a special Animated version of the BlurView!
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 
 interface SidebarProps {
@@ -24,6 +23,7 @@ export default function Sidebar({ visible, onClose }: SidebarProps) {
   const { colors, mode, setThemeMode, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   
+  // We keep the safe padding for the content inside so your user profile doesn't overlap the clock/battery!
   const safeTop = Platform.OS === 'web' ? 50 : insets.top + 20;
 
   useEffect(() => {
@@ -32,8 +32,6 @@ export default function Sidebar({ visible, onClose }: SidebarProps) {
       slideAnim.setValue(-SIDEBAR_WIDTH);
       fadeAnim.setValue(0);
       
-      // 2. The 50ms delay gives React Native time to literally draw the view 
-      // before the animation triggers, fixing the "jump"!
       setTimeout(() => {
         Animated.parallel([
           Animated.timing(slideAnim, { toValue: 0, duration: 300, useNativeDriver: true }),
@@ -62,77 +60,85 @@ export default function Sidebar({ visible, onClose }: SidebarProps) {
   if (!isRendering) return null;
 
   return (
-    <View style={[StyleSheet.absoluteFill, styles.absoluteOverlay]}>
-      
-      <TouchableWithoutFeedback onPress={onClose}>
-        {/* 3. Using the AnimatedBlurView with the Android experimental fix */}
-        <AnimatedBlurView 
-          intensity={20} 
-          tint="dark" 
-          experimentalBlurMethod="dimezisBlurView"
-          style={[StyleSheet.absoluteFill, { opacity: fadeAnim, backgroundColor: 'rgba(0,0,0,0.2)' }]} 
-        />
-      </TouchableWithoutFeedback>
-
-      <Animated.View style={[styles.sidebarContainer, { backgroundColor: colors.background, transform: [{ translateX: slideAnim }] }]}>
+    // THE FIX: Added statusBarTranslucent={true}. This forces the modal to completely cover the physical screen!
+    <Modal 
+      visible={isRendering} 
+      transparent={true} 
+      animationType="none" 
+      onRequestClose={onClose}
+      statusBarTranslucent={true} 
+    >
+      <View style={[StyleSheet.absoluteFill, styles.absoluteOverlay]}>
         
-        <View style={[styles.header, { backgroundColor: colors.primary, paddingTop: safeTop }]}>
-          <View style={styles.profileInfo}>
-            <View style={styles.profileCircle}>
-              <Ionicons name="person" size={30} color={colors.primary} />
-            </View>
-            <View>
-              <Text style={styles.userName}>User</Text>
-              <Text style={styles.userEmail}>No 6 Kuje Street...</Text>
-            </View>
-          </View>
+        <TouchableWithoutFeedback onPress={onClose}>
+          <AnimatedBlurView 
+            intensity={20} 
+            tint="dark" 
+            experimentalBlurMethod="dimezisBlurView"
+            style={[StyleSheet.absoluteFill, { opacity: fadeAnim, backgroundColor: 'rgba(0,0,0,0.4)' }]} 
+          />
+        </TouchableWithoutFeedback>
+
+        <Animated.View style={[styles.sidebarContainer, { backgroundColor: colors.background, transform: [{ translateX: slideAnim }] }]}>
           
-          <TouchableOpacity onPress={onClose} style={[styles.closeBtn, { top: safeTop - 10 }]}>
-            <Ionicons name="close" size={24} color="#FFF" />
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.themeSection}>
-          <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>APPEARANCE</Text>
-          <View style={styles.themeRow}>
-            
-            <TouchableOpacity style={[styles.themeBtn, mode === 'system' && { backgroundColor: colors.primary }]} onPress={() => setThemeMode('system')}>
-              <Ionicons name="phone-portrait-outline" size={20} color={mode === 'system' ? '#FFF' : colors.text} />
-              <Text style={[styles.themeBtnText, { color: mode === 'system' ? '#FFF' : colors.text }]}>System</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={[styles.themeBtn, mode === 'light' && { backgroundColor: colors.primary }]} onPress={() => setThemeMode('light')}>
-              <Ionicons name="sunny-outline" size={20} color={mode === 'light' ? '#FFF' : colors.text} />
-              <Text style={[styles.themeBtnText, { color: mode === 'light' ? '#FFF' : colors.text }]}>Light</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={[styles.themeBtn, mode === 'dark' && { backgroundColor: colors.primary }]} onPress={() => setThemeMode('dark')}>
-              <Ionicons name="moon-outline" size={20} color={mode === 'dark' ? '#FFF' : colors.text} />
-              <Text style={[styles.themeBtnText, { color: mode === 'dark' ? '#FFF' : colors.text }]}>Dark</Text>
-            </TouchableOpacity>
-
-          </View>
-        </View>
-
-        <View style={styles.menuItemsContainer}>
-          {menuItems.map((item, index) => (
-            <TouchableOpacity key={index} style={[styles.menuItem, { borderBottomColor: colors.border }]} activeOpacity={0.7}>
-              <View style={[styles.iconBox, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : '#FFEEEE' }]}>
-                <Ionicons name={item.icon as any} size={22} color={colors.primary} />
+          <View style={[styles.header, { backgroundColor: colors.primary, paddingTop: safeTop }]}>
+            <View style={styles.profileInfo}>
+              <View style={styles.profileCircle}>
+                <Ionicons name="person" size={30} color={colors.primary} />
               </View>
-              <Text style={[styles.menuItemText, { color: colors.text }]}>{item.name}</Text>
-              <Ionicons name="chevron-forward" size={18} color={colors.textMuted} style={styles.chevron} />
+              <View>
+                <Text style={styles.userName}>User</Text>
+                <Text style={styles.userEmail}>No 6 Kuje Street...</Text>
+              </View>
+            </View>
+            
+            <TouchableOpacity onPress={onClose} style={[styles.closeBtn, { top: safeTop - 10 }]}>
+              <Ionicons name="close" size={24} color="#FFF" />
             </TouchableOpacity>
-          ))}
-        </View>
+          </View>
 
-        <TouchableOpacity style={styles.logoutBtn} activeOpacity={0.8}>
-          <Ionicons name="log-out-outline" size={22} color="#FFF" />
-          <Text style={styles.logoutText}>Sign Out</Text>
-        </TouchableOpacity>
+          <View style={styles.themeSection}>
+            <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>APPEARANCE</Text>
+            <View style={styles.themeRow}>
+              
+              <TouchableOpacity style={[styles.themeBtn, mode === 'system' && { backgroundColor: colors.primary }]} onPress={() => setThemeMode('system')}>
+                <Ionicons name="phone-portrait-outline" size={20} color={mode === 'system' ? '#FFF' : colors.text} />
+                <Text style={[styles.themeBtnText, { color: mode === 'system' ? '#FFF' : colors.text }]}>System</Text>
+              </TouchableOpacity>
 
-      </Animated.View>
-    </View>
+              <TouchableOpacity style={[styles.themeBtn, mode === 'light' && { backgroundColor: colors.primary }]} onPress={() => setThemeMode('light')}>
+                <Ionicons name="sunny-outline" size={20} color={mode === 'light' ? '#FFF' : colors.text} />
+                <Text style={[styles.themeBtnText, { color: mode === 'light' ? '#FFF' : colors.text }]}>Light</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={[styles.themeBtn, mode === 'dark' && { backgroundColor: colors.primary }]} onPress={() => setThemeMode('dark')}>
+                <Ionicons name="moon-outline" size={20} color={mode === 'dark' ? '#FFF' : colors.text} />
+                <Text style={[styles.themeBtnText, { color: mode === 'dark' ? '#FFF' : colors.text }]}>Dark</Text>
+              </TouchableOpacity>
+
+            </View>
+          </View>
+
+          <View style={styles.menuItemsContainer}>
+            {menuItems.map((item, index) => (
+              <TouchableOpacity key={index} style={[styles.menuItem, { borderBottomColor: colors.border }]} activeOpacity={0.7}>
+                <View style={[styles.iconBox, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : '#FFEEEE' }]}>
+                  <Ionicons name={item.icon as any} size={22} color={colors.primary} />
+                </View>
+                <Text style={[styles.menuItemText, { color: colors.text }]}>{item.name}</Text>
+                <Ionicons name="chevron-forward" size={18} color={colors.textMuted} style={styles.chevron} />
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <TouchableOpacity style={styles.logoutBtn} activeOpacity={0.8}>
+            <Ionicons name="log-out-outline" size={22} color="#FFF" />
+            <Text style={styles.logoutText}>Sign Out</Text>
+          </TouchableOpacity>
+
+        </Animated.View>
+      </View>
+    </Modal>
   );
 }
 
@@ -155,7 +161,6 @@ const styles = StyleSheet.create({
   header: { 
     paddingBottom: 30, 
     paddingHorizontal: 20, 
-    // borderBottomRightRadius: 30,
   },
   profileInfo: { 
     flexDirection: 'row', 

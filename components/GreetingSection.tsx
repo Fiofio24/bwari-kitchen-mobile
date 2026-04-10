@@ -1,14 +1,15 @@
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/Colors';
+import { useRouter } from 'expo-router'; // 1. Added the router!
 
 interface GreetingProps {
   userName: string;
 }
 
 export default function GreetingSection({ userName }: GreetingProps) {
-  
-  // 1. Helper function to determine the meal based on the device's current time
+  const router = useRouter(); // 2. Initialized the router
+
   const getMealTime = () => {
     const currentHour = new Date().getHours();
     
@@ -21,7 +22,6 @@ export default function GreetingSection({ userName }: GreetingProps) {
     }
   };
 
-  // 2. Store the result in a variable
   const currentMeal = getMealTime();
 
   return (
@@ -34,13 +34,15 @@ export default function GreetingSection({ userName }: GreetingProps) {
         />
         <View style={styles.greetingTextContainer}>
           <Text style={styles.helloText}>Hello, {userName}!</Text>
-          {/* 3. Dynamically inject the meal time! */}
           <Text style={styles.subGreetingText}>What would you like for {currentMeal}?</Text>
         </View>
-        <TouchableOpacity style={styles.menuButton}>
+        
+        {/* 3. Added the onPress event to route to the menu! */}
+        <TouchableOpacity style={styles.menuButton} onPress={() => router.push('/menu')} activeOpacity={0.8}>
           <Ionicons name="restaurant" size={16} color="#000" />
           <Text style={styles.menuButtonText}>Menu</Text>
         </TouchableOpacity>
+        
       </View>
     </View>
   );
@@ -78,7 +80,7 @@ const styles = StyleSheet.create({
     color: '#FFCCCC',
     fontSize: 15,
     marginTop: 2,
-    textTransform: 'capitalize', // <-- Bonus: This forces the first letter of breakfast/lunch/dinner to be uppercase if you want! Just remove it if you prefer lowercase.
+    textTransform: 'capitalize', 
   },
   menuButton: {
     backgroundColor: '#FFFFFF',

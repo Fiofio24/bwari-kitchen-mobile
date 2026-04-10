@@ -6,14 +6,12 @@ import { useTheme } from '../context/ThemeContext';
 interface SearchBarProps {
   onPress?: () => void;
   autoFocus?: boolean;
-  // 1. Tell TypeScript to expect our new onSubmit function!
   onSubmit?: (text: string) => void; 
 }
 
 export default function SearchBar({ onPress, autoFocus, onSubmit }: SearchBarProps) {
   const { colors, isDark } = useTheme();
   
-  // 2. Track what the user is typing
   const [searchText, setSearchText] = useState('');
 
   const Container: any = onPress ? TouchableOpacity : View;
@@ -32,16 +30,13 @@ export default function SearchBar({ onPress, autoFocus, onSubmit }: SearchBarPro
         autoFocus={autoFocus}
         editable={!onPress} 
         pointerEvents={onPress ? "none" : "auto"}
-        // 3. Bind the state to the input
         value={searchText}
         onChangeText={setSearchText}
-        // 4. Change the keyboard "Enter" key to a "Search" button
         returnKeyType="search" 
-        // 5. Fire the submit function when the search key is pressed!
         onSubmitEditing={() => {
           if (onSubmit && searchText.trim().length > 0) {
             onSubmit(searchText);
-            setSearchText(''); // Clears the bar so they can search again
+            setSearchText(''); 
           }
         }}
         style={[
@@ -49,7 +44,6 @@ export default function SearchBar({ onPress, autoFocus, onSubmit }: SearchBarPro
           { 
             backgroundColor: colors.surface,
             color: colors.text,
-            // (Also fixed your shadow here to support Web just like the other components!)
             ...Platform.select({
               ios: { shadowColor: isDark ? '#000' : '#ccc', shadowOpacity: 0.1, shadowRadius: 4, shadowOffset: { width: 0, height: 2 } },
               android: { elevation: 2 },
@@ -70,7 +64,7 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    // paddingHorizontal: 20,
     zIndex: 0,
   },
   searchInput: {
@@ -80,11 +74,10 @@ const styles = StyleSheet.create({
     borderRadius: 25,
     paddingHorizontal: 40,
     fontSize: 15,
-    // Removed old shadows from here so the Platform.select block above works perfectly
   },
   searchIcon: {
     position: 'absolute',
-    left: 35,
+    left: 15,
     zIndex: 1,
   },
   filterButton: {

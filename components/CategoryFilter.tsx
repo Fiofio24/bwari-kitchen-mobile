@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { useTheme } from '../context/ThemeContext'; // <-- 1. Import the hook
+import { useTheme } from '../context/ThemeContext'; 
 
 interface CategoryFilterProps {
   category: string;
@@ -8,7 +8,6 @@ interface CategoryFilterProps {
 }
 
 export default function CategoryFilter({ category, isActive, onPress }: CategoryFilterProps) {
-  // 2. Grab your dynamic colors and the isDark boolean
   const { colors, isDark } = useTheme();
 
   return (
@@ -16,7 +15,6 @@ export default function CategoryFilter({ category, isActive, onPress }: Category
         <TouchableOpacity 
           style={[
             styles.pill, 
-            // 3. Dynamic Background Logic
             { backgroundColor: isActive ? colors.primary : (isDark ? colors.border : '#EAEAEC') },
             isActive ? styles.activePill : null
           ]} 
@@ -25,7 +23,6 @@ export default function CategoryFilter({ category, isActive, onPress }: Category
         >
           <Text style={[
             styles.pillText, 
-            // 4. Dynamic Text Logic
             { color: isActive ? '#FFFFFF' : colors.text },
             isActive ? styles.activePillText : null
           ]}>
@@ -38,7 +35,8 @@ export default function CategoryFilter({ category, isActive, onPress }: Category
 
 const styles = StyleSheet.create({
   container: {
-    paddingLeft: 10,
+    // THE FIX: Switched from paddingLeft to marginRight so it flows natively inside the parent!
+    marginRight: 10, 
     marginTop: 10,
     marginBottom: 20,
   },

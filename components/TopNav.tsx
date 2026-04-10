@@ -111,7 +111,7 @@ export default function TopNav({ address, onAddressChange, cartCount, notificati
       <View style={[styles.topNavContainer, { paddingTop }, shadowStyle]}>
         
         <TouchableOpacity onPress={onOpenMenu} activeOpacity={0.7}>
-          <Ionicons name="menu" size={32} color="#ffffff" />
+          <Ionicons name="menu" size={28} color="#ffffff" />
         </TouchableOpacity>
         
         <TouchableOpacity style={styles.locationContainer} onPress={openModal} activeOpacity={0.8}>
