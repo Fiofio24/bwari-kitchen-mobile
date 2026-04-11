@@ -14,13 +14,15 @@ import ForYouCard from '../../components/ForYouCard';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../context/ThemeContext';
 import { useCart } from '../../context/CartContext';
+import { useFavorites } from '../../context/FavoriteContext'; 
 import { COMBO_PACKAGES, CATEGORIES } from '../../constants/menuData';
 
 const USER_PROFILE = { name: "User", notificationCount: 1 };
 
 export default function HomeScreen() {
   const router = useRouter(); 
-  const { cartCount, addToCart } = useCart();
+  const { addToCart } = useCart(); // REMOVED cartCount to fix TypeScript TS2322 Error
+  const { toggleFavorite, isFavorite } = useFavorites(); 
   const [activeCategory, setActiveCategory] = useState('All');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [currentAddress, setCurrentAddress] = useState("No 6 Kuje Street...");
@@ -108,7 +110,16 @@ export default function HomeScreen() {
           {filteredDishes.length > 0 ? (
             filteredDishes.map((dish) => (
               <View style={{ width: CARD_WIDTH }} key={dish.id}>
-                <GridDishCard category={dish.category} name={dish.name} price={`₦${dish.price.toLocaleString()}`} rating={dish.rating} image={dish.image} onAdd={() => handleAddToCart(dish)} />
+                <GridDishCard 
+                  category={dish.category} 
+                  name={dish.name} 
+                  price={`₦${dish.price.toLocaleString()}`} 
+                  rating={dish.rating} 
+                  image={dish.image} 
+                  isFavorite={isFavorite(dish.id)} 
+                  onToggleFavorite={() => toggleFavorite(dish)} 
+                  onAdd={() => handleAddToCart(dish)} 
+                />
               </View>
             ))
           ) : (
@@ -117,7 +128,8 @@ export default function HomeScreen() {
         </View>
       </ScrollView>
 
-      <TopNav address={currentAddress} onAddressChange={setCurrentAddress} cartCount={cartCount} notificationCount={USER_PROFILE.notificationCount} onOpenMenu={() => setIsSidebarOpen(true)} isScrolled={isScrolled} />
+      {/* REMOVED cartCount prop here to satisfy the TopNavProps TypeScript definition */}
+      <TopNav address={currentAddress} onAddressChange={setCurrentAddress} notificationCount={USER_PROFILE.notificationCount} onOpenMenu={() => setIsSidebarOpen(true)} isScrolled={isScrolled} />
 
       <Animated.View style={[styles.toastContainer, { transform: [{ translateY: toastAnim }], backgroundColor: isDark ? '#333' : '#222' }]}>
         <Ionicons name="checkmark-circle" size={24} color="#4CAF50" />
@@ -130,15 +142,76 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 }, 
-  topLayoutContainer: { marginBottom: 20, zIndex: 5 },
-  searchBarWrapper: { paddingHorizontal: 20, marginTop: 10, zIndex: 1 },
-  sectionTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 15, borderLeftWidth: 3.5, borderLeftColor: Colors.primary, paddingLeft: 5 },
-  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 20, marginHorizontal: 20 },
-  seeMoreText: { color: Colors.primary, fontWeight: 'bold', fontSize: 14 },
-  scrollContainer: { flexDirection: 'row', paddingLeft: 20 },
-  gridContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 15, paddingHorizontal: 20, paddingBottom: 20, marginTop: 5 },
-  emptyText: { width: '100%', textAlign: 'center', marginTop: 20 },
-  toastContainer: { position: 'absolute', left: 20, right: 20, flexDirection: 'row', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 20, borderRadius: 30, elevation: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.3, shadowRadius: 8, zIndex: 100, justifyContent: 'center', gap: 10 },
-  toastText: { color: '#FFF', fontSize: 16, fontWeight: 'bold' }
+  container: {
+    flex: 1,
+  },
+  topLayoutContainer: {
+    marginBottom: 20,
+    zIndex: 5,
+  },
+  searchBarWrapper: {
+    paddingHorizontal: 20,
+    marginTop: 10,
+    zIndex: 1,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 15,
+    borderLeftWidth: 3.5,
+    borderLeftColor: Colors.primary,
+    paddingLeft: 5,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 20,
+    marginHorizontal: 20,
+  },
+  seeMoreText: {
+    color: Colors.primary,
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  scrollContainer: {
+    flexDirection: 'row',
+    paddingLeft: 20,
+  },
+  gridContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 15,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    marginTop: 5,
+  },
+  emptyText: {
+    width: '100%',
+    textAlign: 'center',
+    marginTop: 20,
+  },
+  toastContainer: {
+    position: 'absolute',
+    left: 20,
+    right: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 30,
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    zIndex: 100,
+    justifyContent: 'center',
+    gap: 10,
+  },
+  toastText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
 });

@@ -1,16 +1,17 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
+
+// --- REAL IMPORTS (Uncomment these in your local VS Code environment) ---
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context'; 
-// Removed useTheme from the import since we don't need it in this file anymore
 import { ThemeProvider } from '../context/ThemeContext'; 
 import * as SplashScreen from 'expo-splash-screen';
 import { CartProvider } from '../context/CartContext';
+import { FavoriteProvider } from '../context/FavoriteContext';
 
 SplashScreen.preventAutoHideAsync();
 
 function RootContent() {
-  // Removed the unused `const { isDark } = useTheme();` line here
   const [appIsReady, setAppIsReady] = useState(false);
 
   useEffect(() => {
@@ -23,34 +24,21 @@ function RootContent() {
         setAppIsReady(true);
       }
     }
-
     prepareApp();
   }, []);
 
   useEffect(() => {
-    if (appIsReady) {
-      SplashScreen.hideAsync();
-    }
+    if (appIsReady) SplashScreen.hideAsync();
   }, [appIsReady]);
 
-  if (!appIsReady) {
-    return null; 
-  }
+  if (!appIsReady) return null; 
 
   return (
     <>
-      {/* FORCE the status bar to be translucent and have light icons! */}
       <StatusBar style="light" translucent={true} backgroundColor="transparent" />
-      
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" />
-        <Stack.Screen 
-          name="search" 
-          options={{ 
-            animation: 'slide_from_bottom',
-            presentation: 'transparentModal' 
-          }} 
-        />
+        <Stack.Screen name="search" options={{ animation: 'slide_from_bottom', presentation: 'transparentModal' }} />
       </Stack>
     </>
   );
@@ -60,9 +48,10 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <ThemeProvider>
-        {/* THE BRAIN: Wrapping the entire app! */}
         <CartProvider> 
-          <RootContent />
+          <FavoriteProvider>
+            <RootContent />
+          </FavoriteProvider>
         </CartProvider>
       </ThemeProvider>
     </SafeAreaProvider>

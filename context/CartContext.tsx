@@ -1,13 +1,48 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
+import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+
+// BULLETPROOF STORAGE WRAPPER
+const safeStorage = {
+  getItem: async (key: string) => {
+    try {
+      if (AsyncStorage && typeof AsyncStorage.getItem === 'function') {
+        return await AsyncStorage.getItem(key);
+      } else if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        return window.localStorage.getItem(key);
+      }
+    } catch (e) { console.warn("Storage Error:", e); }
+    return null;
+  },
+  setItem: async (key: string, value: string) => {
+    try {
+      if (AsyncStorage && typeof AsyncStorage.setItem === 'function') {
+        await AsyncStorage.setItem(key, value);
+      } else if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        window.localStorage.setItem(key, value);
+      }
+    } catch (e) { console.warn("Storage Error:", e); }
+  },
+  removeItem: async (key: string) => {
+    try {
+      if (AsyncStorage && typeof AsyncStorage.removeItem === 'function') {
+        await AsyncStorage.removeItem(key);
+      } else if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        window.localStorage.removeItem(key);
+      }
+    } catch (e) { console.warn("Storage Error:", e); }
+  }
+};
 
 export interface CartItem {
   id: string;
   name: string;
+  category?: string;
   contents?: string;
   price: number;
   quantity: number;
   image: string;
+  subItems?: any[]; 
   isAvailable?: boolean; 
 }
 
@@ -24,67 +59,36 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 const CART_STORAGE_KEY = '@bwari_kitchen_cart';
 
-// SIMULATING THE BACKEND: 
-// THE FIX: We moved this to the top level so every function in the file can see it!
-// Notice ID '1' (Party Jollof) is missing from this list.
-const LIVE_AVAILABLE_IDS = ['2', '3', '4', '5', '6', '7', '8', 'b1', 'b2', 'b3', 'l1', 'l2', 'l3', 'd1', 'd2', 'd3']; 
-
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
     const loadCart = async () => {
-      try {
-        const savedCart = await AsyncStorage.getItem(CART_STORAGE_KEY);
-        if (savedCart) {
-          const parsedCart: CartItem[] = JSON.parse(savedCart);
-          
-          // Validate the saved cart against the live menu
-          const validatedCart = parsedCart.map(item => ({
-            ...item,
-            isAvailable: LIVE_AVAILABLE_IDS.includes(item.id) 
-          }));
-
-          setCartItems(validatedCart);
-        }
-      } catch (error) {
-        console.error("Failed to load cart from disk", error);
-      } finally {
-        setIsLoaded(true); 
-      }
+      const savedCart = await safeStorage.getItem(CART_STORAGE_KEY);
+      if (savedCart) setCartItems(JSON.parse(savedCart));
+      setIsLoaded(true); 
     };
     loadCart();
   }, []);
 
   useEffect(() => {
     if (!isLoaded) return; 
-
     const saveAndSync = async () => {
-      try {
-        await AsyncStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cartItems));
-      } catch (error) {
-        console.error("Failed to save/sync cart", error);
-      }
+      await safeStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cartItems));
     };
-
     saveAndSync();
   }, [cartItems, isLoaded]);
 
   const addToCart = (newItem: CartItem) => {
     setCartItems(prev => {
       const existingItem = prev.find(item => item.id === newItem.id);
-      
-      // THE FIX: Real-time verification when the button is pressed!
-      const isActuallyAvailable = LIVE_AVAILABLE_IDS.includes(newItem.id);
-
       if (existingItem) {
         return prev.map(item => 
-          item.id === newItem.id ? { ...item, quantity: item.quantity + newItem.quantity, isAvailable: isActuallyAvailable } : item
+          item.id === newItem.id ? { ...item, quantity: item.quantity + (newItem.quantity || 1) } : item
         );
       }
-      // THE FIX: Prepend the new item to the top of the list!
-      return [{ ...newItem, isAvailable: isActuallyAvailable }, ...prev];
+      return [{ ...newItem, quantity: newItem.quantity || 1 }, ...prev];
     });
   };
 
@@ -94,13 +98,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const increaseQuantity = (id: string) => {
     setCartItems(prev => prev.map(item => 
-      item.id === id && item.isAvailable ? { ...item, quantity: item.quantity + 1 } : item
+      item.id === id ? { ...item, quantity: item.quantity + 1 } : item
     ));
   };
 
   const decreaseQuantity = (id: string) => {
     setCartItems(prev => prev.map(item => {
-      if (item.id === id && item.quantity > 1 && item.isAvailable) {
+      if (item.id === id && item.quantity > 1) {
         return { ...item, quantity: item.quantity - 1 };
       }
       return item;
@@ -108,9 +112,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   };
 
   const clearCart = () => setCartItems([]);
-
-  // Only count available items in the badge!
-  const cartCount = cartItems.reduce((total, item) => total + (item.isAvailable ? item.quantity : 0), 0);
+  const cartCount = cartItems.length;
 
   return (
     <CartContext.Provider value={{ cartItems, addToCart, removeFromCart, increaseQuantity, decreaseQuantity, clearCart, cartCount }}>

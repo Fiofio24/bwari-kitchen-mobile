@@ -1,6 +1,7 @@
 import { View, Text, StyleSheet, TouchableOpacity, Image, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext'; 
+import { Colors } from '../constants/Colors';
 
 interface GridDishCardProps {
   name: string;
@@ -9,20 +10,16 @@ interface GridDishCardProps {
   category: string;
   image: string; 
   isRectangle?: boolean;
-  // THE NEW LINK: Accept the onAdd function from the Home screen!
+  isFavorite?: boolean; // Added to support favorite state
   onAdd?: () => void;
+  onToggleFavorite?: () => void; // Added to handle heart clicks
 }
 
-// Don't forget to extract onAdd from the props here!
-export default function GridDishCard({ name, price, rating, category, image, isRectangle, onAdd }: GridDishCardProps) {
+export default function GridDishCard({ name, price, rating, category, image, isRectangle, isFavorite, onAdd, onToggleFavorite }: GridDishCardProps) {
   const { colors, isDark } = useTheme();
 
   const shadowStyle = isDark 
-    ? Platform.select({
-        ios: { shadowOpacity: 0 },
-        android: { elevation: 0 },
-        web: { boxShadow: 'none' } as any
-      })
+    ? Platform.select({ ios: { shadowOpacity: 0 }, android: { elevation: 0 }, web: { boxShadow: 'none' } as any })
     : Platform.select({
         ios: { shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 5, shadowOffset: { width: 0, height: 2 } },
         android: { elevation: 4, shadowColor: '#000' },
@@ -30,29 +27,19 @@ export default function GridDishCard({ name, price, rating, category, image, isR
       });
 
   return (
-    <View style={[
-      styles.cardContainer, 
-      { backgroundColor: colors.surface, borderRadius: 15 }, 
-      shadowStyle
-    ]}>
-      
-      <View 
-        style={[
-          styles.imagePlaceholder, 
-          { aspectRatio: isRectangle ? 1.5 : 1 },
-          { backgroundColor: isDark ? colors.border : '#EAEAEC' }
-        ]}
-      >
-        <Image 
-          source={{ uri: image }} 
-          style={StyleSheet.absoluteFill} 
-          resizeMode="cover" 
-        />
-        <TouchableOpacity style={styles.favoriteButton} activeOpacity={0.8}>
-          <Ionicons name="heart-outline" size={18} color="#000" />
+    <View style={[styles.cardContainer, { backgroundColor: colors.surface, borderRadius: 15 }, shadowStyle]}>
+      <View style={[styles.imagePlaceholder, { aspectRatio: isRectangle ? 1.5 : 1 }, { backgroundColor: isDark ? colors.border : '#EAEAEC' }]}>
+        <Image source={{ uri: image }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+        
+        <TouchableOpacity style={styles.favoriteButton} activeOpacity={0.8} onPress={onToggleFavorite}>
+          <Ionicons 
+            name={isFavorite ? "heart" : "heart-outline"} 
+            size={18} 
+            color={isFavorite ? Colors.primary : "#000"} 
+          />
         </TouchableOpacity>
+
       </View>
-      
       <View style={styles.contentContainer}>
         <View style={styles.titleRow}>
           <Text style={[styles.dishName, { color: colors.text }]}>{category}</Text>
@@ -61,25 +48,15 @@ export default function GridDishCard({ name, price, rating, category, image, isR
             <Ionicons name="star" size={14} color={colors.star} />
           </View>
         </View>
-
-        <Text style={[styles.subText, { color: colors.textMuted }]}>{name}</Text>
-        
+        <Text style={[styles.subText, { color: colors.textMuted }]} numberOfLines={1}>{name}</Text>
         <View style={styles.priceRow}>
           <Text style={[styles.dishPrice, { color: colors.primary }]}>{price}</Text>
-          
-          {/* THE NEW LINK: Fire the onAdd function when tapped! */}
-          <TouchableOpacity 
-            style={[styles.addButton, { backgroundColor: colors.primary }]} 
-            activeOpacity={0.8}
-            onPress={onAdd}
-          >
+          <TouchableOpacity style={[styles.addButton, { backgroundColor: colors.primary }]} activeOpacity={0.8} onPress={onAdd}>
             <Ionicons name="add" size={16} color="#FFF" />
             <Text style={styles.addButtonText}>Add</Text>
           </TouchableOpacity>
-          
         </View>
       </View>
-
     </View>
   );
 }

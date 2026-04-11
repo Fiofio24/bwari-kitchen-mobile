@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, useWindowDimensions } from 'react-n
 import GridDishCard from './GridDishCard';
 import { Colors } from '../constants/Colors';
 import { useTheme } from '../context/ThemeContext';
-// NEW: Import from the central database
+import { useFavorites } from '../context/FavoriteContext'; // <-- Imported Favorites Context
 import { getBreakfastDishes, getLunchDishes, getDinnerDishes } from '../constants/menuData';
 
 interface ForYouCardProps { onAddToCart: (dish: any) => void; }
@@ -13,6 +13,7 @@ const MAX_SLIDER_WIDTH = 280;
 export default function ForYouCard({ onAddToCart }: ForYouCardProps) {
   const { colors } = useTheme();
   const { width } = useWindowDimensions();
+  const { toggleFavorite, isFavorite } = useFavorites(); // <-- Extracted Favorite Hooks
   
   const getMealTime = () => {
     const currentHour = new Date().getHours();
@@ -44,7 +45,17 @@ export default function ForYouCard({ onAddToCart }: ForYouCardProps) {
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scrollArea} snapToInterval={SLIDER_CARD_WIDTH + 15} decelerationRate="fast">
         {currentDishes.map((dish) => (
           <View style={[styles.cardWrapper, { width: SLIDER_CARD_WIDTH }]} key={dish.id}>
-            <GridDishCard category={dish.category} name={dish.name} price={`₦${dish.price.toLocaleString()}`} rating="4.8" image={dish.image} isRectangle onAdd={() => onAddToCart(dish)} />
+            <GridDishCard 
+              category={dish.category} 
+              name={dish.name} 
+              price={`₦${dish.price.toLocaleString()}`} 
+              rating="4.8" 
+              image={dish.image} 
+              isRectangle 
+              isFavorite={isFavorite(dish.id)} // <-- Bound to Context
+              onToggleFavorite={() => toggleFavorite(dish)} // <-- Bound to Context
+              onAdd={() => onAddToCart(dish)} 
+            />
           </View>
         ))}
       </ScrollView>
@@ -53,9 +64,29 @@ export default function ForYouCard({ onAddToCart }: ForYouCardProps) {
 }
 
 const styles = StyleSheet.create({
-  container: { paddingTop: 10, paddingBottom: 20 },
-  sectionTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 15, borderLeftWidth: 3.5, borderLeftColor: Colors.primary, paddingLeft: 5 },
-  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 20, marginHorizontal: 20 },
-  scrollArea: { paddingLeft: 20 },
-  cardWrapper: { marginRight: 15 }
+  container: {
+    paddingTop: 10,
+    paddingBottom: 20,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 15,
+    borderLeftWidth: 3.5,
+    borderLeftColor: Colors.primary,
+    paddingLeft: 5,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 20,
+    marginHorizontal: 20,
+  },
+  scrollArea: {
+    paddingLeft: 20,
+  },
+  cardWrapper: {
+    marginRight: 15,
+  }
 });

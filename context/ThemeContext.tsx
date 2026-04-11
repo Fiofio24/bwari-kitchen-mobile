@@ -1,9 +1,32 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { useColorScheme } from 'react-native';
+import { useColorScheme, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { lightTheme, darkTheme } from '../constants/Colors';
 
 export type ThemeMode = 'system' | 'light' | 'dark';
+
+// BULLETPROOF STORAGE WRAPPER
+const safeStorage = {
+  getItem: async (key: string) => {
+    try {
+      if (AsyncStorage && typeof AsyncStorage.getItem === 'function') {
+        return await AsyncStorage.getItem(key);
+      } else if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        return window.localStorage.getItem(key);
+      }
+    } catch (e) { console.warn("Storage Error:", e); }
+    return null;
+  },
+  setItem: async (key: string, value: string) => {
+    try {
+      if (AsyncStorage && typeof AsyncStorage.setItem === 'function') {
+        await AsyncStorage.setItem(key, value);
+      } else if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        window.localStorage.setItem(key, value);
+      }
+    } catch (e) { console.warn("Storage Error:", e); }
+  }
+};
 
 interface ThemeContextType {
   mode: ThemeMode;
@@ -20,23 +43,15 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const loadTheme = async () => {
-      try {
-        const savedMode = await AsyncStorage.getItem('@theme_mode');
-        if (savedMode) setModeState(savedMode as ThemeMode);
-      } catch (error) {
-        console.error("Failed to load theme", error); // <-- Used the error variable here!
-      }
+      const savedMode = await safeStorage.getItem('@theme_mode');
+      if (savedMode) setModeState(savedMode as ThemeMode);
     };
     loadTheme();
   }, []);
 
   const setThemeMode = async (newMode: ThemeMode) => {
     setModeState(newMode);
-    try {
-      await AsyncStorage.setItem('@theme_mode', newMode);
-    } catch (error) {
-      console.error("Failed to save theme", error); // <-- Used the error variable here!
-    }
+    await safeStorage.setItem('@theme_mode', newMode);
   };
 
   const isDark = 
