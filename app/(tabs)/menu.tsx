@@ -1,6 +1,16 @@
 // Note: This file requires an Expo/React Native environment to compile correctly.
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, Platform, Animated, useWindowDimensions } from 'react-native';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  TouchableOpacity, 
+  ScrollView, 
+  Image, 
+  Platform, 
+  Animated, 
+  useWindowDimensions 
+} from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context'; 
@@ -43,7 +53,11 @@ export default function MenuScreen() {
 
   const toggleItem = (id: string) => {
     setCustomPlate(prev => {
-      if (prev[id]) { const newState = { ...prev }; delete newState[id]; return newState; }
+      if (prev[id]) { 
+        const newState = { ...prev }; 
+        delete newState[id]; 
+        return newState; 
+      }
       return { ...prev, [id]: 1 };
     });
   };
@@ -57,7 +71,11 @@ export default function MenuScreen() {
     });
   };
   const removeItem = (id: string) => {
-    setCustomPlate(prev => { const newState = { ...prev }; delete newState[id]; return newState; });
+    setCustomPlate(prev => { 
+      const newState = { ...prev }; 
+      delete newState[id]; 
+      return newState; 
+    });
   };
   const clearAll = () => setCustomPlate({});
 
@@ -84,7 +102,9 @@ export default function MenuScreen() {
       price: item.price
     }));
 
-    const uniquePackageId = `custom_pkg_${Date.now()}`;
+    // FIXED: Generate a deterministic ID based on the exact contents of the plate.
+    // This ensures identical custom plates stack together and increment quantity!
+    const uniquePackageId = 'custom_' + selectedItemsList.map(i => `${i.id}_${customPlate[i.id]}`).sort().join('-');
 
     const newItem: any = { 
       id: uniquePackageId, 
@@ -96,6 +116,7 @@ export default function MenuScreen() {
       isAvailable: true,
       subItems: subItemsArray 
     };
+    
     addToCart(newItem);
 
     Animated.sequence([
@@ -109,7 +130,7 @@ export default function MenuScreen() {
 
   const handleAddForYou = (comboPackage: any) => {
     const newItem: any = { 
-      id: `cart_pkg_${Date.now()}`, 
+      id: comboPackage.id, // FIXED: Use actual ID so CartContext can stack duplicates properly
       name: comboPackage.name, 
       category: comboPackage.category,
       price: comboPackage.price, 
@@ -173,20 +194,40 @@ export default function MenuScreen() {
           <View style={[styles.filledBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             <View style={styles.filledBoxHeader}>
               <Text style={[styles.filledBoxTitle, { color: colors.text }]}>Items</Text>
-              <TouchableOpacity onPress={clearAll}><Text style={styles.deleteAllText}>Delete All</Text></TouchableOpacity>
+              <TouchableOpacity onPress={clearAll}>
+                <Text style={styles.deleteAllText}>Delete All</Text>
+              </TouchableOpacity>
             </View>
+            
             {selectedItemsList.map(item => (
               <View key={item.id} style={styles.receiptRow}>
                 <Text style={[styles.receiptName, { color: colors.text }]} numberOfLines={1}>{item.name}</Text>
-                <View style={styles.receiptControls}>
-                  <TouchableOpacity onPress={() => decreaseQuantity(item.id)} style={styles.receiptBtn}><Ionicons name="remove" size={14} color="#000" /></TouchableOpacity>
-                  <Text style={[styles.receiptQty, { color: colors.text }]}>{customPlate[item.id]}</Text>
-                  <TouchableOpacity onPress={() => increaseQuantity(item.id)} style={styles.receiptBtn}><Ionicons name="add" size={14} color="#FFF" /></TouchableOpacity>
+                
+                {/* FIXED UI: Identical to Cart page quantity controls */}
+                <View style={[
+                  styles.quantityBox, 
+                  { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F5F5F5' }
+                ]}>
+                  <TouchableOpacity onPress={() => decreaseQuantity(item.id)} style={styles.qtyBtn}>
+                    <Ionicons name="remove" size={16} color={colors.text} />
+                  </TouchableOpacity>
+                  <Text style={[styles.qtyText, { color: colors.text }]}>
+                    {customPlate[item.id]}
+                  </Text>
+                  <TouchableOpacity onPress={() => increaseQuantity(item.id)} style={styles.qtyBtn}>
+                    <Ionicons name="add" size={16} color={colors.text} />
+                  </TouchableOpacity>
                 </View>
-                <Text style={[styles.receiptPrice, { color: colors.text }]}>₦{(item.price * (customPlate[item.id] || 0)).toLocaleString()}</Text>
-                <TouchableOpacity onPress={() => removeItem(item.id)} style={styles.trashBtn}><Ionicons name="trash-outline" size={18} color="#FF4444" /></TouchableOpacity>
+
+                <Text style={[styles.receiptPrice, { color: colors.text }]}>
+                  ₦{(item.price * (customPlate[item.id] || 0)).toLocaleString()}
+                </Text>
+                <TouchableOpacity onPress={() => removeItem(item.id)} style={styles.trashBtn}>
+                  <Ionicons name="trash-outline" size={18} color="#FF4444" />
+                </TouchableOpacity>
               </View>
             ))}
+            
             <View style={[styles.totalRow, { borderTopColor: colors.border }]}>
               <Text style={[styles.totalText, { color: colors.text }]}>Total</Text>
               <Text style={[styles.totalPrice, { color: colors.text }]}>₦{plateTotal.toLocaleString()}</Text>
@@ -361,27 +402,26 @@ const styles = StyleSheet.create({
     fontSize: 14, 
     fontWeight: '500' 
   },
-  receiptControls: { 
+  quantityBox: { 
     flexDirection: 'row', 
     alignItems: 'center', 
-    backgroundColor: '#F0F0F0', 
     borderRadius: 20, 
-    paddingHorizontal: 4, 
-    paddingVertical: 4, 
+    paddingHorizontal: 5, 
+    paddingVertical: 5, 
     marginHorizontal: 10 
   },
-  receiptBtn: { 
-    width: 22, 
-    height: 22, 
-    borderRadius: 11, 
+  qtyBtn: { 
+    width: 26, 
+    height: 26, 
     justifyContent: 'center', 
     alignItems: 'center', 
-    backgroundColor: Colors.primary 
+    borderRadius: 13, 
+    backgroundColor: 'rgba(150,150,150,0.2)' 
   },
-  receiptQty: { 
-    marginHorizontal: 10, 
+  qtyText: { 
+    fontSize: 14, 
     fontWeight: 'bold', 
-    fontSize: 14 
+    marginHorizontal: 8 
   },
   receiptPrice: { 
     fontSize: 14, 

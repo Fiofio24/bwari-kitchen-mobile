@@ -7,7 +7,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { Colors } from '../../constants/Colors';
 import { StatusBar } from 'expo-status-bar';
 import { useCart } from '../../context/CartContext';
-import { useFavorites } from '../../context/FavoriteContext'; // <-- Imported Favorites Context
+import { useFavorites } from '../../context/FavoriteContext'; 
 import GridDishCard from '../../components/GridDishCard';
 import Sidebar from '../../components/Sidebar';
 import CartBadgeIcon from '../../components/CartBadgeIcon';
@@ -18,7 +18,6 @@ export default function FavoriteScreen() {
   const insets = useSafeAreaInsets();
   const { addToCart } = useCart();
   
-  // Use Global State!
   const { favorites, toggleFavorite, isFavorite } = useFavorites();
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -37,7 +36,7 @@ export default function FavoriteScreen() {
 
   const handleAddToCart = (dish: any) => {
     const newItem: any = {
-      id: `cart_pkg_${Date.now()}`,
+      id: dish.id, // FIXED: Replaced `cart_pkg_${Date.now()}` with actual ID to allow stacking
       name: dish.name,
       category: dish.category,
       price: dish.price,
@@ -59,7 +58,6 @@ export default function FavoriteScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar style="light" />
 
-      {/* HEADER WITH TRUE CENTERING */}
       <View style={[styles.header, { paddingTop, paddingBottom }]}>
         <TouchableOpacity onPress={() => setIsSidebarOpen(true)} style={[styles.iconButton, styles.sideIcon]}>
           <Ionicons name="menu-outline" size={28} color="#FFF" />
@@ -117,7 +115,6 @@ export default function FavoriteScreen() {
         </View>
       )}
 
-      {/* TOAST NOTIFICATION */}
       <Animated.View style={[styles.toastContainer, { transform: [{ translateY: toastAnim }], backgroundColor: isDark ? '#333' : '#222' }]}>
         <Ionicons name="checkmark-circle" size={24} color="#4CAF50" />
         <Text style={styles.toastText}>Added to cart!</Text>

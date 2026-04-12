@@ -1,6 +1,15 @@
 // Note: This file requires an Expo/React Native environment to compile correctly.
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, Platform, Animated } from 'react-native';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  TouchableOpacity, 
+  ScrollView, 
+  Image, 
+  Platform, 
+  Animated 
+} from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context'; 
@@ -24,8 +33,6 @@ const CartItemCard = ({ item, isSelected, onToggle, onIncrease, onDecrease, onRe
   });
   
   const hasUnavailable = unavailableSubItems.length > 0;
-  
-  // A card is only locked if it has unavailable items matched in the live DB
   const isLocked = hasUnavailable;
 
   useEffect(() => {
@@ -186,7 +193,6 @@ export default function CartScreen() {
   const isAllSelected = availableCartItems.length > 0 && selectedIds.length === availableCartItems.length;
   const selectedItemsList = cartItems.filter((item: any) => selectedIds.includes(item.id));
   
-  // Calculate subtotal from selected items taking quantity into account
   const subtotal = selectedItemsList.reduce((sum: number, item: any) => sum + (item.price * (item.quantity || 1)), 0);
   const total = subtotal + (subtotal > 0 ? 500 : 0);
 
@@ -194,6 +200,13 @@ export default function CartScreen() {
   const paddingBottom = 15;
 
   const handleRemove = (id: string) => { removeFromCart(id); };
+
+  // New function to handle checkout navigation
+  const proceedToCheckout = () => {
+    if (selectedIds.length > 0) {
+      router.push('/checkout');
+    }
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -250,7 +263,12 @@ export default function CartScreen() {
                 <Text style={[styles.totalLabel, { color: colors.text }]}>Total Order</Text>
                 <Text style={[styles.totalValue, { color: Colors.primary }]}>₦{total.toLocaleString()}</Text>
               </View>
-              <TouchableOpacity style={[styles.checkoutBtn, selectedIds.length === 0 && { opacity: 0.5, backgroundColor: '#999' }]} disabled={selectedIds.length === 0} activeOpacity={0.8}>
+              <TouchableOpacity 
+                style={[styles.checkoutBtn, selectedIds.length === 0 && { opacity: 0.5, backgroundColor: '#999' }]} 
+                disabled={selectedIds.length === 0} 
+                activeOpacity={0.8}
+                onPress={proceedToCheckout}
+              >
                 <Text style={styles.checkoutText}>Order Now</Text>
               </TouchableOpacity>
             </View>

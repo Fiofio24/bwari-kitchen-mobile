@@ -10,20 +10,19 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/Colors';
 import { useTheme } from '../context/ThemeContext'; 
+import { useRouter } from 'expo-router'; // <-- Added Router
 
 const { width, height } = Dimensions.get('window');
 const BUTTON_SIZE = 60;
 const EDGE_PADDING = 20; 
 
-interface DraggableOrderButtonProps { 
-  onPress: () => void; 
-}
-
 /**
  * A professional, floating action button that users can drag across the screen.
- * Swapped the icon to 'bag-handle' for a more intuitive order/delivery feel.
+ * Tapping this button now intelligently routes directly to the 'My Orders' page.
  */
-export default function DraggableOrderButton({ onPress }: DraggableOrderButtonProps) {
+export default function DraggableOrderButton() {
+  const router = useRouter(); // <-- Initialized Router
+  
   const pan = useRef(new Animated.ValueXY({ 
     x: width - BUTTON_SIZE - EDGE_PADDING, 
     y: height - 250 
@@ -96,8 +95,14 @@ export default function DraggableOrderButton({ onPress }: DraggableOrderButtonPr
       ),
       onPanResponderRelease: (e, gestureState) => {
         pan.flattenOffset(); 
+        
+        // Detect if it was a quick tap rather than a drag
         const isTap = Math.abs(gestureState.dx) < 5 && Math.abs(gestureState.dy) < 5;
-        if (isTap) onPress(); 
+        
+        // ROUTE DIRECTLY TO MY ORDERS IF TAPPED
+        if (isTap) {
+          router.push('/my-orders');
+        }
 
         const releaseX = (pan.x as any)._value;
         let releaseY = (pan.y as any)._value;
@@ -136,6 +141,9 @@ export default function DraggableOrderButton({ onPress }: DraggableOrderButtonPr
           { transform: [{ scale: glowScale }], opacity: glowOpacity }
         ]} 
       />
+      {/* The actual TouchableOpacity needs to have disabled={true} 
+        so the PanResponder can reliably catch the tap events above it 
+      */}
       <TouchableOpacity 
         style={[
           styles.button, 

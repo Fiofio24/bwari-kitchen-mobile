@@ -1,3 +1,4 @@
+// Note: This file requires an Expo/React Native environment and local components to compile correctly in preview.
 import React, { useState, useRef, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, useWindowDimensions, Animated, RefreshControl } from 'react-native'; 
 import { Colors } from '../../constants/Colors';
@@ -21,7 +22,7 @@ const USER_PROFILE = { name: "User", notificationCount: 1 };
 
 export default function HomeScreen() {
   const router = useRouter(); 
-  const { addToCart } = useCart(); // REMOVED cartCount to fix TypeScript TS2322 Error
+  const { addToCart } = useCart(); 
   const { toggleFavorite, isFavorite } = useFavorites(); 
   const [activeCategory, setActiveCategory] = useState('All');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -58,7 +59,7 @@ export default function HomeScreen() {
 
   const handleAddToCart = (comboPackage: any) => {
     const newItem: any = { 
-      id: `cart_pkg_${Date.now()}`, 
+      id: comboPackage.id, // FIXED: Replaced `cart_pkg_${Date.now()}` with actual ID to allow stacking
       name: comboPackage.name, 
       category: comboPackage.category,
       price: comboPackage.price, 
