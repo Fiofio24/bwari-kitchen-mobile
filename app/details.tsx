@@ -20,6 +20,8 @@ import { useCart } from '../context/CartContext';
 import { useFavorites } from '../context/FavoriteContext';
 import { MENU_ITEMS, COMBO_PACKAGES } from '../constants/menuData';
 import { LinearGradient } from 'expo-linear-gradient';
+import QuickEditPackage from '../components/QuickEditPackage';
+import CartBadgeIcon from '../components/CartBadgeIcon'; 
 
 export default function DetailsScreen() {
   const { id } = useLocalSearchParams();
@@ -30,6 +32,7 @@ export default function DetailsScreen() {
   const { toggleFavorite, isFavorite } = useFavorites();
   
   const [quantity, setQuantity] = useState(1);
+  const [isEditModalVisible, setIsEditModalVisible] = useState(false); 
   const toastAnim = useRef(new Animated.Value(-100)).current;
 
   // Find the item in either Single Items or Combo Packages
@@ -78,19 +81,27 @@ export default function DetailsScreen() {
     ]).start();
   };
 
-  const paddingTop = Platform.OS === 'web' ? 20 : insets.top + 10;
+  const paddingTop = Platform.OS === 'web' ? 50 : insets.top + 10;
+  const paddingBottom = 15;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar style="light" />
 
-      {/* Floating Back Button */}
-      <TouchableOpacity 
-        style={[styles.floatingBackBtn, { top: paddingTop, backgroundColor: 'rgba(0,0,0,0.4)' }]} 
-        onPress={() => router.back()}
-      >
-        <Ionicons name="arrow-back" size={24} color="#FFF" />
-      </TouchableOpacity>
+      {/* Premium Header */}
+      <View style={[styles.header, { paddingTop, paddingBottom }]}>
+        <TouchableOpacity onPress={() => router.back()} style={[styles.iconButton, styles.sideIcon]}>
+          <Ionicons name="arrow-back" size={26} color="#FFF" />
+        </TouchableOpacity>
+        
+        <View style={[styles.centerWrapper, { top: paddingTop, bottom: paddingBottom }]} pointerEvents="none">
+          <Text style={styles.headerTitle}>Package Details</Text>
+        </View>
+
+        <View style={[styles.headerRight, styles.sideIcon]}>
+          <CartBadgeIcon onPress={() => router.push('/cart')} />
+        </View>
+      </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
         
@@ -106,8 +117,10 @@ export default function DetailsScreen() {
           {!isAvail && (
              <View style={styles.soldOutHeroOverlay}>
                <View style={styles.soldOutBadge}>
-                 <Ionicons name="alert" size={20} color="#FFF" style={{ marginRight: 5 }} />
-                 <Text style={styles.soldOutHeroText}>Currently Sold Out</Text>
+                 <Ionicons name="alert" size={20} color="#FFF" style={{ marginRight: 8, marginTop: 2 }} />
+                 <Text style={styles.soldOutHeroText}>
+                   ! One or more items sold out. Please edit package and add to cart.
+                 </Text>
                </View>
              </View>
           )}
@@ -145,7 +158,15 @@ export default function DetailsScreen() {
 
           {item.subItems && item.subItems.length > 0 && (
             <View style={[styles.comboPackageBox, { backgroundColor: isDark ? colors.surface : '#F9F9F9', borderColor: colors.border }]}>
-              <Text style={[styles.comboTitle, { color: colors.text }]}>Package Includes:</Text>
+              
+              <View style={styles.comboHeaderRow}>
+                <Text style={[styles.comboTitle, { color: colors.text }]}>Package Includes:</Text>
+                <TouchableOpacity onPress={() => setIsEditModalVisible(true)} style={styles.editPackageBtn}>
+                  <Ionicons name="create-outline" size={16} color={Colors.primary} />
+                  <Text style={styles.editPackageText}>Edit</Text>
+                </TouchableOpacity>
+              </View>
+
               {item.subItems.map((sub: any, idx: number) => {
                 const dbItem = MENU_ITEMS.find((m: any) => m.id === sub.id);
                 const isSubSoldOut = dbItem?.isAvailable === false;
@@ -171,7 +192,14 @@ export default function DetailsScreen() {
       </ScrollView>
 
       {/* BOTTOM ACTION BAR */}
-      <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, 15), backgroundColor: isDark ? colors.surface : '#FFF', borderTopColor: colors.border }]}>
+      <View style={[
+        styles.bottomBar, 
+        { 
+          paddingBottom: Math.max(insets.bottom, 20), 
+          backgroundColor: isDark ? colors.surface : '#FFF',
+          borderTopColor: colors.border 
+        }
+      ]}>
         <View style={styles.quantitySelector}>
           <TouchableOpacity 
             style={[styles.qtyBtn, { backgroundColor: isDark ? colors.background : '#F5F5F5' }]} 
@@ -191,13 +219,15 @@ export default function DetailsScreen() {
         </View>
 
         <TouchableOpacity 
-          style={[styles.addToCartBtn, { backgroundColor: isAvail ? Colors.primary : colors.border }]} 
+          style={[
+            styles.addToCartBtn, 
+            { backgroundColor: Colors.primary }
+          ]} 
           activeOpacity={0.8}
-          onPress={handleAddToCart}
-          disabled={!isAvail}
+          onPress={() => isAvail ? handleAddToCart() : setIsEditModalVisible(true)}
         >
-          <Text style={[styles.addToCartText, { color: isAvail ? '#FFF' : colors.textMuted }]}>
-            {isAvail ? `Add to Cart - ₦${(item.price * quantity).toLocaleString()}` : "Unavailable"}
+          <Text style={[styles.addToCartText, { color: '#FFF' }]}>
+            {isAvail ? `Add to Cart - ₦${(item.price * quantity).toLocaleString()}` : "Edit Package"}
           </Text>
         </TouchableOpacity>
       </View>
@@ -206,6 +236,14 @@ export default function DetailsScreen() {
         <Ionicons name="checkmark-circle" size={24} color="#4CAF50" />
         <Text style={styles.toastText}>Successfully added to cart!</Text>
       </Animated.View>
+
+      {/* QUICK EDIT MODAL */}
+      <QuickEditPackage 
+        visible={isEditModalVisible} 
+        onClose={() => setIsEditModalVisible(false)} 
+        initialItem={item} 
+      />
+
     </View>
   );
 }
@@ -213,6 +251,42 @@ export default function DetailsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  header: { 
+    backgroundColor: Colors.primary, 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'space-between', 
+    paddingHorizontal: 20, 
+    borderBottomLeftRadius: 30, 
+    borderBottomRightRadius: 30, 
+    zIndex: 10, 
+  },
+  sideIcon: {
+    zIndex: 2,
+    minWidth: 40,
+  },
+  centerWrapper: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1,
+  },
+  iconButton: { 
+    padding: 5,
+    marginLeft: -5,
+  },
+  headerTitle: { 
+    fontSize: 20, 
+    fontWeight: 'bold', 
+    color: '#FFF',
+  },
+  headerRight: { 
+    flexDirection: 'row', 
+    alignItems: 'center',
+    justifyContent: 'flex-end',
   },
   errorContainer: {
     flex: 1,
@@ -235,19 +309,9 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 16,
   },
-  floatingBackBtn: {
-    position: 'absolute',
-    left: 20,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 10,
-  },
   heroImage: {
     width: '100%',
-    height: 350,
+    height: 300,
   },
   gradientOverlay: {
     position: 'absolute',
@@ -258,22 +322,25 @@ const styles = StyleSheet.create({
   },
   soldOutHeroOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   soldOutBadge: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     backgroundColor: '#D32F2F',
     paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 20,
+    paddingVertical: 15,
+    borderRadius: 15,
+    marginHorizontal: 30,
   },
   soldOutHeroText: {
     color: '#FFF',
     fontWeight: 'bold',
-    fontSize: 16,
+    fontSize: 14,
+    flex: 1,
+    lineHeight: 20,
   },
   detailsContent: {
     paddingHorizontal: 20,
@@ -314,7 +381,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     elevation: 4,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { 
+      width: 0, 
+      height: 2 
+    },
     shadowOpacity: 0.1,
     shadowRadius: 5,
   },
@@ -352,10 +422,29 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginBottom: 20,
   },
+  comboHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
   comboTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    marginBottom: 15,
+  },
+  editPackageBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(211, 47, 47, 0.1)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  editPackageText: {
+    color: Colors.primary,
+    fontWeight: 'bold',
+    fontSize: 12,
+    marginLeft: 4,
   },
   comboItemRow: {
     flexDirection: 'row',
@@ -381,8 +470,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: 15,
+    paddingTop: 20,
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
     borderTopWidth: 1,
+    elevation: 15,
+    shadowColor: '#000',
+    shadowOffset: { 
+      width: 0, 
+      height: -5 
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
   },
   quantitySelector: {
     flexDirection: 'row',
@@ -409,7 +508,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     elevation: 4,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { 
+      width: 0, 
+      height: 4 
+    },
     shadowOpacity: 0.2,
     shadowRadius: 5,
   },
@@ -428,7 +530,10 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     elevation: 10,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 5 },
+    shadowOffset: { 
+      width: 0, 
+      height: 5 
+    },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     zIndex: 100,

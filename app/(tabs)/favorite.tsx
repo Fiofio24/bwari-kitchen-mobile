@@ -121,6 +121,8 @@ export default function FavoriteScreen() {
                     isAvailable={isAvail} 
                     isFavorite={isFavorite(dish.id)} 
                     onToggleFavorite={() => toggleFavorite(dish)}
+                    // PRO UX FIX: Tapping the card routes to the Details page just like Home
+                    onPress={() => router.push({ pathname: '/details', params: { id: dish.id } })}
                     onAdd={() => handleAddToCart(dish)} 
                   />
                 </View>
@@ -246,7 +248,10 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     elevation: 3,
     shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { 
+      width: 0, 
+      height: 4 
+    },
     shadowOpacity: 0.3,
     shadowRadius: 5,
   },
@@ -266,7 +271,10 @@ const styles = StyleSheet.create({
     borderRadius: 30, 
     elevation: 10, 
     shadowColor: '#000', 
-    shadowOffset: { width: 0, height: 5 }, 
+    shadowOffset: { 
+      width: 0, 
+      height: 5 
+    }, 
     shadowOpacity: 0.3, 
     shadowRadius: 8, 
     zIndex: 100, 

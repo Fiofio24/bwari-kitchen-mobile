@@ -8,7 +8,8 @@ import {
   ScrollView, 
   Image, 
   Platform, 
-  Animated 
+  Animated,
+  DeviceEventEmitter 
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,15 +19,17 @@ import { Colors } from '../constants/Colors';
 import { StatusBar } from 'expo-status-bar';
 import { useCart } from '../context/CartContext';
 import { MENU_ITEMS } from '../constants/menuData';
+import QuickEditPackage from '../components/QuickEditPackage';
 
-const CartItemCard = ({ item, isSelected, onToggle, onIncrease, onDecrease, onRemove, colors, isDark }: any) => {
+const CartItemCard = ({ item, isSelected, onToggle, onIncrease, onDecrease, onRemove, onEdit, colors, isDark }: any) => {
   const scaleAnim = useRef(new Animated.Value(isSelected ? 1 : 0)).current;
-  const router = useRouter();
-
+  
   const [isExpanded, setIsExpanded] = useState(false);
+  const isExpandedRef = useRef(false);
   const expandAnim = useRef(new Animated.Value(0)).current;
+  // PRO UX FIX: Changed NodeJS.Timeout to ReturnType<typeof setTimeout> for strict TypeScript compatibility
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // STRICT LOCKING: Only check the live database to confirm if a sub-item is actually sold out.
   const unavailableSubItems = (item.subItems || []).filter((sub: any) => {
     const dbItem = MENU_ITEMS.find((m: any) => m.id === sub.id);
     return dbItem?.isAvailable === false;
@@ -44,13 +47,50 @@ const CartItemCard = ({ item, isSelected, onToggle, onIncrease, onDecrease, onRe
     }).start();
   }, [isSelected, isLocked, scaleAnim]); 
 
+  useEffect(() => {
+    const subscription = DeviceEventEmitter.addListener('HIDE_WARNING_BADGE', (emittedId) => {
+      if (emittedId !== item.id && isExpandedRef.current) {
+        isExpandedRef.current = false;
+        setIsExpanded(false);
+        Animated.timing(expandAnim, { 
+          toValue: 0, 
+          duration: 250, 
+          useNativeDriver: false 
+        }).start();
+      }
+    });
+    return () => subscription.remove();
+  }, [expandAnim, item.id]);
+
   const toggleExpand = () => {
+    const newValue = !isExpanded;
+    isExpandedRef.current = newValue;
+    setIsExpanded(newValue);
+    
+    if (newValue) {
+      DeviceEventEmitter.emit('HIDE_WARNING_BADGE', item.id);
+      
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      timeoutRef.current = setTimeout(() => {
+        if (isExpandedRef.current) {
+          isExpandedRef.current = false;
+          setIsExpanded(false);
+          Animated.timing(expandAnim, { 
+            toValue: 0, 
+            duration: 250, 
+            useNativeDriver: false 
+          }).start();
+        }
+      }, 4000);
+    } else {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    }
+
     Animated.timing(expandAnim, {
-      toValue: isExpanded ? 0 : 1,
+      toValue: newValue ? 1 : 0,
       duration: 300,
       useNativeDriver: false 
     }).start();
-    setIsExpanded(!isExpanded);
   };
 
   const badgeWidth = expandAnim.interpolate({
@@ -134,7 +174,7 @@ const CartItemCard = ({ item, isSelected, onToggle, onIncrease, onDecrease, onRe
                   styles.editBtn, 
                   { backgroundColor: isLocked ? '#FFEBEE' : (isDark ? 'rgba(255,255,255,0.1)' : '#F0F0F0') }
                 ]} 
-                onPress={() => router.push('/menu')}
+                onPress={() => onEdit(item)}
               >
                 <Text style={[styles.editBtnText, { color: isLocked ? '#D32F2F' : colors.text }]}>Edit</Text>
               </TouchableOpacity>
@@ -171,6 +211,9 @@ export default function CartScreen() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const isInitialized = useRef(false);
 
+  const [editingItem, setEditingItem] = useState<any>(null);
+  const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+
   const isItemFullyAvailable = useCallback((item: any) => {
     if (!item.subItems || item.subItems.length === 0) return true;
     return !item.subItems.some((sub: any) => {
@@ -201,11 +244,15 @@ export default function CartScreen() {
 
   const handleRemove = (id: string) => { removeFromCart(id); };
 
-  // New function to handle checkout navigation
   const proceedToCheckout = () => {
     if (selectedIds.length > 0) {
       router.push('/checkout');
     }
+  };
+
+  const handleEditItem = (item: any) => {
+    setEditingItem(item);
+    setIsEditModalVisible(true);
   };
 
   return (
@@ -241,7 +288,8 @@ export default function CartScreen() {
                   onToggle={(id: string) => setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id])} 
                   onIncrease={increaseQuantity} 
                   onDecrease={decreaseQuantity} 
-                  onRemove={handleRemove} 
+                  onRemove={handleRemove}
+                  onEdit={handleEditItem} 
                   colors={colors} 
                   isDark={isDark} 
                 />
@@ -284,6 +332,13 @@ export default function CartScreen() {
           </TouchableOpacity>
         </View>
       )}
+
+      <QuickEditPackage 
+        visible={isEditModalVisible} 
+        onClose={() => setIsEditModalVisible(false)} 
+        initialItem={editingItem} 
+      />
+
     </View>
   );
 }

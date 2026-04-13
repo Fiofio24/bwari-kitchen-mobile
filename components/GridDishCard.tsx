@@ -1,5 +1,5 @@
 // Note: This file requires an Expo/React Native environment to compile correctly.
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -7,7 +7,8 @@ import {
   TouchableOpacity, 
   Image, 
   Platform,
-  Animated 
+  Animated,
+  DeviceEventEmitter
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext'; 
@@ -46,16 +47,58 @@ export default function GridDishCard({
 }: GridDishCardProps) {
   const { colors, isDark } = useTheme();
 
+  const cardId = useRef(Math.random().toString()).current;
   const [isExpanded, setIsExpanded] = useState(false);
+  const isExpandedRef = useRef(false);
+  
   const expandAnim = useRef(new Animated.Value(0)).current;
+  // PRO UX FIX: Changed NodeJS.Timeout to ReturnType<typeof setTimeout> for strict TypeScript compatibility
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    const subscription = DeviceEventEmitter.addListener('HIDE_WARNING_BADGE', (emittedId) => {
+      if (emittedId !== cardId && isExpandedRef.current) {
+        isExpandedRef.current = false;
+        setIsExpanded(false);
+        Animated.timing(expandAnim, { 
+          toValue: 0, 
+          duration: 250, 
+          useNativeDriver: false 
+        }).start();
+      }
+    });
+    return () => subscription.remove();
+  }, [expandAnim, cardId]);
 
   const toggleExpand = () => {
+    const newValue = !isExpanded;
+    isExpandedRef.current = newValue;
+    setIsExpanded(newValue);
+    
+    if (newValue) {
+      DeviceEventEmitter.emit('HIDE_WARNING_BADGE', cardId);
+      
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      timeoutRef.current = setTimeout(() => {
+        if (isExpandedRef.current) {
+          isExpandedRef.current = false;
+          setIsExpanded(false);
+          Animated.timing(expandAnim, { 
+            toValue: 0, 
+            duration: 250, 
+            useNativeDriver: false 
+          }).start();
+        }
+      }, 4000);
+    } else {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    }
+
     Animated.timing(expandAnim, {
-      toValue: isExpanded ? 0 : 1,
+      toValue: newValue ? 1 : 0,
       duration: 300,
       useNativeDriver: false 
     }).start();
-    setIsExpanded(!isExpanded);
   };
 
   const badgeWidth = expandAnim.interpolate({
@@ -80,7 +123,10 @@ export default function GridDishCard({
           shadowColor: '#000', 
           shadowOpacity: 0.1, 
           shadowRadius: 5, 
-          shadowOffset: { width: 0, height: 2 } 
+          shadowOffset: { 
+            width: 0, 
+            height: 2 
+          } 
         },
         android: { 
           elevation: 4, 
@@ -92,10 +138,10 @@ export default function GridDishCard({
       });
 
   const handleCardPress = () => {
-    if (!isAvailable) {
-      if (!isCompact) toggleExpand();
-    } else if (onPress) {
+    if (onPress) {
       onPress();
+    } else if (!isAvailable && !isCompact) {
+      toggleExpand();
     }
   };
 
@@ -131,10 +177,7 @@ export default function GridDishCard({
       >
         <Image 
           source={{ uri: image }} 
-          style={[
-            StyleSheet.absoluteFill, 
-            !isAvailable && { opacity: 0.3 } 
-          ]} 
+          style={StyleSheet.absoluteFill} 
           resizeMode="cover" 
         />
         
@@ -148,8 +191,11 @@ export default function GridDishCard({
         )}
 
         {!isAvailable && isCompact && (
-          <View style={styles.soldOutOverlay}>
-            <Text style={styles.soldOutText}>
+          <View style={[
+            styles.soldOutOverlay, 
+            { backgroundColor: isDark ? 'rgba(40, 40, 40, 0.7)' : 'rgba(255, 255, 255, 0.7)' }
+          ]}>
+            <Text style={[styles.soldOutText, { color: colors.text }]}>
               Sold Out
             </Text>
           </View>
@@ -301,7 +347,10 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 2,
     textShadowColor: 'rgba(0, 0, 0, 0.7)',
-    textShadowOffset: { width: 0, height: 1 },
+    textShadowOffset: { 
+      width: 0, 
+      height: 1 
+    },
     textShadowRadius: 4,
   },
   contentContainer: { 
