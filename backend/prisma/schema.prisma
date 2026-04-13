@@ -1,0 +1,520 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────
+
+enum UserRole {
+  customer
+  admin
+  rider
+}
+
+enum OrderType {
+  delivery
+  pickup
+}
+
+enum OrderStatus {
+  pending
+  confirmed
+  preparing
+  ready
+  picked_up
+  on_the_way
+  delivered
+  cancelled
+  refunded
+}
+
+enum PaymentMethod {
+  card
+  bank_transfer
+  ussd
+  cash_on_delivery
+  wallet
+}
+
+enum PaymentStatus {
+  pending
+  processing
+  successful
+  failed
+  refunded
+}
+
+enum TransactionType {
+  credit
+  debit
+}
+
+enum NotificationType {
+  order_update
+  promotion
+  system
+  review_request
+}
+
+enum PromotionType {
+  percentage
+  fixed
+  free_delivery
+  bogo
+}
+
+// ─────────────────────────────────────────
+// MODELS
+// ─────────────────────────────────────────
+
+model AppSetting {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  value       String
+  description String?
+  updatedAt   DateTime @updatedAt
+
+  @@map("app_settings")
+}
+
+model Branch {
+  id               String   @id @default(uuid())
+  name             String
+  address          String
+  landmark         String?
+  area             String?
+  latitude         Decimal? @db.Decimal(9, 6)
+  longitude        Decimal? @db.Decimal(9, 6)
+  phoneNumber      String?
+  openingTime      String?
+  closingTime      String?
+  isOpen           Boolean  @default(true)
+  acceptsPickup    Boolean  @default(true)
+  acceptsDelivery  Boolean  @default(true)
+  deliveryRadiusKm Decimal? @db.Decimal(4, 2)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  menuItems MenuItem[]
+  orders    Order[]
+
+  @@map("branches")
+}
+
+model User {
+  id              String    @id @default(uuid())
+  fullName        String
+  email           String?   @unique
+  phoneNumber     String    @unique
+  passwordHash    String?
+  role            UserRole  @default(customer)
+  profilePhotoUrl String?
+  isVerified      Boolean   @default(false)
+  isActive        Boolean   @default(true)
+  deviceToken     String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
+
+  addresses          UserAddress[]
+  orders             Order[]              @relation("CustomerOrders")
+  assignedDeliveries Order[]              @relation("RiderOrders")
+  cancelledOrders    Order[]              @relation("CancelledByUser")
+  wallet             Wallet?
+  reviews            Review[]             @relation("CustomerReviews")
+  riderReviews       Review[]             @relation("RiderReviews")
+  notifications      Notification[]
+  promoUsages        PromoUsage[]
+  orderStatusChanges OrderStatusHistory[]
+  payments           Payment[]
+
+  @@map("users")
+}
+
+model UserAddress {
+  id            String    @id @default(uuid())
+  userId        String
+  label         String?
+  streetAddress String
+  landmark      String?
+  area          String?
+  city          String    @default("Abuja")
+  latitude      Decimal?  @db.Decimal(9, 6)
+  longitude     Decimal?  @db.Decimal(9, 6)
+  isDefault     Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  deletedAt     DateTime?
+
+  user   User    @relation(fields: [userId], references: [id])
+  orders Order[]
+
+  @@map("user_addresses")
+}
+
+model Category {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  imageUrl    String?
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  menuItems MenuItem[]
+
+  @@map("categories")
+}
+
+model MenuItem {
+  id              String    @id @default(uuid())
+  branchId        String?
+  categoryId      String
+  name            String
+  description     String?
+  basePrice       Decimal   @db.Decimal(10, 2)
+  discountPrice   Decimal?  @db.Decimal(10, 2)
+  imageUrl        String?
+  isAvailable     Boolean   @default(true)
+  isFeatured      Boolean   @default(false)
+  preparationTime Int?
+  tags            String[]
+  sortOrder       Int       @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
+
+  branch            Branch?            @relation(fields: [branchId], references: [id])
+  category          Category           @relation(fields: [categoryId], references: [id])
+  options           MenuItemOption[]
+  packageItems      PackageItem[]
+  orderPackageItems OrderPackageItem[]
+
+  @@map("menu_items")
+}
+
+// ─────────────────────────────────────────
+// MENU ITEM OPTIONS
+// ─────────────────────────────────────────
+
+model MenuItemOption {
+  id            String  @id @default(uuid())
+  menuItemId    String
+  name          String
+  isRequired    Boolean @default(false)
+  minSelections Int     @default(0)
+  maxSelections Int     @default(1)
+  sortOrder     Int     @default(0)
+
+  menuItem MenuItem               @relation(fields: [menuItemId], references: [id])
+  choices  MenuItemOptionChoice[]
+
+  @@map("menu_item_options")
+}
+
+model MenuItemOptionChoice {
+  id              String  @id @default(uuid())
+  optionId        String
+  name            String
+  additionalPrice Decimal @default(0) @db.Decimal(10, 2)
+  isAvailable     Boolean @default(true)
+  sortOrder       Int     @default(0)
+
+  option                  MenuItemOption           @relation(fields: [optionId], references: [id])
+  orderPackageItemChoices OrderPackageItemChoice[]  // ← fixed: was pointing to deleted OrderItemChoice
+
+  @@map("menu_item_option_choices")
+}
+
+// ─────────────────────────────────────────
+// PACKAGES
+// ─────────────────────────────────────────
+
+// Restaurant-created combo packages e.g. "Family Pack", "Lunch Deal"
+model Package {
+  id          String    @id @default(uuid())
+  name        String
+  description String?
+  imageUrl    String?
+  totalPrice  Decimal   @db.Decimal(10, 2) // can be less than sum of items (discount)
+  isAvailable Boolean   @default(true)
+  isFeatured  Boolean   @default(false)
+  tags        String[]
+  sortOrder   Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  items         PackageItem[]
+  orderPackages OrderPackage[]
+
+  @@map("packages")
+}
+
+// The menu items that make up a restaurant-defined package
+model PackageItem {
+  id         String @id @default(uuid())
+  packageId  String
+  menuItemId String
+  quantity   Int    @default(1)
+
+  package  Package  @relation(fields: [packageId], references: [id])
+  menuItem MenuItem @relation(fields: [menuItemId], references: [id])
+
+  @@map("package_items")
+}
+
+// ─────────────────────────────────────────
+// ORDERS
+// ─────────────────────────────────────────
+
+model Order {
+  id                    String      @id @default(uuid())
+  orderNumber           String      @unique
+  customerId            String
+  branchId              String
+  deliveryAddressId     String?
+  riderId               String?
+  orderType             OrderType
+  status                OrderStatus @default(pending)
+  subtotal              Decimal     @db.Decimal(10, 2)
+  deliveryFee           Decimal     @default(0) @db.Decimal(10, 2)
+  discountAmount        Decimal     @default(0) @db.Decimal(10, 2)
+  totalAmount           Decimal     @db.Decimal(10, 2)
+  specialInstructions   String?
+  estimatedDeliveryTime DateTime?
+  actualDeliveryTime    DateTime?
+  cancelledBy           String?
+  cancellationReason    String?
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+
+  customer        User             @relation("CustomerOrders", fields: [customerId], references: [id])
+  branch          Branch           @relation(fields: [branchId], references: [id])
+  deliveryAddress UserAddress?     @relation(fields: [deliveryAddressId], references: [id])
+  rider           User?            @relation("RiderOrders", fields: [riderId], references: [id])
+  cancelledByUser User?            @relation("CancelledByUser", fields: [cancelledBy], references: [id])
+  payment         Payment?
+  delivery        DeliveryTracking?
+  review          Review?
+  statusHistory   OrderStatusHistory[]
+  promoUsage      PromoUsage?
+  orderPackages   OrderPackage[]   // ← only packages now, no loose order_items
+
+  @@map("orders")
+}
+
+// Tracks when a package (combo or custom bundle) is added to an order
+model OrderPackage {
+  id                String  @id @default(uuid())
+  orderId           String
+  packageId         String? // NULL if custom or edited combo
+  originalPackageId String? // remembers which combo it was based on if edited
+  packageName       String  // snapshot
+  totalPrice        Decimal @db.Decimal(10, 2)
+  isCustom          Boolean @default(false) // true = user built or edited it
+  wasEdited         Boolean @default(false) // true = started as combo, user modified it
+
+  order   Order        @relation(fields: [orderId], references: [id])
+  package Package?     @relation(fields: [packageId], references: [id])
+  items   OrderPackageItem[]
+
+  @@map("order_packages")
+}
+
+// The individual items within an ordered package
+model OrderPackageItem {
+  id             String  @id @default(uuid())
+  orderPackageId String
+  menuItemId     String
+  itemName       String  // snapshot
+  quantity       Int
+  unitPrice      Decimal @db.Decimal(10, 2) // snapshot
+  totalPrice     Decimal @db.Decimal(10, 2)
+
+  orderPackage OrderPackage             @relation(fields: [orderPackageId], references: [id])
+  menuItem     MenuItem                 @relation(fields: [menuItemId], references: [id])
+  choices      OrderPackageItemChoice[]
+
+  @@map("order_package_items")
+}
+
+// Choices made for each item within a package (e.g. "Beef", "Extra Wrap")
+model OrderPackageItemChoice {
+  id                 String  @id @default(uuid())
+  orderPackageItemId String
+  optionChoiceId     String
+  choiceName         String  // snapshot
+  additionalPrice    Decimal @db.Decimal(10, 2)
+
+  orderPackageItem OrderPackageItem     @relation(fields: [orderPackageItemId], references: [id])
+  optionChoice     MenuItemOptionChoice @relation(fields: [optionChoiceId], references: [id])
+
+  @@map("order_package_item_choices")
+}
+
+model OrderStatusHistory {
+  id          String   @id @default(uuid())
+  orderId     String
+  status      String
+  changedById String?
+  note        String?
+  createdAt   DateTime @default(now())
+
+  order     Order @relation(fields: [orderId], references: [id])
+  changedBy User? @relation(fields: [changedById], references: [id])
+
+  @@map("order_status_history")
+}
+
+// ─────────────────────────────────────────
+// PAYMENTS & WALLET
+// ─────────────────────────────────────────
+
+model Payment {
+  id               String        @id @default(uuid())
+  orderId          String        @unique
+  userId           String
+  amount           Decimal       @db.Decimal(10, 2)
+  currency         String        @default("NGN")
+  paymentMethod    PaymentMethod
+  paymentStatus    PaymentStatus @default(pending)
+  provider         String?
+  providerRef      String?       @unique
+  providerResponse Json?
+  paidAt           DateTime?
+  createdAt        DateTime      @default(now())
+
+  order Order @relation(fields: [orderId], references: [id])
+  user  User  @relation(fields: [userId], references: [id])
+
+  @@map("payments")
+}
+
+model Wallet {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  balance   Decimal  @default(0) @db.Decimal(10, 2)
+  currency  String   @default("NGN")
+  updatedAt DateTime @updatedAt
+
+  user         User                @relation(fields: [userId], references: [id])
+  transactions WalletTransaction[]
+
+  @@map("wallets")
+}
+
+model WalletTransaction {
+  id             String          @id @default(uuid())
+  walletId       String
+  type           TransactionType
+  amount         Decimal         @db.Decimal(10, 2)
+  description    String?
+  reference      String          @unique
+  relatedOrderId String?
+  createdAt      DateTime        @default(now())
+
+  wallet Wallet @relation(fields: [walletId], references: [id])
+
+  @@map("wallet_transactions")
+}
+
+// ─────────────────────────────────────────
+// DELIVERY & REVIEWS
+// ─────────────────────────────────────────
+
+model DeliveryTracking {
+  id               String    @id @default(uuid())
+  orderId          String    @unique
+  riderId          String
+  currentLatitude  Decimal?  @db.Decimal(9, 6)
+  currentLongitude Decimal?  @db.Decimal(9, 6)
+  pickupTime       DateTime?
+  estimatedArrival DateTime?
+  lastUpdated      DateTime  @default(now())
+
+  order Order @relation(fields: [orderId], references: [id])
+
+  @@map("delivery_tracking")
+}
+
+model Review {
+  id             String   @id @default(uuid())
+  orderId        String   @unique
+  customerId     String
+  riderId        String?
+  foodRating     Decimal  @db.Decimal(2, 1)
+  deliveryRating Decimal? @db.Decimal(2, 1)
+  comment        String?
+  isVisible      Boolean  @default(true)
+  createdAt      DateTime @default(now())
+
+  order    Order  @relation(fields: [orderId], references: [id])
+  customer User   @relation("CustomerReviews", fields: [customerId], references: [id])
+  rider    User?  @relation("RiderReviews", fields: [riderId], references: [id])
+
+  @@map("reviews")
+}
+
+// ─────────────────────────────────────────
+// PROMOTIONS
+// ─────────────────────────────────────────
+
+model Promotion {
+  id             String        @id @default(uuid())
+  code           String        @unique
+  description    String?
+  type           PromotionType
+  value          Decimal       @db.Decimal(10, 2)
+  minOrderAmount Decimal       @default(0) @db.Decimal(10, 2)
+  maxUses        Int?
+  usesCount      Int           @default(0)
+  perUserLimit   Int           @default(1)
+  validFrom      DateTime?
+  validUntil     DateTime?
+  isActive       Boolean       @default(true)
+  createdAt      DateTime      @default(now())
+
+  usages PromoUsage[]
+
+  @@map("promotions")
+}
+
+model PromoUsage {
+  id              String   @id @default(uuid())
+  promoId         String
+  userId          String
+  orderId         String   @unique
+  discountApplied Decimal  @db.Decimal(10, 2)
+  usedAt          DateTime @default(now())
+
+  promotion Promotion @relation(fields: [promoId], references: [id])
+  user      User      @relation(fields: [userId], references: [id])
+  order     Order     @relation(fields: [orderId], references: [id])
+
+  @@map("promo_usages")
+}
+
+// ─────────────────────────────────────────
+// NOTIFICATIONS
+// ─────────────────────────────────────────
+
+model Notification {
+  id             String           @id @default(uuid())
+  userId         String
+  title          String
+  body           String
+  type           NotificationType
+  isRead         Boolean          @default(false)
+  relatedOrderId String?
+  createdAt      DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("notifications")
+}
