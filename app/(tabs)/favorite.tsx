@@ -1,5 +1,15 @@
+// Note: This file requires an Expo/React Native environment to compile correctly.
 import React, { useState, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated, useWindowDimensions, Platform } from 'react-native';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  TouchableOpacity, 
+  ScrollView, 
+  Animated, 
+  useWindowDimensions, 
+  Platform 
+} from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -11,6 +21,7 @@ import { useFavorites } from '../../context/FavoriteContext';
 import GridDishCard from '../../components/GridDishCard';
 import Sidebar from '../../components/Sidebar';
 import CartBadgeIcon from '../../components/CartBadgeIcon';
+import { MENU_ITEMS } from '../../constants/menuData'; 
 
 export default function FavoriteScreen() {
   const router = useRouter();
@@ -27,7 +38,9 @@ export default function FavoriteScreen() {
   const GRID_PADDING = 20;
   const GRID_GAP = 15;
   const AVAILABLE_WIDTH = width - (GRID_PADDING * 2);
-  const NUM_COLUMNS = 2;
+  
+  const MAX_GRID_WIDTH = 200; 
+  const NUM_COLUMNS = Math.max(2, Math.ceil(AVAILABLE_WIDTH / (MAX_GRID_WIDTH + GRID_GAP)));
   const CARD_WIDTH = Math.floor((AVAILABLE_WIDTH - (GRID_GAP * (NUM_COLUMNS - 1))) / NUM_COLUMNS);
 
   const bottomNavHeight = 70 + Math.max(insets.bottom, 15);
@@ -36,7 +49,7 @@ export default function FavoriteScreen() {
 
   const handleAddToCart = (dish: any) => {
     const newItem: any = {
-      id: dish.id, // FIXED: Replaced `cart_pkg_${Date.now()}` with actual ID to allow stacking
+      id: dish.id, 
       name: dish.name,
       category: dish.category,
       price: dish.price,
@@ -52,6 +65,17 @@ export default function FavoriteScreen() {
       Animated.delay(2000),
       Animated.timing(toastAnim, { toValue: -100, duration: 300, useNativeDriver: true })
     ]).start();
+  };
+
+  const checkAvailability = (dish: any) => {
+    if (dish.subItems && dish.subItems.length > 0) {
+      return !dish.subItems.some((sub: any) => {
+        const dbItem = MENU_ITEMS.find((m: any) => m.id === sub.id);
+        return dbItem?.isAvailable === false;
+      });
+    }
+    const dbItem = MENU_ITEMS.find((m: any) => m.id === dish.id);
+    return dbItem ? dbItem.isAvailable !== false : true;
   };
 
   return (
@@ -83,21 +107,25 @@ export default function FavoriteScreen() {
             </Text>
           </View>
 
-          <View style={styles.gridContainer}>
-            {favorites.map((dish) => (
-              <View style={{ width: CARD_WIDTH }} key={dish.id}>
-                <GridDishCard 
-                  category={dish.category} 
-                  name={dish.name} 
-                  price={`₦${dish.price.toLocaleString()}`} 
-                  rating={dish.rating} 
-                  image={dish.image} 
-                  isFavorite={isFavorite(dish.id)} 
-                  onToggleFavorite={() => toggleFavorite(dish)}
-                  onAdd={() => handleAddToCart(dish)} 
-                />
-              </View>
-            ))}
+          <View style={[styles.gridContainer, { gap: GRID_GAP }]}>
+            {favorites.map((dish) => {
+              const isAvail = checkAvailability(dish);
+              return (
+                <View style={{ width: CARD_WIDTH }} key={dish.id}>
+                  <GridDishCard 
+                    category={dish.category} 
+                    name={dish.name} 
+                    price={`₦${dish.price.toLocaleString()}`} 
+                    rating={dish.rating} 
+                    image={dish.image} 
+                    isAvailable={isAvail} 
+                    isFavorite={isFavorite(dish.id)} 
+                    onToggleFavorite={() => toggleFavorite(dish)}
+                    onAdd={() => handleAddToCart(dish)} 
+                  />
+                </View>
+              );
+            })}
           </View>
         </ScrollView>
       ) : (
@@ -182,7 +210,6 @@ const styles = StyleSheet.create({
   gridContainer: { 
     flexDirection: 'row', 
     flexWrap: 'wrap', 
-    gap: 15, 
     paddingHorizontal: 20,
   },
   emptyContainer: { 
