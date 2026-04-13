@@ -1,6 +1,15 @@
 // Note: This file requires an Expo/React Native environment and local components to compile correctly in preview.
 import React, { useState, useRef, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, useWindowDimensions, Animated, RefreshControl } from 'react-native'; 
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  ScrollView, 
+  TouchableOpacity, 
+  useWindowDimensions, 
+  Animated, 
+  RefreshControl 
+} from 'react-native'; 
 import { Colors } from '../../constants/Colors';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,7 +25,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../context/ThemeContext';
 import { useCart } from '../../context/CartContext';
 import { useFavorites } from '../../context/FavoriteContext'; 
-import { COMBO_PACKAGES, CATEGORIES } from '../../constants/menuData';
+import { COMBO_PACKAGES, CATEGORIES, MENU_ITEMS } from '../../constants/menuData'; 
 
 const USER_PROFILE = { name: "User", notificationCount: 1 };
 
@@ -53,13 +62,15 @@ export default function HomeScreen() {
     }
   }, []);
 
-  const filteredDishes = activeCategory === 'All' ? COMBO_PACKAGES : COMBO_PACKAGES.filter(dish => dish.category === activeCategory);
+  const filteredDishes = activeCategory === 'All' 
+    ? COMBO_PACKAGES 
+    : COMBO_PACKAGES.filter(dish => dish.category === activeCategory);
 
   const handleScroll = (event: any) => setIsScrolled(event.nativeEvent.contentOffset.y > shadowTripwire);
 
   const handleAddToCart = (comboPackage: any) => {
     const newItem: any = { 
-      id: comboPackage.id, // FIXED: Replaced `cart_pkg_${Date.now()}` with actual ID to allow stacking
+      id: comboPackage.id, 
       name: comboPackage.name, 
       category: comboPackage.category,
       price: comboPackage.price, 
@@ -77,6 +88,14 @@ export default function HomeScreen() {
     ]).start();
   };
 
+  const isComboAvailable = (combo: any) => {
+    if (!combo.subItems || combo.subItems.length === 0) return combo.isAvailable !== false;
+    return !combo.subItems.some((sub: any) => {
+      const dbItem = MENU_ITEMS.find((m: any) => m.id === sub.id);
+      return dbItem?.isAvailable === false;
+    });
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView 
@@ -84,7 +103,16 @@ export default function HomeScreen() {
         contentContainerStyle={{ paddingBottom: 100 }}
         onScroll={handleScroll}
         scrollEventThrottle={16} 
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} colors={[Colors.primary]} progressBackgroundColor={isDark ? colors.surface : '#FFF'} progressViewOffset={insets.top + 60} />}
+        refreshControl={
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={onRefresh} 
+            tintColor={Colors.primary} 
+            colors={[Colors.primary]} 
+            progressBackgroundColor={isDark ? colors.surface : '#FFF'} 
+            progressViewOffset={insets.top + 60} 
+          />
+        }
       >
         <View style={styles.topLayoutContainer}>
           <GreetingSection userName={USER_PROFILE.name} />
@@ -94,6 +122,7 @@ export default function HomeScreen() {
         </View>
 
         <PromoSlider />
+        
         <ForYouCard onAddToCart={handleAddToCart} />
 
         <View style={styles.headerRow}>
@@ -103,34 +132,50 @@ export default function HomeScreen() {
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scrollContainer}>
           {CATEGORIES.map((category) => (
-            <CategoryFilter key={category} category={category} isActive={activeCategory === category} onPress={() => setActiveCategory(category)} />
+            <CategoryFilter 
+              key={category} 
+              category={category} 
+              isActive={activeCategory === category} 
+              onPress={() => setActiveCategory(category)} 
+            />
           ))}
         </ScrollView>
 
         <View style={styles.gridContainer}>
           {filteredDishes.length > 0 ? (
-            filteredDishes.map((dish) => (
-              <View style={{ width: CARD_WIDTH }} key={dish.id}>
-                <GridDishCard 
-                  category={dish.category} 
-                  name={dish.name} 
-                  price={`₦${dish.price.toLocaleString()}`} 
-                  rating={dish.rating} 
-                  image={dish.image} 
-                  isFavorite={isFavorite(dish.id)} 
-                  onToggleFavorite={() => toggleFavorite(dish)} 
-                  onAdd={() => handleAddToCart(dish)} 
-                />
-              </View>
-            ))
+            filteredDishes.map((dish) => {
+              const isAvail = isComboAvailable(dish);
+              return (
+                <View style={{ width: CARD_WIDTH }} key={dish.id}>
+                  <GridDishCard 
+                    category={dish.category} 
+                    name={dish.name} 
+                    price={`₦${dish.price.toLocaleString()}`} 
+                    rating={dish.rating} 
+                    image={dish.image} 
+                    isFavorite={isFavorite(dish.id)} 
+                    isAvailable={isAvail} 
+                    onToggleFavorite={() => toggleFavorite(dish)} 
+                    // PRO UX FIX: Tapping the card routes to the Details page
+                    onPress={() => router.push({ pathname: '/details', params: { id: dish.id } })}
+                    onAdd={() => handleAddToCart(dish)} 
+                  />
+                </View>
+              );
+            })
           ) : (
             <Text style={[styles.emptyText, { color: colors.textMuted }]}>This category is not available in kitchen.</Text>
           )}
         </View>
       </ScrollView>
 
-      {/* REMOVED cartCount prop here to satisfy the TopNavProps TypeScript definition */}
-      <TopNav address={currentAddress} onAddressChange={setCurrentAddress} notificationCount={USER_PROFILE.notificationCount} onOpenMenu={() => setIsSidebarOpen(true)} isScrolled={isScrolled} />
+      <TopNav 
+        address={currentAddress} 
+        onAddressChange={setCurrentAddress} 
+        notificationCount={USER_PROFILE.notificationCount} 
+        onOpenMenu={() => setIsSidebarOpen(true)} 
+        isScrolled={isScrolled} 
+      />
 
       <Animated.View style={[styles.toastContainer, { transform: [{ translateY: toastAnim }], backgroundColor: isDark ? '#333' : '#222' }]}>
         <Ionicons name="checkmark-circle" size={24} color="#4CAF50" />

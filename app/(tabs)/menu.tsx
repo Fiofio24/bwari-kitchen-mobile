@@ -6,7 +6,6 @@ import {
   StyleSheet, 
   TouchableOpacity, 
   ScrollView, 
-  Image, 
   Platform, 
   Animated, 
   useWindowDimensions 
@@ -24,6 +23,7 @@ import CategoryFilter from '../../components/CategoryFilter';
 import ForYouCard from '../../components/ForYouCard';
 import { MENU_ITEMS } from '../../constants/menuData';
 import CartBadgeIcon from '../../components/CartBadgeIcon';
+import GridDishCard from '../../components/GridDishCard';
 
 const MENU_CATEGORIES = ['Main', 'Protein', 'Swallow', 'Snacks', 'Drinks', 'Rice'];
 
@@ -43,9 +43,11 @@ export default function MenuScreen() {
 
   const { width } = useWindowDimensions();
   const GRID_PADDING = 20; 
-  const GRID_GAP = 15;     
+  const GRID_GAP = 10; 
   const AVAILABLE_WIDTH = width - (GRID_PADDING * 2);
-  const NUM_COLUMNS = 3; 
+  
+  const MIN_CARD_WIDTH = 105; 
+  const NUM_COLUMNS = Math.max(3, Math.floor((AVAILABLE_WIDTH + GRID_GAP) / (MIN_CARD_WIDTH + GRID_GAP)));
   const CARD_WIDTH = Math.floor((AVAILABLE_WIDTH - (GRID_GAP * (NUM_COLUMNS - 1))) / NUM_COLUMNS);
 
   const filteredItems = MENU_ITEMS.filter(item => item.category === activeCategory || activeCategory === 'Main');
@@ -102,8 +104,6 @@ export default function MenuScreen() {
       price: item.price
     }));
 
-    // FIXED: Generate a deterministic ID based on the exact contents of the plate.
-    // This ensures identical custom plates stack together and increment quantity!
     const uniquePackageId = 'custom_' + selectedItemsList.map(i => `${i.id}_${customPlate[i.id]}`).sort().join('-');
 
     const newItem: any = { 
@@ -130,7 +130,7 @@ export default function MenuScreen() {
 
   const handleAddForYou = (comboPackage: any) => {
     const newItem: any = { 
-      id: comboPackage.id, // FIXED: Use actual ID so CartContext can stack duplicates properly
+      id: comboPackage.id, 
       name: comboPackage.name, 
       category: comboPackage.category,
       price: comboPackage.price, 
@@ -160,7 +160,6 @@ export default function MenuScreen() {
           <Ionicons name="menu-outline" size={28} color="#FFF" />
         </TouchableOpacity>
         
-        {/* TRUE CENTERED TITLE WRAPPER */}
         <View style={[styles.centerWrapper, { top: paddingTop, bottom: paddingBottom }]} pointerEvents="none">
           <Text style={styles.headerTitle}>Menu</Text>
         </View>
@@ -203,7 +202,6 @@ export default function MenuScreen() {
               <View key={item.id} style={styles.receiptRow}>
                 <Text style={[styles.receiptName, { color: colors.text }]} numberOfLines={1}>{item.name}</Text>
                 
-                {/* FIXED UI: Identical to Cart page quantity controls */}
                 <View style={[
                   styles.quantityBox, 
                   { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F5F5F5' }
@@ -247,21 +245,21 @@ export default function MenuScreen() {
           ))}
         </ScrollView>
 
-        <View style={styles.gridContainer}>
+        <View style={[styles.gridContainer, { gap: GRID_GAP }]}>
           {filteredItems.map(item => {
             const isSelected = (customPlate[item.id] || 0) > 0;
             return (
-              <TouchableOpacity key={item.id} style={[styles.gridCard, { width: CARD_WIDTH }]} activeOpacity={0.8} onPress={() => toggleItem(item.id)}>
-                <View style={styles.gridImageWrapper}>
-                  <Image source={{ uri: item.image }} style={styles.gridImage} />
-                  {isSelected && (
-                    <View style={styles.gridOverlay}>
-                      <View style={styles.checkCircle}><Ionicons name="checkmark" size={14} color="#000" /></View>
-                    </View>
-                  )}
-                </View>
-                <Text style={[styles.gridName, { color: colors.text }]} numberOfLines={1}>{item.name}</Text>
-              </TouchableOpacity>
+              <View key={item.id} style={{ width: CARD_WIDTH }}>
+                <GridDishCard 
+                  name={item.name} 
+                  price={`₦${item.price.toLocaleString()}`}
+                  image={item.image}
+                  isSelected={isSelected}
+                  isAvailable={item.isAvailable !== false} 
+                  onPress={() => toggleItem(item.id)}
+                  isCompact={true}
+                />
+              </View>
             );
           })}
         </View>
@@ -473,42 +471,8 @@ const styles = StyleSheet.create({
   gridContainer: { 
     flexDirection: 'row', 
     flexWrap: 'wrap', 
-    gap: 15, 
     marginBottom: 10, 
     paddingHorizontal: 20 
-  },
-  gridCard: { 
-  }, 
-  gridImageWrapper: { 
-    width: '100%', 
-    aspectRatio: 1, 
-    borderRadius: 15, 
-    overflow: 'hidden', 
-    backgroundColor: '#EEE', 
-    marginBottom: 8 
-  },
-  gridImage: { 
-    width: '100%', 
-    height: '100%' 
-  },
-  gridOverlay: { 
-    ...StyleSheet.absoluteFillObject, 
-    backgroundColor: 'rgba(0,0,0,0.5)', 
-    justifyContent: 'center', 
-    alignItems: 'center' 
-  },
-  checkCircle: { 
-    width: 24, 
-    height: 24, 
-    borderRadius: 12, 
-    backgroundColor: '#FFF', 
-    justifyContent: 'center', 
-    alignItems: 'center' 
-  },
-  gridName: { 
-    fontSize: 13, 
-    fontWeight: '600', 
-    textAlign: 'center' 
   },
   floatingButtonContainer: { 
     position: 'absolute', 
