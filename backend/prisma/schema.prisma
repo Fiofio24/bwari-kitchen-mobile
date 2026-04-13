@@ -77,6 +77,7 @@ model AppSetting {
   key         String   @unique
   value       String
   description String?
+  createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   @@map("app_settings")
@@ -191,44 +192,10 @@ model MenuItem {
 
   branch            Branch?            @relation(fields: [branchId], references: [id])
   category          Category           @relation(fields: [categoryId], references: [id])
-  options           MenuItemOption[]
   packageItems      PackageItem[]
   orderPackageItems OrderPackageItem[]
 
   @@map("menu_items")
-}
-
-// ─────────────────────────────────────────
-// MENU ITEM OPTIONS
-// ─────────────────────────────────────────
-
-model MenuItemOption {
-  id            String  @id @default(uuid())
-  menuItemId    String
-  name          String
-  isRequired    Boolean @default(false)
-  minSelections Int     @default(0)
-  maxSelections Int     @default(1)
-  sortOrder     Int     @default(0)
-
-  menuItem MenuItem               @relation(fields: [menuItemId], references: [id])
-  choices  MenuItemOptionChoice[]
-
-  @@map("menu_item_options")
-}
-
-model MenuItemOptionChoice {
-  id              String  @id @default(uuid())
-  optionId        String
-  name            String
-  additionalPrice Decimal @default(0) @db.Decimal(10, 2)
-  isAvailable     Boolean @default(true)
-  sortOrder       Int     @default(0)
-
-  option                  MenuItemOption           @relation(fields: [optionId], references: [id])
-  orderPackageItemChoices OrderPackageItemChoice[]  // ← fixed: was pointing to deleted OrderItemChoice
-
-  @@map("menu_item_option_choices")
 }
 
 // ─────────────────────────────────────────
@@ -339,23 +306,8 @@ model OrderPackageItem {
 
   orderPackage OrderPackage             @relation(fields: [orderPackageId], references: [id])
   menuItem     MenuItem                 @relation(fields: [menuItemId], references: [id])
-  choices      OrderPackageItemChoice[]
 
   @@map("order_package_items")
-}
-
-// Choices made for each item within a package (e.g. "Beef", "Extra Wrap")
-model OrderPackageItemChoice {
-  id                 String  @id @default(uuid())
-  orderPackageItemId String
-  optionChoiceId     String
-  choiceName         String  // snapshot
-  additionalPrice    Decimal @db.Decimal(10, 2)
-
-  orderPackageItem OrderPackageItem     @relation(fields: [orderPackageItemId], references: [id])
-  optionChoice     MenuItemOptionChoice @relation(fields: [optionChoiceId], references: [id])
-
-  @@map("order_package_item_choices")
 }
 
 model OrderStatusHistory {
@@ -436,7 +388,7 @@ model DeliveryTracking {
   currentLongitude Decimal?  @db.Decimal(9, 6)
   pickupTime       DateTime?
   estimatedArrival DateTime?
-  lastUpdated      DateTime  @default(now())
+  lastUpdated      DateTime  @updatedAt
 
   order Order @relation(fields: [orderId], references: [id])
 
