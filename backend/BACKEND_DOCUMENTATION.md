@@ -153,9 +153,9 @@ The database contains **20 tables** organised across the following domains:
 | Configuration | `app_settings` |
 | Locations | `branches` |
 | Users | `users`, `user_addresses` |
-| Menu | `categories`, `menu_items`, `menu_item_options`, `menu_item_option_choices` |
+| Menu | `categories`, `menu_items` |
 | Packages | `packages`, `package_items` |
-| Orders | `orders`, `order_packages`, `order_package_items`, `order_package_item_choices`, `order_status_history` |
+| Orders | `orders`, `order_packages`, `order_package_items`, `order_status_history` |
 | Payments | `payments`, `wallets`, `wallet_transactions` |
 | Delivery | `delivery_tracking` |
 | Feedback | `reviews` |
@@ -170,8 +170,6 @@ app_settings          (standalone configuration)
 branches
     └──> menu_items
               └──> categories
-              └──> menu_item_options
-                        └──> menu_item_option_choices
 
 users
     └──> user_addresses
@@ -180,7 +178,7 @@ users
 orders
     └──> order_packages
               └──> order_package_items
-                        └──> order_package_item_choices
+                      
     └──> payments
     └──> delivery_tracking
     └──> reviews
@@ -330,37 +328,6 @@ Individual food and drink items available for ordering. Each item is standalone 
 
 ---
 
-### `menu_item_options`
-
-Defines a customisation group for a menu item e.g. "Choose Protein", "Extra Wraps", "Add-ons". One item can have multiple option groups.
-
-| Field | Type | Description |
-|---|---|---|
-| `id` | UUID | Primary key |
-| `menuItemId` | UUID (FK) | Parent menu item |
-| `name` | String | Option group label |
-| `isRequired` | Boolean | Whether customer must make a selection |
-| `minSelections` | Int | Minimum number of choices required |
-| `maxSelections` | Int | Maximum number of choices allowed |
-| `sortOrder` | Int | Display order |
-
----
-
-### `menu_item_option_choices`
-
-Individual choices within an option group e.g. "Beef +₦500", "Extra Wrap +₦300", "Coke +₦300".
-
-| Field | Type | Description |
-|---|---|---|
-| `id` | UUID | Primary key |
-| `optionId` | UUID (FK) | Parent option group |
-| `name` | String | Choice label |
-| `additionalPrice` | Decimal | Extra cost added to the item base price |
-| `isAvailable` | Boolean | Whether this choice is currently available |
-| `sortOrder` | Int | Display order |
-
----
-
 ### `packages`
 
 Restaurant-created combo deals e.g. "Family Pack", "Lunch Deal". Combos can carry a total price lower than the sum of their items, effectively providing a discount.
@@ -455,20 +422,6 @@ The individual menu items within each ordered package, with price snapshots capt
 | `totalPrice` | Decimal | unitPrice × quantity |
 
 > Price and name snapshots are critical. They ensure order history remains accurate even if menu prices or names change after the order was placed.
-
----
-
-### `order_package_item_choices`
-
-The customisation choices made for each item within a package e.g. "Beef +₦500", "Extra Wrap +₦300".
-
-| Field | Type | Description |
-|---|---|---|
-| `id` | UUID | Primary key |
-| `orderPackageItemId` | UUID (FK) | Parent order package item |
-| `optionChoiceId` | UUID (FK) | Selected option choice |
-| `choiceName` | String | **Snapshot** of choice name at order time |
-| `additionalPrice` | Decimal | **Snapshot** of additional price at order time |
 
 ---
 
@@ -653,7 +606,7 @@ GET /api/menu?categoryActive=true&itemAvailable=true
 
 ### Price Snapshotting
 
-Order-related tables (`order_package_items`, `order_package_item_choices`) always store a **snapshot** of the item name and price at the moment the order is placed. This means historical orders remain accurate even if menu prices or item names are updated later.
+Order-related tables (`order_package_items`) always store a **snapshot** of the item name and price at the moment the order is placed. This means historical orders remain accurate even if menu prices or item names are updated later.
 
 ### Soft Deletes
 
