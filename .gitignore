@@ -41,3 +41,17 @@ app-example
 # generated native folders
 /ios
 /android
+
+backend/.env
+backend/node_modules/
+backend/dist/
+
+.DS_Store
+Thumbs.db
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.env
+.env.local
+.env.production
