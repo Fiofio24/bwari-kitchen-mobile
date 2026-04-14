@@ -9,7 +9,8 @@ import {
   Image, 
   Platform, 
   Animated,
-  DeviceEventEmitter 
+  DeviceEventEmitter,
+  LayoutAnimation
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -27,7 +28,6 @@ const CartItemCard = ({ item, isSelected, onToggle, onIncrease, onDecrease, onRe
   const [isExpanded, setIsExpanded] = useState(false);
   const isExpandedRef = useRef(false);
   const expandAnim = useRef(new Animated.Value(0)).current;
-  // PRO UX FIX: Changed NodeJS.Timeout to ReturnType<typeof setTimeout> for strict TypeScript compatibility
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const unavailableSubItems = (item.subItems || []).filter((sub: any) => {
@@ -209,6 +209,7 @@ export default function CartScreen() {
   const { cartItems, increaseQuantity, decreaseQuantity, removeFromCart } = useCart();
   
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [isSummaryExpanded, setIsSummaryExpanded] = useState(false); // PRO UX FIX: State for expanded summary
   const isInitialized = useRef(false);
 
   const [editingItem, setEditingItem] = useState<any>(null);
@@ -237,7 +238,8 @@ export default function CartScreen() {
   const selectedItemsList = cartItems.filter((item: any) => selectedIds.includes(item.id));
   
   const subtotal = selectedItemsList.reduce((sum: number, item: any) => sum + (item.price * (item.quantity || 1)), 0);
-  const total = subtotal + (subtotal > 0 ? 500 : 0);
+  const deliveryFee = subtotal > 0 ? 500 : 0; // Estimated delivery fee
+  const total = subtotal + deliveryFee;
 
   const paddingTop = Platform.OS === 'web' ? 50 : insets.top + 10;
   const paddingBottom = 15;
@@ -253,6 +255,11 @@ export default function CartScreen() {
   const handleEditItem = (item: any) => {
     setEditingItem(item);
     setIsEditModalVisible(true);
+  };
+
+  const toggleSummary = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setIsSummaryExpanded(!isSummaryExpanded);
   };
 
   return (
@@ -296,21 +303,53 @@ export default function CartScreen() {
               ))}
             </View>
           </ScrollView>
+
+          {/* COLLAPSIBLE ORDER SUMMARY */}
           <View style={[styles.stickyFooter, { paddingBottom: insets.bottom + 20, backgroundColor: isDark ? colors.surface : '#FFF', borderTopColor: colors.border }]}>
             <View style={styles.summaryContainer}>
-              <Text style={[styles.summaryTitle, { color: colors.text }]}>Order Summary</Text>
-              <View style={styles.summaryRow}>
-                <Text style={[styles.summaryLabel, { color: colors.textMuted }]}>Order</Text>
-                <Text style={[styles.summaryValue, { color: colors.text }]}>₦{subtotal.toLocaleString()}</Text>
-              </View>
-              <View style={styles.summaryRow}>
-                <Text style={[styles.summaryLabel, { color: colors.textMuted }]}>Delivery Fee</Text>
-                <Text style={[styles.summaryValue, { color: colors.text }]}>₦{(subtotal > 0 ? 500 : 0).toLocaleString()}</Text>
-              </View>
+              
+              <TouchableOpacity 
+                style={styles.summaryHeaderRow} 
+                onPress={toggleSummary} 
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.summaryTitle, { color: colors.text }]}>Order Summary</Text>
+                <Ionicons name={isSummaryExpanded ? "chevron-up" : "chevron-down"} size={22} color={colors.text} />
+              </TouchableOpacity>
+
+              {isSummaryExpanded && (
+                <View style={styles.expandedSummaryContent}>
+                  {selectedItemsList.map((item: any, idx: number) => (
+                    <View key={idx} style={styles.summaryItemRow}>
+                      <Text style={[styles.summaryItemName, { color: colors.textMuted }]} numberOfLines={1}>
+                        {item.quantity || 1}x {item.name}
+                      </Text>
+                      <Text style={[styles.summaryItemPrice, { color: colors.text }]}>
+                        ₦{(item.price * (item.quantity || 1)).toLocaleString()}
+                      </Text>
+                    </View>
+                  ))}
+                  
+                  <View style={[styles.divider, { backgroundColor: colors.border, marginVertical: 12 }]} />
+                  
+                  <View style={styles.summaryRow}>
+                    <Text style={[styles.summaryLabel, { color: colors.textMuted }]}>Subtotal</Text>
+                    <Text style={[styles.summaryValue, { color: colors.text }]}>₦{subtotal.toLocaleString()}</Text>
+                  </View>
+                  <View style={styles.summaryRow}>
+                    <Text style={[styles.summaryLabel, { color: colors.textMuted }]}>Est. Delivery Fee</Text>
+                    <Text style={[styles.summaryValue, { color: colors.text }]}>₦{deliveryFee.toLocaleString()}</Text>
+                  </View>
+                  
+                  <View style={[styles.divider, { backgroundColor: colors.border, marginTop: 12, marginBottom: 15 }]} />
+                </View>
+              )}
+
               <View style={styles.summaryRow}>
                 <Text style={[styles.totalLabel, { color: colors.text }]}>Total Order</Text>
                 <Text style={[styles.totalValue, { color: Colors.primary }]}>₦{total.toLocaleString()}</Text>
               </View>
+
               <TouchableOpacity 
                 style={[styles.checkoutBtn, selectedIds.length === 0 && { opacity: 0.5, backgroundColor: '#999' }]} 
                 disabled={selectedIds.length === 0} 
@@ -344,18 +383,18 @@ export default function CartScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1 
+  container: {
+    flex: 1,
   },
-  topNavContainer: { 
-    backgroundColor: Colors.primary, 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'center', 
-    paddingHorizontal: 20, 
-    borderBottomLeftRadius: 30, 
-    borderBottomRightRadius: 30, 
-    zIndex: 10 
+  topNavContainer: {
+    backgroundColor: Colors.primary,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+    zIndex: 10,
   },
   sideIcon: {
     zIndex: 2,
@@ -369,258 +408,285 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     zIndex: 1,
   },
-  backButton: { 
-    padding: 5, 
-    marginLeft: -5 
+  backButton: {
+    padding: 5,
+    marginLeft: -5,
   },
-  topNavTitle: { 
-    fontSize: 20, 
-    fontWeight: 'bold', 
-    color: '#FFF' 
+  topNavTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#FFF',
   },
-  scrollContent: { 
-    paddingHorizontal: 20, 
-    paddingBottom: 280 
-  }, 
-  sectionHeaderRow: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'center', 
-    marginTop: 25, 
-    marginBottom: 10 
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 280,
   },
-  sectionTitle: { 
-    fontSize: 18, 
-    fontWeight: 'bold', 
-    borderLeftWidth: 4, 
-    borderLeftColor: Colors.primary, 
-    paddingLeft: 10 
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 25,
+    marginBottom: 10,
   },
-  selectAllText: { 
-    color: Colors.primary, 
-    fontWeight: 'bold', 
-    fontSize: 14 
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    borderLeftWidth: 4,
+    borderLeftColor: Colors.primary,
+    paddingLeft: 10,
   },
-  itemsContainer: { 
-    marginTop: 10 
+  selectAllText: {
+    color: Colors.primary,
+    fontWeight: 'bold',
+    fontSize: 14,
   },
-  cartItem: { 
-    flexDirection: 'row', 
-    borderRadius: 20, 
-    marginBottom: 15, 
-    overflow: 'hidden' 
+  itemsContainer: {
+    marginTop: 10,
   },
-  floatingBadge: { 
-    position: 'absolute', 
-    top: 5, 
-    left: 5, 
-    height: 28, 
-    backgroundColor: '#D32F2F', 
-    borderRadius: 14, 
-    zIndex: 50, 
-    overflow: 'hidden' 
+  cartItem: {
+    flexDirection: 'row',
+    borderRadius: 20,
+    marginBottom: 15,
+    overflow: 'hidden',
   },
-  badgeContent: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    height: 28, 
-    width: 210 
+  floatingBadge: {
+    position: 'absolute',
+    top: 5,
+    left: 5,
+    height: 28,
+    backgroundColor: '#D32F2F',
+    borderRadius: 14,
+    zIndex: 50,
+    overflow: 'hidden',
   },
-  badgeIcon: { 
-    width: 28, 
-    textAlign: 'center' 
+  badgeContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 28,
+    width: 210,
   },
-  floatingBadgeText: { 
-    color: '#FFF', 
-    fontSize: 11, 
-    fontWeight: 'bold', 
-    flex: 1 
+  badgeIcon: {
+    width: 28,
+    textAlign: 'center',
   },
-  imageWrapper: { 
-    width: 105, 
-    position: 'relative', 
-    backgroundColor: '#EEE', 
-    borderTopLeftRadius: 20, 
-    borderBottomLeftRadius: 20, 
-    overflow: 'hidden' 
+  floatingBadgeText: {
+    color: '#FFF',
+    fontSize: 11,
+    fontWeight: 'bold',
+    flex: 1,
   },
-  itemImage: { 
-    ...StyleSheet.absoluteFillObject, 
-    width: '100%', 
-    height: '100%' 
+  imageWrapper: {
+    width: 105,
+    position: 'relative',
+    backgroundColor: '#EEE',
+    borderTopLeftRadius: 20,
+    borderBottomLeftRadius: 20,
+    overflow: 'hidden',
   },
-  detailsWrapper: { 
-    flex: 1, 
-    padding: 15, 
-    minHeight: 120 
+  itemImage: {
+    ...StyleSheet.absoluteFillObject,
+    width: '100%',
+    height: '100%',
   },
-  topRow: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'flex-start' 
+  detailsWrapper: {
+    flex: 1,
+    padding: 15,
+    minHeight: 120,
   },
-  selectedOverlay: { 
-    ...StyleSheet.absoluteFillObject, 
-    backgroundColor: 'rgba(229, 57, 53, 0.6)', 
-    justifyContent: 'center', 
-    alignItems: 'center' 
+  topRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
   },
-  itemDetails: { 
-    flex: 1, 
-    marginTop: 5 
+  selectedOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(229, 57, 53, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  itemName: { 
-    fontSize: 16, 
-    fontWeight: 'bold', 
-    flex: 1, 
-    paddingRight: 10 
+  itemDetails: {
+    flex: 1,
+    marginTop: 5,
   },
-  itemContents: { 
-    fontSize: 13, 
-    marginBottom: 4 
+  itemName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    flex: 1,
+    paddingRight: 10,
   },
-  expandedMissingBox: { 
-    marginTop: 6, 
-    marginBottom: 8, 
-    backgroundColor: '#FFEBEE', 
-    paddingVertical: 6, 
-    paddingHorizontal: 10, 
-    borderRadius: 8 
+  itemContents: {
+    fontSize: 13,
+    marginBottom: 4,
   },
-  missingItemText: { 
-    color: '#D32F2F', 
-    fontSize: 12, 
-    fontWeight: 'bold', 
-    textDecorationLine: 'line-through', 
-    marginBottom: 2 
+  expandedMissingBox: {
+    marginTop: 6,
+    marginBottom: 8,
+    backgroundColor: '#FFEBEE',
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 8,
   },
-  priceAndActionRow: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'flex-end', 
-    marginTop: 'auto' 
+  missingItemText: {
+    color: '#D32F2F',
+    fontSize: 12,
+    fontWeight: 'bold',
+    textDecorationLine: 'line-through',
+    marginBottom: 2,
   },
-  itemPrice: { 
-    fontSize: 16, 
-    fontWeight: 'bold' 
+  priceAndActionRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    marginTop: 'auto',
   },
-  rightActions: { 
-    flexDirection: 'row', 
-    alignItems: 'center' 
+  itemPrice: {
+    fontSize: 16,
+    fontWeight: 'bold',
   },
-  editBtn: { 
-    paddingHorizontal: 12, 
-    paddingVertical: 6, 
-    borderRadius: 12, 
-    marginRight: 10 
+  rightActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  editBtnText: { 
-    fontSize: 12, 
-    fontWeight: 'bold' 
+  editBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    marginRight: 10,
   },
-  deleteBtn: { 
-    padding: 5 
+  editBtnText: {
+    fontSize: 12,
+    fontWeight: 'bold',
   },
-  quantityBox: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    borderRadius: 20, 
-    paddingHorizontal: 5, 
-    paddingVertical: 5 
+  deleteBtn: {
+    padding: 5,
   },
-  qtyBtn: { 
-    width: 26, 
-    height: 26, 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    borderRadius: 13, 
-    backgroundColor: 'rgba(150,150,150,0.2)' 
+  quantityBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 20,
+    paddingHorizontal: 5,
+    paddingVertical: 5,
   },
-  qtyText: { 
-    fontSize: 14, 
-    fontWeight: 'bold', 
-    marginHorizontal: 8 
+  qtyBtn: {
+    width: 26,
+    height: 26,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 13,
+    backgroundColor: 'rgba(150,150,150,0.2)',
   },
-  stickyFooter: { 
-    position: 'absolute', 
-    bottom: 0, 
-    left: 0, 
-    right: 0, 
-    borderTopLeftRadius: 30, 
-    borderTopRightRadius: 30, 
-    borderTopWidth: 1 
+  qtyText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginHorizontal: 8,
   },
-  summaryContainer: { 
-    paddingHorizontal: 20, 
-    paddingTop: 20 
+  stickyFooter: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    borderTopWidth: 1,
   },
-  summaryTitle: { 
-    fontSize: 18, 
-    fontWeight: 'bold', 
-    marginBottom: 15 
+  summaryContainer: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
   },
-  summaryRow: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    marginBottom: 12, 
-    alignItems: 'center' 
+  summaryHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 15,
   },
-  summaryLabel: { 
-    fontSize: 15 
+  summaryTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
   },
-  summaryValue: { 
-    fontSize: 15, 
-    fontWeight: '600' 
+  expandedSummaryContent: {
+    overflow: 'hidden',
   },
-  totalLabel: { 
-    fontSize: 16, 
-    fontWeight: 'bold' 
+  summaryItemRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
   },
-  totalValue: { 
-    fontSize: 22, 
-    fontWeight: 'bold' 
+  summaryItemName: {
+    flex: 1,
+    fontSize: 14,
+    paddingRight: 10,
   },
-  checkoutBtn: { 
-    backgroundColor: Colors.primary, 
-    paddingVertical: 18, 
-    borderRadius: 20, 
-    marginTop: 15, 
-    alignItems: 'center' 
+  summaryItemPrice: {
+    fontSize: 14,
+    fontWeight: '500',
   },
-  checkoutText: { 
-    color: '#FFF', 
-    fontSize: 18, 
-    fontWeight: 'bold' 
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+    alignItems: 'center',
   },
-  emptyContainer: { 
-    flex: 1, 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    paddingHorizontal: 40, 
-    marginTop: 40 
+  summaryLabel: {
+    fontSize: 15,
   },
-  emptyTitle: { 
-    fontSize: 24, 
-    fontWeight: 'bold', 
-    marginTop: 20, 
-    marginBottom: 10, 
-    textAlign: 'center' 
+  summaryValue: {
+    fontSize: 15,
+    fontWeight: '600',
   },
-  emptySubtitle: { 
-    fontSize: 16, 
-    textAlign: 'center', 
-    lineHeight: 24, 
-    marginBottom: 35 
+  divider: {
+    height: 1,
+    marginVertical: 10,
   },
-  browseBtn: { 
-    backgroundColor: Colors.primary, 
-    paddingVertical: 16, 
-    paddingHorizontal: 35, 
-    borderRadius: 30 
+  totalLabel: {
+    fontSize: 16,
+    fontWeight: 'bold',
   },
-  browseBtnText: { 
-    color: '#FFF', 
-    fontSize: 18, 
-    fontWeight: 'bold' 
+  totalValue: {
+    fontSize: 22,
+    fontWeight: 'bold',
+  },
+  checkoutBtn: {
+    backgroundColor: Colors.primary,
+    paddingVertical: 18,
+    borderRadius: 20,
+    marginTop: 15,
+    alignItems: 'center',
+  },
+  checkoutText: {
+    color: '#FFF',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+    marginTop: 40,
+  },
+  emptyTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginTop: 20,
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  emptySubtitle: {
+    fontSize: 16,
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 35,
+  },
+  browseBtn: {
+    backgroundColor: Colors.primary,
+    paddingVertical: 16,
+    paddingHorizontal: 35,
+    borderRadius: 30,
+  },
+  browseBtnText: {
+    color: '#FFF',
+    fontSize: 18,
+    fontWeight: 'bold',
   },
 });
