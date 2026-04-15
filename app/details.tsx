@@ -1,4 +1,5 @@
 // Note: This file requires an Expo/React Native environment to compile correctly.
+// Environment re-trigger to bypass temporary compilation permissions issue.
 import React, { useState, useRef } from 'react';
 import { 
   View, 
@@ -42,7 +43,9 @@ export default function DetailsScreen() {
     return (
       <View style={[styles.errorContainer, { backgroundColor: colors.background }]}>
         <Ionicons name="alert-circle-outline" size={60} color={colors.textMuted} />
-        <Text style={[styles.errorText, { color: colors.text }]}>Item not found</Text>
+        <Text style={[styles.errorText, { color: colors.text }]}>
+          Item not found
+        </Text>
         <TouchableOpacity style={[styles.backBtn, { backgroundColor: Colors.primary }]} onPress={() => router.back()}>
           <Text style={styles.backBtnText}>Go Back</Text>
         </TouchableOpacity>
@@ -75,26 +78,40 @@ export default function DetailsScreen() {
     addToCart(newItem);
 
     Animated.sequence([
-      Animated.spring(toastAnim, { toValue: insets.top + 20, useNativeDriver: true, friction: 6 }),
+      Animated.spring(toastAnim, { 
+        toValue: insets.top + 20, 
+        useNativeDriver: true, 
+        friction: 6 
+      }),
       Animated.delay(2000),
-      Animated.timing(toastAnim, { toValue: -100, duration: 300, useNativeDriver: true })
+      Animated.timing(toastAnim, { 
+        toValue: -100, 
+        duration: 300, 
+        useNativeDriver: true 
+      })
     ]).start();
   };
 
-  const paddingTop = Platform.OS === 'web' ? 50 : insets.top + 10;
+  // Mathematical layout positioning for the header and image
+  const safeTop = Platform.OS === 'web' ? 50 : insets.top + 10;
   const paddingBottom = 15;
+  const iconHeight = 26;
+  const headerHeight = safeTop + paddingBottom + iconHeight;
+  
+  // The image starts exactly behind the 30px curve of the border radius
+  const imageMarginTop = headerHeight - 30; 
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar style="light" />
 
       {/* Premium Header */}
-      <View style={[styles.header, { paddingTop, paddingBottom }]}>
+      <View style={[styles.header, { paddingTop: safeTop, paddingBottom }]}>
         <TouchableOpacity onPress={() => router.back()} style={[styles.iconButton, styles.sideIcon]}>
-          <Ionicons name="arrow-back" size={26} color="#FFF" />
+          <Ionicons name="arrow-back" size={iconHeight} color="#FFF" />
         </TouchableOpacity>
         
-        <View style={[styles.centerWrapper, { top: paddingTop, bottom: paddingBottom }]} pointerEvents="none">
+        <View style={[styles.centerWrapper, { top: safeTop, bottom: paddingBottom }]} pointerEvents="none">
           <Text style={styles.headerTitle}>Package Details</Text>
         </View>
 
@@ -103,27 +120,28 @@ export default function DetailsScreen() {
         </View>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 140 }]}>
         
         {/* HERO IMAGE */}
         <ImageBackground 
           source={{ uri: item.image }} 
-          style={styles.heroImage}
+          style={[styles.heroImage, { marginTop: imageMarginTop }]}
         >
-          <LinearGradient 
-            colors={['transparent', isDark ? colors.background : '#FFF']} 
-            style={styles.gradientOverlay} 
-          />
           {!isAvail && (
              <View style={styles.soldOutHeroOverlay}>
                <View style={styles.soldOutBadge}>
-                 <Ionicons name="alert" size={20} color="#FFF" style={{ marginRight: 8, marginTop: 2 }} />
+                 <Ionicons name="alert" size={20} color="#FFF" style={styles.alertIcon} />
                  <Text style={styles.soldOutHeroText}>
                    ! One or more items sold out. Please edit package and add to cart.
                  </Text>
                </View>
              </View>
           )}
+
+          <LinearGradient 
+            colors={['transparent', colors.background]} 
+            style={styles.gradientOverlay} 
+          />
         </ImageBackground>
 
         {/* DETAILS CONTENT */}
@@ -131,27 +149,44 @@ export default function DetailsScreen() {
           <View style={styles.titleRow}>
             <View style={styles.titleLeft}>
               <View style={[styles.categoryPill, { backgroundColor: 'rgba(211, 47, 47, 0.1)' }]}>
-                <Text style={[styles.categoryText, { color: Colors.primary }]}>{item.category}</Text>
+                <Text style={[styles.categoryText, { color: Colors.primary }]}>
+                  {item.category}
+                </Text>
               </View>
-              <Text style={[styles.itemTitle, { color: colors.text }]}>{item.name}</Text>
+              <Text style={[styles.itemTitle, { color: colors.text }]}>
+                {item.name}
+              </Text>
+              <Text style={[styles.mainPrice, { color: Colors.primary }]}>
+                ₦{item.price.toLocaleString()}
+              </Text>
             </View>
             <TouchableOpacity 
               style={[styles.favoriteBtn, { backgroundColor: isDark ? colors.surface : '#FFF' }]} 
               onPress={() => toggleFavorite(item)}
             >
-              <Ionicons name={isFavorite(item.id) ? "heart" : "heart-outline"} size={26} color={isFavorite(item.id) ? Colors.primary : colors.textMuted} />
+              <Ionicons 
+                name={isFavorite(item.id) ? "heart" : "heart-outline"} 
+                size={26} 
+                color={isFavorite(item.id) ? Colors.primary : colors.textMuted} 
+              />
             </TouchableOpacity>
           </View>
 
           <View style={styles.ratingRow}>
             <Ionicons name="star" size={18} color="#FFC107" />
-            <Text style={[styles.ratingText, { color: colors.text }]}>{item.rating || '4.8'}</Text>
-            <Text style={[styles.reviewCount, { color: colors.textMuted }]}>(120+ Reviews)</Text>
+            <Text style={[styles.ratingText, { color: colors.text }]}>
+              {item.rating || '4.8'}
+            </Text>
+            <Text style={[styles.reviewCount, { color: colors.textMuted }]}>
+              (120+ Reviews)
+            </Text>
           </View>
 
           <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Description</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            Description
+          </Text>
           <Text style={[styles.descriptionText, { color: colors.textMuted }]}>
             Enjoy our delicious and freshly prepared {item.name.toLowerCase()}. Crafted with the finest ingredients to give you that authentic Bwari Kitchen taste.
           </Text>
@@ -160,7 +195,9 @@ export default function DetailsScreen() {
             <View style={[styles.comboPackageBox, { backgroundColor: isDark ? colors.surface : '#F9F9F9', borderColor: colors.border }]}>
               
               <View style={styles.comboHeaderRow}>
-                <Text style={[styles.comboTitle, { color: colors.text }]}>Package Includes:</Text>
+                <Text style={[styles.comboTitle, { color: colors.text }]}>
+                  Package Includes:
+                </Text>
                 <TouchableOpacity onPress={() => setIsEditModalVisible(true)} style={styles.editPackageBtn}>
                   <Ionicons name="create-outline" size={16} color={Colors.primary} />
                   <Text style={styles.editPackageText}>Edit</Text>
@@ -173,7 +210,11 @@ export default function DetailsScreen() {
 
                 return (
                   <View key={idx} style={styles.comboItemRow}>
-                    <Ionicons name="checkmark-circle" size={18} color={isSubSoldOut ? colors.textMuted : Colors.primary} />
+                    <Ionicons 
+                      name="checkmark-circle" 
+                      size={18} 
+                      color={isSubSoldOut ? colors.textMuted : Colors.primary} 
+                    />
                     <Text style={[
                       styles.comboItemText, 
                       { color: isSubSoldOut ? colors.textMuted : colors.text },
@@ -181,7 +222,9 @@ export default function DetailsScreen() {
                     ]}>
                       {sub.qty}x {sub.name}
                     </Text>
-                    {isSubSoldOut && <Text style={styles.soldOutSubText}>(Sold Out)</Text>}
+                    {isSubSoldOut && (
+                      <Text style={styles.soldOutSubText}>(Sold Out)</Text>
+                    )}
                   </View>
                 );
               })}
@@ -191,11 +234,11 @@ export default function DetailsScreen() {
         </View>
       </ScrollView>
 
-      {/* BOTTOM ACTION BAR */}
+      {/* BOTTOM ACTION BAR - PRO UX FIX: Assured clearance from the system nav bar */}
       <View style={[
         styles.bottomBar, 
         { 
-          paddingBottom: Math.max(insets.bottom, 20), 
+          paddingBottom: insets.bottom + 20, 
           backgroundColor: isDark ? colors.surface : '#FFF',
           borderTopColor: colors.border 
         }
@@ -208,7 +251,9 @@ export default function DetailsScreen() {
           >
             <Ionicons name="remove" size={20} color={!isAvail ? colors.textMuted : colors.text} />
           </TouchableOpacity>
-          <Text style={[styles.qtyValue, { color: !isAvail ? colors.textMuted : colors.text }]}>{quantity}</Text>
+          <Text style={[styles.qtyValue, { color: !isAvail ? colors.textMuted : colors.text }]}>
+            {quantity}
+          </Text>
           <TouchableOpacity 
             style={[styles.qtyBtn, { backgroundColor: isDark ? colors.background : '#F5F5F5' }]} 
             onPress={() => setQuantity(quantity + 1)}
@@ -232,7 +277,13 @@ export default function DetailsScreen() {
         </TouchableOpacity>
       </View>
 
-      <Animated.View style={[styles.toastContainer, { transform: [{ translateY: toastAnim }], backgroundColor: isDark ? '#333' : '#222' }]}>
+      <Animated.View style={[
+        styles.toastContainer, 
+        { 
+          transform: [{ translateY: toastAnim }], 
+          backgroundColor: isDark ? '#333' : '#222' 
+        }
+      ]}>
         <Ionicons name="checkmark-circle" size={24} color="#4CAF50" />
         <Text style={styles.toastText}>Successfully added to cart!</Text>
       </Animated.View>
@@ -253,6 +304,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: { 
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
     backgroundColor: Colors.primary, 
     flexDirection: 'row', 
     alignItems: 'center', 
@@ -260,7 +315,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20, 
     borderBottomLeftRadius: 30, 
     borderBottomRightRadius: 30, 
-    zIndex: 10, 
+    zIndex: 100, 
   },
   sideIcon: {
     zIndex: 2,
@@ -309,6 +364,9 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 16,
   },
+  scrollContent: {
+    paddingBottom: 140, 
+  },
   heroImage: {
     width: '100%',
     height: 300,
@@ -334,6 +392,10 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     borderRadius: 15,
     marginHorizontal: 30,
+  },
+  alertIcon: {
+    marginRight: 8,
+    marginTop: 2,
   },
   soldOutHeroText: {
     color: '#FFF',
@@ -372,6 +434,11 @@ const styles = StyleSheet.create({
     fontSize: 26,
     fontWeight: '900',
     lineHeight: 34,
+  },
+  mainPrice: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    marginTop: 5,
   },
   favoriteBtn: {
     width: 50,

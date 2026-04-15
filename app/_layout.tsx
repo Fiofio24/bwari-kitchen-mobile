@@ -8,6 +8,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { CartProvider } from '../context/CartContext';
 import { FavoriteProvider } from '../context/FavoriteContext';
 import { UserProvider } from '../context/UserContext'; 
+import { NotificationProvider } from '../context/NotificationContext'; // <-- PRO UX FIX: Global Notifications
 
 // This prevents the splash screen from hiding automatically 
 // until we are sure the app is ready.
@@ -75,7 +76,9 @@ export default function RootLayout() {
         <UserProvider>
           <CartProvider> 
             <FavoriteProvider>
-              <RootContent />
+              <NotificationProvider>
+                <RootContent />
+              </NotificationProvider>
             </FavoriteProvider>
           </CartProvider>
         </UserProvider>

@@ -23,6 +23,9 @@ import SearchBar from './SearchBar';
 import CategoryFilter from './CategoryFilter';
 import GridDishCard from './GridDishCard';
 
+// PRO DRY FIX: We dynamically import the exact styles from the Menu page!
+import { menuStyles } from '../app/(tabs)/menu';
+
 const { height, width } = Dimensions.get('window');
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 
@@ -231,16 +234,17 @@ export default function QuickEditPackage({ visible, onClose, initialItem }: Quic
 
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
             
-            <View style={styles.searchContainer}>
+            <View style={menuStyles.searchContainer}>
               <SearchBar onSubmit={(text) => setSearchQuery(text)} />
             </View>
             
-            <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>CURRENT ITEMS</Text>
+            <Text style={[menuStyles.sectionTitle, { color: colors.textMuted }]}>CURRENT ITEMS</Text>
             
+            {/* PRO DRY FIX: Using menuStyles perfectly ensures consistency! */}
             {isPackageEmpty ? (
               <View 
                 style={[
-                  styles.emptyBox, 
+                  menuStyles.emptyBox, 
                   { 
                     borderColor: '#FFCCCC', 
                     backgroundColor: isDark ? 'rgba(255,0,0,0.05)' : '#FFF0F0' 
@@ -248,24 +252,24 @@ export default function QuickEditPackage({ visible, onClose, initialItem }: Quic
                 ]}
               >
                 <Ionicons name="cube-outline" size={40} color={Colors.primary} />
-                <Text style={[styles.emptyBoxTitle, { color: Colors.primary }]}>Your package is empty</Text>
-                <Text style={[styles.emptyBoxSub, { color: Colors.primary }]}>Click on any food item to add to package</Text>
+                <Text style={[menuStyles.emptyBoxTitle, { color: Colors.primary }]}>Your package is empty</Text>
+                <Text style={[menuStyles.emptyBoxSub, { color: Colors.primary }]}>Click on any food item to add to package</Text>
               </View>
             ) : (
-              <View style={[styles.filledBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                <View style={styles.filledBoxHeader}>
-                  <Text style={[styles.filledBoxTitle, { color: colors.text }]}>Items</Text>
+              <View style={[menuStyles.filledBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                <View style={menuStyles.filledBoxHeader}>
+                  <Text style={[menuStyles.filledBoxTitle, { color: colors.text }]}>Items</Text>
                   <TouchableOpacity onPress={clearAll}>
-                    <Text style={styles.deleteAllText}>Delete All</Text>
+                    <Text style={menuStyles.deleteAllText}>Delete All</Text>
                   </TouchableOpacity>
                 </View>
                 
                 {selectedItemsList.map(item => (
-                  <View key={item.id} style={styles.receiptRow}>
-                    <View style={styles.receiptInfo}>
+                  <View key={item.id} style={menuStyles.receiptRow}>
+                    <View style={menuStyles.receiptInfo}>
                       <Text 
                         style={[
-                          styles.receiptName, 
+                          menuStyles.receiptName, 
                           { color: !item.isAvailable ? '#D32F2F' : colors.text },
                           !item.isAvailable && { textDecorationLine: 'line-through' }
                         ]} 
@@ -274,44 +278,44 @@ export default function QuickEditPackage({ visible, onClose, initialItem }: Quic
                         {item.name}
                       </Text>
                       {!item.isAvailable && (
-                        <Text style={styles.soldOutWarningText}>Sold Out - Remove</Text>
+                        <Text style={menuStyles.soldOutWarningText}>Sold Out - Remove</Text>
                       )}
                     </View>
                     
                     <View style={[
-                      styles.quantityBox, 
+                      menuStyles.quantityBox, 
                       { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F5F5F5' }
                     ]}>
-                      <TouchableOpacity onPress={() => decreaseQuantity(item.id)} style={styles.qtyBtn}>
+                      <TouchableOpacity onPress={() => decreaseQuantity(item.id)} style={menuStyles.qtyBtn}>
                         <Ionicons name="remove" size={16} color={colors.text} />
                       </TouchableOpacity>
-                      <Text style={[styles.qtyText, { color: colors.text }]}>
+                      <Text style={[menuStyles.qtyText, { color: colors.text }]}>
                         {customPlate[item.id]}
                       </Text>
-                      <TouchableOpacity onPress={() => increaseQuantity(item.id)} style={styles.qtyBtn}>
+                      <TouchableOpacity onPress={() => increaseQuantity(item.id)} style={menuStyles.qtyBtn}>
                         <Ionicons name="add" size={16} color={colors.text} />
                       </TouchableOpacity>
                     </View>
 
-                    <Text style={[styles.receiptPrice, { color: colors.text }]}>
+                    <Text style={[menuStyles.receiptPrice, { color: colors.text }]}>
                       ₦{(item.price * (customPlate[item.id] || 0)).toLocaleString()}
                     </Text>
-                    <TouchableOpacity onPress={() => removeItem(item.id)} style={styles.trashBtn}>
+                    <TouchableOpacity onPress={() => removeItem(item.id)} style={menuStyles.trashBtn}>
                       <Ionicons name="trash-outline" size={18} color="#FF4444" />
                     </TouchableOpacity>
                   </View>
                 ))}
                 
-                <View style={[styles.totalRow, { borderTopColor: colors.border }]}>
-                  <Text style={[styles.totalText, { color: colors.text }]}>Total</Text>
-                  <Text style={[styles.totalPrice, { color: colors.text }]}>₦{plateTotal.toLocaleString()}</Text>
+                <View style={[menuStyles.totalRow, { borderTopColor: colors.border }]}>
+                  <Text style={[menuStyles.totalText, { color: colors.text }]}>Total</Text>
+                  <Text style={[menuStyles.totalPrice, { color: colors.text }]}>₦{plateTotal.toLocaleString()}</Text>
                 </View>
               </View>
             )}
 
-            <Text style={[styles.sectionTitle, { color: colors.textMuted, marginTop: 15 }]}>ADD FROM MENU</Text>
+            <Text style={[menuStyles.sectionTitle, { color: colors.textMuted, marginTop: 15 }]}>ADD FROM MENU</Text>
             
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={menuStyles.categoryScroll}>
               {MENU_CATEGORIES.map(category => (
                 <CategoryFilter 
                   key={category} 
@@ -322,7 +326,7 @@ export default function QuickEditPackage({ visible, onClose, initialItem }: Quic
               ))}
             </ScrollView>
 
-            <View style={[styles.gridContainer, { gap: GRID_GAP }]}>
+            <View style={[menuStyles.gridContainer, { gap: GRID_GAP }]}>
               {filteredItems.map(item => {
                 const isSelected = (customPlate[item.id] || 0) > 0;
                 return (
@@ -368,6 +372,7 @@ export default function QuickEditPackage({ visible, onClose, initialItem }: Quic
   );
 }
 
+// PRO DRY FIX: Component drastically shrinks since the bulk UI styling is dynamically imported from menuStyles!
 const styles = StyleSheet.create({
   overlay: {
     zIndex: 1000,
@@ -418,141 +423,6 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingBottom: 40,
-  },
-  searchContainer: { 
-    marginBottom: 20, 
-    paddingHorizontal: 20 
-  },
-  sectionTitle: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    letterSpacing: 1,
-    marginBottom: 10,
-    marginTop: 5,
-    paddingHorizontal: 20,
-  },
-  emptyBox: { 
-    borderWidth: 1.5, 
-    borderStyle: 'dashed', 
-    borderRadius: 20, 
-    padding: 25, 
-    alignItems: 'center', 
-    marginBottom: 25, 
-    marginHorizontal: 20 
-  },
-  emptyBoxTitle: { 
-    fontSize: 16, 
-    fontWeight: 'bold', 
-    marginTop: 10, 
-    marginBottom: 5 
-  },
-  emptyBoxSub: { 
-    fontSize: 12, 
-    textAlign: 'center', 
-    opacity: 0.8 
-  },
-  filledBox: { 
-    borderWidth: 1, 
-    borderRadius: 20, 
-    padding: 15, 
-    marginBottom: 25, 
-    marginHorizontal: 20, 
-    elevation: 2, 
-    shadowColor: '#000', 
-    shadowOffset: { 
-      width: 0, 
-      height: 2 
-    }, 
-    shadowOpacity: 0.1, 
-    shadowRadius: 4 
-  },
-  filledBoxHeader: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    marginBottom: 15 
-  },
-  filledBoxTitle: { 
-    fontSize: 16, 
-    fontWeight: 'bold' 
-  },
-  deleteAllText: { 
-    color: Colors.primary, 
-    fontWeight: 'bold', 
-    fontSize: 14 
-  },
-  receiptRow: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    marginBottom: 15 
-  },
-  receiptInfo: {
-    flex: 1,
-    paddingRight: 5,
-  },
-  receiptName: { 
-    fontSize: 14, 
-    fontWeight: '500' 
-  },
-  soldOutWarningText: {
-    fontSize: 11,
-    fontWeight: 'bold',
-    color: '#D32F2F',
-    marginTop: 2,
-  },
-  quantityBox: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    borderRadius: 20, 
-    paddingHorizontal: 5, 
-    paddingVertical: 5, 
-    marginHorizontal: 10 
-  },
-  qtyBtn: { 
-    width: 26, 
-    height: 26, 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    borderRadius: 13, 
-  },
-  qtyText: { 
-    fontSize: 14, 
-    fontWeight: 'bold', 
-    marginHorizontal: 8 
-  },
-  receiptPrice: { 
-    fontSize: 14, 
-    fontWeight: 'bold', 
-    minWidth: 50, 
-    textAlign: 'right' 
-  },
-  trashBtn: { 
-    marginLeft: 10, 
-    padding: 5 
-  },
-  totalRow: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    borderTopWidth: 1, 
-    paddingTop: 15, 
-    marginTop: 5 
-  },
-  totalText: { 
-    fontSize: 16, 
-    fontWeight: 'bold' 
-  },
-  totalPrice: { 
-    fontSize: 16, 
-    fontWeight: 'bold' 
-  },
-  categoryScroll: { 
-    marginBottom: 20, 
-    paddingLeft: 20 
-  },
-  gridContainer: { 
-    flexDirection: 'row', 
-    flexWrap: 'wrap', 
-    marginBottom: 10, 
-    paddingHorizontal: 20 
   },
   footer: {
     paddingHorizontal: 20,

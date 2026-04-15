@@ -152,100 +152,104 @@ export default function MenuScreen() {
   const paddingBottom = 15;
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[menuStyles.container, { backgroundColor: colors.background }]}>
       <StatusBar style="light" />
 
-      <View style={[styles.header, { paddingTop, paddingBottom }]}>
-        <TouchableOpacity onPress={() => setIsSidebarOpen(true)} style={[styles.iconButton, styles.sideIcon]}>
+      <View style={[menuStyles.header, { paddingTop, paddingBottom }]}>
+        <TouchableOpacity onPress={() => setIsSidebarOpen(true)} style={[menuStyles.iconButton, menuStyles.sideIcon]}>
           <Ionicons name="menu-outline" size={28} color="#FFF" />
         </TouchableOpacity>
         
-        <View style={[styles.centerWrapper, { top: paddingTop, bottom: paddingBottom }]} pointerEvents="none">
-          <Text style={styles.headerTitle}>Menu</Text>
+        <View style={[menuStyles.centerWrapper, { top: paddingTop, bottom: paddingBottom }]} pointerEvents="none">
+          <Text style={menuStyles.headerTitle}>Menu</Text>
         </View>
 
-        <View style={[styles.headerRight, styles.sideIcon]}>
-          <TouchableOpacity style={styles.iconButton}>
+        <View style={[menuStyles.headerRight, menuStyles.sideIcon]}>
+          <TouchableOpacity style={menuStyles.iconButton}>
             <Ionicons name="help-circle-outline" size={26} color="#FFF" />
           </TouchableOpacity>
           <CartBadgeIcon onPress={() => router.push('/cart')} />
         </View>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomNavHeight + 90 }]}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[menuStyles.scrollContent, { paddingBottom: bottomNavHeight + 90 }]}>
         
-        <View style={styles.titlesWrapper}>
-          <Text style={[styles.specialsText, { color: colors.textMuted }]}>Specials</Text>
-          <Text style={[styles.mainTitle, { color: Colors.primary }]}>Made Just For You</Text>
+        <View style={menuStyles.titlesWrapper}>
+          <Text style={[menuStyles.specialsText, { color: colors.textMuted }]}>Specials</Text>
+          <Text style={[menuStyles.mainTitle, { color: Colors.primary }]}>Made Just For You</Text>
         </View>
 
-        <View style={styles.searchContainer}>
+        <View style={menuStyles.searchContainer}>
            <SearchBar onPress={() => router.push('/search')} />
         </View>
 
         {isPackageEmpty ? (
-          <View style={[styles.emptyBox, { borderColor: isDark ? colors.border : '#FFCCCC', backgroundColor: isDark ? 'rgba(255,0,0,0.05)' : '#FFF0F0' }]}>
+          <View style={[menuStyles.emptyBox, { borderColor: isDark ? colors.border : '#FFCCCC', backgroundColor: isDark ? 'rgba(255,0,0,0.05)' : '#FFF0F0' }]}>
             <Ionicons name="cube-outline" size={50} color={Colors.primary} style={{ opacity: 0.5 }} />
-            <Text style={[styles.emptyBoxTitle, { color: Colors.primary }]}>Your package is empty</Text>
-            <Text style={[styles.emptyBoxSub, { color: Colors.primary }]}>Click on any food item to add to package</Text>
+            <Text style={[menuStyles.emptyBoxTitle, { color: Colors.primary }]}>Your package is empty</Text>
+            <Text style={[menuStyles.emptyBoxSub, { color: Colors.primary }]}>Click on any food item to add to package</Text>
           </View>
         ) : (
-          <View style={[styles.filledBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <View style={styles.filledBoxHeader}>
-              <Text style={[styles.filledBoxTitle, { color: colors.text }]}>Items</Text>
+          <View style={[menuStyles.filledBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View style={menuStyles.filledBoxHeader}>
+              <Text style={[menuStyles.filledBoxTitle, { color: colors.text }]}>Items</Text>
               <TouchableOpacity onPress={clearAll}>
-                <Text style={styles.deleteAllText}>Delete All</Text>
+                <Text style={menuStyles.deleteAllText}>Delete All</Text>
               </TouchableOpacity>
             </View>
             
             {selectedItemsList.map(item => (
-              <View key={item.id} style={styles.receiptRow}>
-                <Text style={[styles.receiptName, { color: colors.text }]} numberOfLines={1}>{item.name}</Text>
+              <View key={item.id} style={menuStyles.receiptRow}>
+                <View style={menuStyles.receiptInfo}>
+                  <Text style={[menuStyles.receiptName, { color: colors.text }]} numberOfLines={1}>
+                    {item.name}
+                  </Text>
+                </View>
                 
                 <View style={[
-                  styles.quantityBox, 
+                  menuStyles.quantityBox, 
                   { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F5F5F5' }
                 ]}>
-                  <TouchableOpacity onPress={() => decreaseQuantity(item.id)} style={styles.qtyBtn}>
+                  <TouchableOpacity onPress={() => decreaseQuantity(item.id)} style={menuStyles.qtyBtn}>
                     <Ionicons name="remove" size={16} color={colors.text} />
                   </TouchableOpacity>
-                  <Text style={[styles.qtyText, { color: colors.text }]}>
+                  <Text style={[menuStyles.qtyText, { color: colors.text }]}>
                     {customPlate[item.id]}
                   </Text>
-                  <TouchableOpacity onPress={() => increaseQuantity(item.id)} style={styles.qtyBtn}>
+                  <TouchableOpacity onPress={() => increaseQuantity(item.id)} style={menuStyles.qtyBtn}>
                     <Ionicons name="add" size={16} color={colors.text} />
                   </TouchableOpacity>
                 </View>
 
-                <Text style={[styles.receiptPrice, { color: colors.text }]}>
+                <Text style={[menuStyles.receiptPrice, { color: colors.text }]}>
                   ₦{(item.price * (customPlate[item.id] || 0)).toLocaleString()}
                 </Text>
-                <TouchableOpacity onPress={() => removeItem(item.id)} style={styles.trashBtn}>
+                <TouchableOpacity onPress={() => removeItem(item.id)} style={menuStyles.trashBtn}>
                   <Ionicons name="trash-outline" size={18} color="#FF4444" />
                 </TouchableOpacity>
               </View>
             ))}
             
-            <View style={[styles.totalRow, { borderTopColor: colors.border }]}>
-              <Text style={[styles.totalText, { color: colors.text }]}>Total</Text>
-              <Text style={[styles.totalPrice, { color: colors.text }]}>₦{plateTotal.toLocaleString()}</Text>
+            <View style={[menuStyles.totalRow, { borderTopColor: colors.border }]}>
+              <Text style={[menuStyles.totalText, { color: colors.text }]}>Total</Text>
+              <Text style={[menuStyles.totalPrice, { color: colors.text }]}>₦{plateTotal.toLocaleString()}</Text>
             </View>
           </View>
         )}
 
-        <View style={styles.menuTitleRow}>
-          <View style={styles.redLine} />
-          <Text style={[styles.menuTitle, { color: colors.text }]}>Menu</Text>
+        <View style={menuStyles.menuTitleRow}>
+          <View style={menuStyles.redLine} />
+          <Text style={[menuStyles.menuTitle, { color: colors.text }]}>Menu</Text>
           <Ionicons name="chevron-forward" size={18} color={colors.text} />
         </View>
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={menuStyles.categoryScroll}>
           {MENU_CATEGORIES.map(category => (
             <CategoryFilter key={category} category={category} isActive={activeCategory === category} onPress={() => setActiveCategory(category)} />
           ))}
         </ScrollView>
 
-        <View style={[styles.gridContainer, { gap: GRID_GAP }]}>
+        <View style={[menuStyles.gridContainer, { gap: GRID_GAP }]}>
           {filteredItems.map(item => {
             const isSelected = (customPlate[item.id] || 0) > 0;
             return (
@@ -256,7 +260,8 @@ export default function MenuScreen() {
                   image={item.image}
                   isSelected={isSelected}
                   isAvailable={item.isAvailable !== false} 
-                  onPress={() => toggleItem(item.id)}
+                  // PRO UX FIX: Sold out items are totally unselectable!
+                  onPress={item.isAvailable !== false ? () => toggleItem(item.id) : undefined}
                   isCompact={true}
                 />
               </View>
@@ -268,15 +273,15 @@ export default function MenuScreen() {
 
       </ScrollView>
 
-      <Animated.View pointerEvents={isPackageEmpty ? 'none' : 'auto'} style={[styles.floatingButtonContainer, { bottom: bottomNavHeight + 15, opacity: floatingButtonAnim, transform: [{ translateY: floatingButtonAnim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }] }]}>
-        <TouchableOpacity style={[styles.mainAddButton, { backgroundColor: Colors.primary }]} activeOpacity={0.8} onPress={handleAddCustomPlateToCart}>
-          <Text style={[styles.mainAddButtonText, { color: '#FFF' }]}>{`Add To Cart - ₦${plateTotal.toLocaleString()}`}</Text>
+      <Animated.View pointerEvents={isPackageEmpty ? 'none' : 'auto'} style={[menuStyles.floatingButtonContainer, { bottom: bottomNavHeight + 15, opacity: floatingButtonAnim, transform: [{ translateY: floatingButtonAnim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }] }]}>
+        <TouchableOpacity style={[menuStyles.mainAddButton, { backgroundColor: Colors.primary }]} activeOpacity={0.8} onPress={handleAddCustomPlateToCart}>
+          <Text style={[menuStyles.mainAddButtonText, { color: '#FFF' }]}>{`Add To Cart - ₦${plateTotal.toLocaleString()}`}</Text>
         </TouchableOpacity>
       </Animated.View>
 
-      <Animated.View style={[styles.toastContainer, { transform: [{ translateY: toastAnim }], backgroundColor: isDark ? '#333' : '#222' }]}>
+      <Animated.View style={[menuStyles.toastContainer, { transform: [{ translateY: toastAnim }], backgroundColor: isDark ? '#333' : '#222' }]}>
         <Ionicons name="checkmark-circle" size={24} color="#4CAF50" />
-        <Text style={styles.toastText}>Custom Package added to cart!</Text>
+        <Text style={menuStyles.toastText}>Custom Package added to cart!</Text>
       </Animated.View>
 
       <Sidebar visible={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
@@ -285,7 +290,8 @@ export default function MenuScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+// PRO DRY FIX: Exported globally so QuickEditPackage can mirror these exact styles without duplicated code!
+export const menuStyles = StyleSheet.create({
   container: { 
     flex: 1 
   },
@@ -325,6 +331,7 @@ const styles = StyleSheet.create({
     alignItems: 'center' 
   },
   scrollContent: { 
+    // Kept standard
   },
   titlesWrapper: { 
     marginTop: 20, 
@@ -343,6 +350,14 @@ const styles = StyleSheet.create({
   searchContainer: { 
     marginBottom: 20, 
     paddingHorizontal: 20 
+  },
+  sectionTitle: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    letterSpacing: 1,
+    marginBottom: 10,
+    marginTop: 5,
+    paddingHorizontal: 20,
   },
   emptyBox: { 
     borderWidth: 2, 
@@ -372,7 +387,10 @@ const styles = StyleSheet.create({
     marginHorizontal: 20, 
     elevation: 2, 
     shadowColor: '#000', 
-    shadowOffset: { width: 0, height: 2 }, 
+    shadowOffset: { 
+      width: 0, 
+      height: 2 
+    }, 
     shadowOpacity: 0.1, 
     shadowRadius: 4 
   },
@@ -395,10 +413,19 @@ const styles = StyleSheet.create({
     alignItems: 'center', 
     marginBottom: 15 
   },
+  receiptInfo: {
+    flex: 1,
+    paddingRight: 5,
+  },
   receiptName: { 
-    flex: 1, 
     fontSize: 14, 
     fontWeight: '500' 
+  },
+  soldOutWarningText: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: '#D32F2F',
+    marginTop: 2,
   },
   quantityBox: { 
     flexDirection: 'row', 
@@ -486,7 +513,10 @@ const styles = StyleSheet.create({
     alignItems: 'center', 
     elevation: 6, 
     shadowColor: '#000', 
-    shadowOffset: { width: 0, height: 4 }, 
+    shadowOffset: { 
+      width: 0, 
+      height: 4 
+    }, 
     shadowOpacity: 0.3, 
     shadowRadius: 6 
   },
@@ -505,7 +535,10 @@ const styles = StyleSheet.create({
     borderRadius: 30, 
     elevation: 10, 
     shadowColor: '#000', 
-    shadowOffset: { width: 0, height: 5 }, 
+    shadowOffset: { 
+      width: 0, 
+      height: 5 
+    }, 
     shadowOpacity: 0.3, 
     shadowRadius: 8, 
     zIndex: 100, 

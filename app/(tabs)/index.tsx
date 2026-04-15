@@ -1,4 +1,5 @@
 // Note: This file requires an Expo/React Native environment and local components to compile correctly in preview.
+// Retrying build to resolve environment permissions issue.
 import React, { useState, useRef, useCallback } from 'react';
 import { 
   View, 
@@ -27,7 +28,7 @@ import { useCart } from '../../context/CartContext';
 import { useFavorites } from '../../context/FavoriteContext'; 
 import { COMBO_PACKAGES, CATEGORIES, MENU_ITEMS } from '../../constants/menuData'; 
 
-const USER_PROFILE = { name: "User", notificationCount: 1 };
+const USER_PROFILE = { name: "User" };
 
 export default function HomeScreen() {
   const router = useRouter(); 
@@ -127,7 +128,9 @@ export default function HomeScreen() {
 
         <View style={styles.headerRow}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Others</Text>
-          <TouchableOpacity><Text style={styles.seeMoreText}>See More</Text></TouchableOpacity>
+          <TouchableOpacity>
+            <Text style={styles.seeMoreText}>See More</Text>
+          </TouchableOpacity>
         </View>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scrollContainer}>
@@ -156,7 +159,6 @@ export default function HomeScreen() {
                     isFavorite={isFavorite(dish.id)} 
                     isAvailable={isAvail} 
                     onToggleFavorite={() => toggleFavorite(dish)} 
-                    // PRO UX FIX: Tapping the card routes to the Details page
                     onPress={() => router.push({ pathname: '/details', params: { id: dish.id } })}
                     onAdd={() => handleAddToCart(dish)} 
                   />
@@ -164,15 +166,17 @@ export default function HomeScreen() {
               );
             })
           ) : (
-            <Text style={[styles.emptyText, { color: colors.textMuted }]}>This category is not available in kitchen.</Text>
+            <Text style={[styles.emptyText, { color: colors.textMuted }]}>
+              This category is not available in kitchen.
+            </Text>
           )}
         </View>
       </ScrollView>
 
+      {/* PRO UX FIX: Removed hardcoded notification prop, TopNav now automatically pulls dynamic context! */}
       <TopNav 
         address={currentAddress} 
         onAddressChange={setCurrentAddress} 
-        notificationCount={USER_PROFILE.notificationCount} 
         onOpenMenu={() => setIsSidebarOpen(true)} 
         isScrolled={isScrolled} 
       />
@@ -248,7 +252,10 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     elevation: 10,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 5 },
+    shadowOffset: { 
+      width: 0, 
+      height: 5 
+    },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     zIndex: 100,

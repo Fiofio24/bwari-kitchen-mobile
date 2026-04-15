@@ -1,4 +1,5 @@
 // Note: This file requires an Expo/React Native environment to compile correctly.
+// Retrying build to resolve environment permissions issue.
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { 
   View, 
@@ -209,7 +210,7 @@ export default function CartScreen() {
   const { cartItems, increaseQuantity, decreaseQuantity, removeFromCart } = useCart();
   
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [isSummaryExpanded, setIsSummaryExpanded] = useState(false); // PRO UX FIX: State for expanded summary
+  const [isSummaryExpanded, setIsSummaryExpanded] = useState(false); 
   const isInitialized = useRef(false);
 
   const [editingItem, setEditingItem] = useState<any>(null);
@@ -237,9 +238,8 @@ export default function CartScreen() {
   const isAllSelected = availableCartItems.length > 0 && selectedIds.length === availableCartItems.length;
   const selectedItemsList = cartItems.filter((item: any) => selectedIds.includes(item.id));
   
-  const subtotal = selectedItemsList.reduce((sum: number, item: any) => sum + (item.price * (item.quantity || 1)), 0);
-  const deliveryFee = subtotal > 0 ? 500 : 0; // Estimated delivery fee
-  const total = subtotal + deliveryFee;
+  // Cart total is strictly the subtotal. Delivery fees are applied at Checkout based on the user's choice.
+  const total = selectedItemsList.reduce((sum: number, item: any) => sum + (item.price * (item.quantity || 1)), 0);
 
   const paddingTop = Platform.OS === 'web' ? 50 : insets.top + 10;
   const paddingBottom = 15;
@@ -320,28 +320,22 @@ export default function CartScreen() {
               {isSummaryExpanded && (
                 <View style={styles.expandedSummaryContent}>
                   {selectedItemsList.map((item: any, idx: number) => (
-                    <View key={idx} style={styles.summaryItemRow}>
-                      <Text style={[styles.summaryItemName, { color: colors.textMuted }]} numberOfLines={1}>
-                        {item.quantity || 1}x {item.name}
-                      </Text>
+                    <View key={item.id} style={styles.summaryItemRow}>
+                      <View style={styles.summaryItemLeft}>
+                        <Text style={[styles.snText, { color: Colors.primary }]}>
+                          {(idx + 1).toString().padStart(2, '0')}.
+                        </Text>
+                        <Text style={[styles.summaryItemName, { color: colors.textMuted }]} numberOfLines={1}>
+                          {item.quantity || 1}x {item.name}
+                        </Text>
+                      </View>
                       <Text style={[styles.summaryItemPrice, { color: colors.text }]}>
                         ₦{(item.price * (item.quantity || 1)).toLocaleString()}
                       </Text>
                     </View>
                   ))}
                   
-                  <View style={[styles.divider, { backgroundColor: colors.border, marginVertical: 12 }]} />
-                  
-                  <View style={styles.summaryRow}>
-                    <Text style={[styles.summaryLabel, { color: colors.textMuted }]}>Subtotal</Text>
-                    <Text style={[styles.summaryValue, { color: colors.text }]}>₦{subtotal.toLocaleString()}</Text>
-                  </View>
-                  <View style={styles.summaryRow}>
-                    <Text style={[styles.summaryLabel, { color: colors.textMuted }]}>Est. Delivery Fee</Text>
-                    <Text style={[styles.summaryValue, { color: colors.text }]}>₦{deliveryFee.toLocaleString()}</Text>
-                  </View>
-                  
-                  <View style={[styles.divider, { backgroundColor: colors.border, marginTop: 12, marginBottom: 15 }]} />
+                  <View style={[styles.divider, { backgroundColor: colors.border, marginTop: 4, marginBottom: 15 }]} />
                 </View>
               )}
 
@@ -610,7 +604,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 10,
+  },
+  summaryItemLeft: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  snText: {
+    fontSize: 13,
+    fontWeight: '900',
+    marginRight: 8,
   },
   summaryItemName: {
     flex: 1,
@@ -619,20 +623,13 @@ const styles = StyleSheet.create({
   },
   summaryItemPrice: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   summaryRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 12,
     alignItems: 'center',
-  },
-  summaryLabel: {
-    fontSize: 15,
-  },
-  summaryValue: {
-    fontSize: 15,
-    fontWeight: '600',
   },
   divider: {
     height: 1,

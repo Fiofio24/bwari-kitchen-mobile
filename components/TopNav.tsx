@@ -1,6 +1,20 @@
 // Note: This file requires an Expo/React Native environment to compile correctly.
+// Minor update to trigger a fresh build and resolve environment process errors.
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Platform, Modal, TextInput, TouchableWithoutFeedback, Animated, Easing, Keyboard, ScrollView } from 'react-native';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  TouchableOpacity, 
+  Platform, 
+  Modal, 
+  TextInput, 
+  TouchableWithoutFeedback, 
+  Animated, 
+  Easing, 
+  Keyboard, 
+  ScrollView 
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/Colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context'; 
@@ -8,6 +22,7 @@ import { useTheme } from '../context/ThemeContext';
 import { BlurView } from 'expo-blur';
 import { useRouter } from 'expo-router';
 import CartBadgeIcon from './CartBadgeIcon';
+import { useNotifications } from '../context/NotificationContext'; // <-- Connect Context
 
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 
@@ -22,21 +37,23 @@ const SAVED_ADDRESSES = [
 interface TopNavProps { 
   address: string; 
   onAddressChange: (newAddress: string) => void; 
-  notificationCount: number; 
   onOpenMenu: () => void; 
   isScrolled: boolean; 
 }
 
-export default function TopNav({ address, onAddressChange, notificationCount, onOpenMenu, isScrolled }: TopNavProps) {
+export default function TopNav({ address, onAddressChange, onOpenMenu, isScrolled }: TopNavProps) {
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useTheme();
   const router = useRouter(); 
+  const { unreadCount } = useNotifications(); // <-- Pull dynamic badge count!
   
   const [isVisible, setIsVisible] = useState(false);
   const [inputText, setInputText] = useState(''); 
   const [displayAddress, setDisplayAddress] = useState(address);
 
-  useEffect(() => { setDisplayAddress(address); }, [address]);
+  useEffect(() => { 
+    setDisplayAddress(address); 
+  }, [address]);
 
   const fadeAnim = useRef(new Animated.Value(0)).current; 
   const slideAnim = useRef(new Animated.Value(500)).current; 
@@ -45,8 +62,16 @@ export default function TopNav({ address, onAddressChange, notificationCount, on
   const paddingBottom = 15;
 
   const shadowStyle = isScrolled 
-    ? Platform.select({ ios: { shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 5, shadowOffset: { width: 0, height: 4 } }, android: { elevation: 8 }, web: { boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.3)' } as any })
-    : Platform.select({ ios: { shadowOpacity: 0 }, android: { elevation: 0 }, web: { boxShadow: 'none' } as any });
+    ? Platform.select({ 
+        ios: { shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 5, shadowOffset: { width: 0, height: 4 } }, 
+        android: { elevation: 8 }, 
+        web: { boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.3)' } as any 
+      })
+    : Platform.select({ 
+        ios: { shadowOpacity: 0 }, 
+        android: { elevation: 0 }, 
+        web: { boxShadow: 'none' } as any 
+      });
 
   const openModal = () => {
     setIsVisible(true);
@@ -72,11 +97,26 @@ export default function TopNav({ address, onAddressChange, notificationCount, on
     });
   };
 
-  const handleSaveCustomAddress = () => { if (inputText.trim().length > 0) { setDisplayAddress(inputText); closeModal(() => onAddressChange(inputText)); } };
-  const handleSelectAddress = (fullAddressText: string) => { setDisplayAddress(fullAddressText); closeModal(() => onAddressChange(fullAddressText)); };
-  const handleManageAddresses = () => { closeModal(() => { console.log("Routing to /profile/addresses"); }); };
+  const handleSaveCustomAddress = () => { 
+    if (inputText.trim().length > 0) { 
+      setDisplayAddress(inputText); 
+      closeModal(() => onAddressChange(inputText)); 
+    } 
+  };
+  
+  const handleSelectAddress = (fullAddressText: string) => { 
+    setDisplayAddress(fullAddressText); 
+    closeModal(() => onAddressChange(fullAddressText)); 
+  };
+  
+  const handleManageAddresses = () => { 
+    closeModal(() => { console.log('Routing to /profile/addresses'); }); 
+  };
 
-  const filteredAddresses = SAVED_ADDRESSES.filter(item => item.title.toLowerCase().includes(inputText.toLowerCase()) || item.address.toLowerCase().includes(inputText.toLowerCase()));
+  const filteredAddresses = SAVED_ADDRESSES.filter(item => 
+    item.title.toLowerCase().includes(inputText.toLowerCase()) || 
+    item.address.toLowerCase().includes(inputText.toLowerCase())
+  );
 
   return (
     <>
@@ -99,16 +139,26 @@ export default function TopNav({ address, onAddressChange, notificationCount, on
 
         <View style={[styles.headerIcons, styles.sideIcon]}>
           <CartBadgeIcon onPress={() => { closeModal(); router.push('/cart'); }} />
-          <View style={[styles.iconWrapper, styles.bellIcon]}>
+          
+          {/* PRO UX FIX: Made the bell a TouchableOpacity and connected the unreadCount badge! */}
+          <TouchableOpacity 
+            style={[styles.iconWrapper, styles.bellIcon]}
+            activeOpacity={0.7}
+            onPress={() => { closeModal(); router.push('/notifications'); }}
+          >
             <Ionicons name="notifications-outline" size={26} color="#FFF" />
-            {notificationCount > 0 && (
+            {unreadCount > 0 && (
               <View style={styles.badge}>
-                <Text style={styles.badgeText}>{notificationCount}</Text>
+                <Text style={styles.badgeText}>
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </Text>
               </View>
             )}
-          </View>
+          </TouchableOpacity>
         </View>
-        <View style={styles.dividerWrapper}><View style={styles.divider} /></View>
+        <View style={styles.dividerWrapper}>
+          <View style={styles.divider} />
+        </View>
       </View>
 
       <Modal animationType="none" transparent={true} visible={isVisible} onRequestClose={() => closeModal()} statusBarTranslucent={true}>
@@ -128,18 +178,29 @@ export default function TopNav({ address, onAddressChange, notificationCount, on
           <Animated.View style={[styles.modalSheet, { backgroundColor: colors.background, paddingBottom: insets.bottom + 20, transform: [{ translateY: slideAnim }] }]}>
             <View style={styles.modalHeader}>
               <Text style={[styles.modalTitle, { color: colors.text }]}>Quick Settings</Text>
-              <TouchableOpacity onPress={() => closeModal()}><Ionicons name="close-circle" size={28} color={colors.textMuted} /></TouchableOpacity>
+              <TouchableOpacity onPress={() => closeModal()}>
+                <Ionicons name="close-circle" size={28} color={colors.textMuted} />
+              </TouchableOpacity>
             </View>
             <View style={[styles.inputContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <Ionicons name="search" size={20} color={colors.textMuted} />
-              <TextInput style={[styles.input, { color: colors.text }]} value={inputText} onChangeText={setInputText} placeholder="Search saved addresses..." placeholderTextColor={colors.textMuted} autoCorrect={false} />
+              <TextInput 
+                style={[styles.input, { color: colors.text }]} 
+                value={inputText} 
+                onChangeText={setInputText} 
+                placeholder="Search saved addresses..." 
+                placeholderTextColor={colors.textMuted} 
+                autoCorrect={false} 
+              />
               {inputText.length > 0 && filteredAddresses.length === 0 && (
-                <TouchableOpacity onPress={handleSaveCustomAddress} style={styles.miniSaveBtn}><Text style={styles.miniSaveText}>Save Custom</Text></TouchableOpacity>
+                <TouchableOpacity onPress={handleSaveCustomAddress} style={styles.miniSaveBtn}>
+                  <Text style={styles.miniSaveText}>Save Custom</Text>
+                </TouchableOpacity>
               )}
             </View>
             <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 250 }}>
               {inputText.length === 0 && (
-                <TouchableOpacity style={styles.currentLocationBtn} onPress={() => handleSelectAddress("Current GPS Location")} activeOpacity={0.7}>
+                <TouchableOpacity style={styles.currentLocationBtn} onPress={() => handleSelectAddress('Current GPS Location')} activeOpacity={0.7}>
                   <Ionicons name="locate" size={22} color={Colors.primary} />
                   <Text style={[styles.currentLocationText, { color: Colors.primary }]}>Use Current Location</Text>
                 </TouchableOpacity>
@@ -147,14 +208,20 @@ export default function TopNav({ address, onAddressChange, notificationCount, on
               {inputText.length === 0 && <Text style={[styles.savedTitle, { color: colors.textMuted }]}>Saved Addresses</Text>}
               {filteredAddresses.map((item) => (
                 <TouchableOpacity key={item.id} style={[styles.quickAddressRow, { borderBottomColor: colors.border }]} onPress={() => handleSelectAddress(`${item.title}: ${item.address}`)}>
-                  <View style={[styles.iconBox, { backgroundColor: 'rgba(150,150,150,0.1)' }]}><Ionicons name={item.icon as any} size={20} color={colors.textMuted} /></View>
+                  <View style={[styles.iconBox, { backgroundColor: 'rgba(150,150,150,0.1)' }]}>
+                    <Ionicons name={item.icon as any} size={20} color={colors.textMuted} />
+                  </View>
                   <View style={styles.addressTextStack}>
                     <Text style={[styles.quickAddressTitle, { color: colors.text }]}>{item.title}</Text>
                     <Text style={[styles.quickAddressDetail, { color: colors.textMuted }]}>{item.address}</Text>
                   </View>
                 </TouchableOpacity>
               ))}
-              {inputText.length > 0 && filteredAddresses.length === 0 && <Text style={[styles.noResultsText, { color: colors.textMuted }]}>No saved addresses match &quot;{inputText}&quot;.</Text>}
+              {inputText.length > 0 && filteredAddresses.length === 0 && (
+                <Text style={[styles.noResultsText, { color: colors.textMuted }]}>
+                  No saved addresses match &quot;{inputText}&quot;.
+                </Text>
+              )}
             </ScrollView>
             <TouchableOpacity style={[styles.manageBtn, { borderTopColor: colors.border }]} onPress={handleManageAddresses} activeOpacity={0.7}>
               <Text style={[styles.manageBtnText, { color: colors.text }]}>Manage Addresses</Text>
@@ -168,19 +235,19 @@ export default function TopNav({ address, onAddressChange, notificationCount, on
 }
 
 const styles = StyleSheet.create({
-  topNavContainer: { 
-    backgroundColor: Colors.primary, 
-    position: 'absolute', 
-    top: 0, 
-    left: 0, 
-    right: 0, 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'center', 
-    paddingHorizontal: 20, 
-    borderBottomLeftRadius: 30, 
-    borderBottomRightRadius: 30, 
-    zIndex: 10, 
+  topNavContainer: {
+    backgroundColor: Colors.primary,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+    zIndex: 10,
   },
   sideIcon: {
     zIndex: 2,
@@ -194,204 +261,207 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     zIndex: 1,
   },
-  locationContainer: { 
-    alignItems: 'center', 
-    maxWidth: '65%', 
+  locationContainer: {
+    alignItems: 'center',
+    maxWidth: '65%',
   },
-  deliverToText: { 
-    color: '#FFCCCC', 
-    fontSize: 12, 
+  deliverToText: {
+    color: '#FFCCCC',
+    fontSize: 12,
     textAlign: 'center',
   },
-  addressRow: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    marginTop: 2, 
-    maxWidth: '100%', 
+  addressRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 2,
+    maxWidth: '100%',
   },
-  addressText: { 
-    color: '#FFFFFF', 
-    fontWeight: 'bold', 
-    fontSize: 14, 
-    marginLeft: 4, 
-    flexShrink: 1, 
+  addressText: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    fontSize: 14,
+    marginLeft: 4,
+    flexShrink: 1,
   },
-  chevronIcon: { 
-    marginLeft: 4, 
+  chevronIcon: {
+    marginLeft: 4,
   },
-  headerIcons: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
+  headerIcons: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  iconWrapper: { 
-    position: 'relative', 
+  iconWrapper: {
+    position: 'relative',
     padding: 4,
   },
-  bellIcon: { 
-    marginLeft: 10, 
+  bellIcon: {
+    marginLeft: 10,
   },
-  badge: { 
-    position: 'absolute', 
-    top: -2, 
-    right: -2, 
-    backgroundColor: '#FFFFFF', 
-    borderRadius: 10, 
-    minWidth: 16, 
-    height: 16, 
-    justifyContent: 'center', 
-    alignItems: 'center', 
+  badge: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    minWidth: 16,
+    height: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  badgeText: { 
-    color: Colors.primary, 
-    fontSize: 10, 
-    fontWeight: 'bold', 
+  badgeText: {
+    color: Colors.primary,
+    fontSize: 10,
+    fontWeight: 'bold',
   },
-  dividerWrapper: { 
-    position: 'absolute', 
-    bottom: 0, 
-    left: 0, 
-    right: 0, 
-    alignItems: 'center', 
-    zIndex: 100, 
+  dividerWrapper: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    zIndex: 100,
   },
-  divider: { 
-    width: '90%', 
-    height: 1, 
-    backgroundColor: 'rgba(255, 255, 255, 0.25)', 
+  divider: {
+    width: '90%',
+    height: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
   },
-  floatingAddressBox: { 
-    position: 'absolute', 
-    alignSelf: 'center', 
-    width: '85%', 
-    padding: 15, 
-    borderRadius: 20, 
-    borderWidth: 1, 
-    alignItems: 'center', 
-    shadowColor: '#000', 
-    shadowOffset: { width: 0, height: 4 }, 
-    shadowOpacity: 0.15, 
-    shadowRadius: 10, 
-    elevation: 10, 
-    zIndex: 50 
+  floatingAddressBox: {
+    position: 'absolute',
+    alignSelf: 'center',
+    width: '85%',
+    padding: 15,
+    borderRadius: 20,
+    borderWidth: 1,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { 
+      width: 0, 
+      height: 4 
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 10,
+    zIndex: 50,
   },
-  floatingLabel: { 
-    fontSize: 11, 
-    fontWeight: 'bold', 
-    marginBottom: 6, 
-    textTransform: 'uppercase', 
-    letterSpacing: 1 
+  floatingLabel: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    marginBottom: 6,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
-  floatingAddressRow: { 
-    flexDirection: 'row', 
-    alignItems: 'center' 
+  floatingAddressRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  floatingAddressText: { 
-    fontSize: 16, 
-    fontWeight: 'bold', 
-    marginLeft: 6 
+  floatingAddressText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginLeft: 6,
   },
-  modalContentWrapper: { 
-    flex: 1, 
-    justifyContent: 'flex-end', 
+  modalContentWrapper: {
+    flex: 1,
+    justifyContent: 'flex-end',
   },
-  modalSheet: { 
-    borderTopLeftRadius: 30, 
-    borderTopRightRadius: 30, 
-    paddingHorizontal: 20, 
-    paddingTop: 25, 
+  modalSheet: {
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    paddingHorizontal: 20,
+    paddingTop: 25,
   },
-  modalHeader: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'center', 
-    marginBottom: 20, 
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
   },
-  modalTitle: { 
-    fontSize: 20, 
-    fontWeight: 'bold', 
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
   },
-  inputContainer: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    borderWidth: 1, 
-    borderRadius: 15, 
-    paddingHorizontal: 15, 
-    height: 50, 
-    marginBottom: 15, 
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: 15,
+    paddingHorizontal: 15,
+    height: 50,
+    marginBottom: 15,
   },
-  input: { 
-    flex: 1, 
-    marginLeft: 10, 
-    fontSize: 16, 
+  input: {
+    flex: 1,
+    marginLeft: 10,
+    fontSize: 16,
   },
-  miniSaveBtn: { 
-    backgroundColor: Colors.primary, 
-    paddingHorizontal: 15, 
-    paddingVertical: 6, 
-    borderRadius: 10, 
+  miniSaveBtn: {
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 15,
+    paddingVertical: 6,
+    borderRadius: 10,
   },
-  miniSaveText: { 
-    color: '#FFF', 
-    fontWeight: 'bold', 
-    fontSize: 12 
+  miniSaveText: {
+    color: '#FFF',
+    fontWeight: 'bold',
+    fontSize: 12,
   },
-  currentLocationBtn: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    paddingVertical: 10, 
-    marginBottom: 20, 
+  currentLocationBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    marginBottom: 20,
   },
-  currentLocationText: { 
-    fontSize: 16, 
-    fontWeight: 'bold', 
-    marginLeft: 10, 
+  currentLocationText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginLeft: 10,
   },
-  savedTitle: { 
-    fontSize: 14, 
-    fontWeight: 'bold', 
-    marginBottom: 5, 
-    letterSpacing: 0.5 
+  savedTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginBottom: 5,
+    letterSpacing: 0.5,
   },
-  quickAddressRow: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    paddingVertical: 12, 
-    borderBottomWidth: 1, 
+  quickAddressRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
   },
-  iconBox: { 
-    width: 36, 
-    height: 36, 
-    borderRadius: 18, 
-    justifyContent: 'center', 
-    alignItems: 'center', 
+  iconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  addressTextStack: { 
-    marginLeft: 15, 
-    justifyContent: 'center' 
+  addressTextStack: {
+    marginLeft: 15,
+    justifyContent: 'center',
   },
-  quickAddressTitle: { 
-    fontSize: 16, 
-    fontWeight: 'bold' 
+  quickAddressTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
   },
-  quickAddressDetail: { 
-    fontSize: 12, 
-    marginTop: 2 
+  quickAddressDetail: {
+    fontSize: 12,
+    marginTop: 2,
   },
-  noResultsText: { 
-    textAlign: 'center', 
-    marginTop: 20, 
-    fontStyle: 'italic' 
+  noResultsText: {
+    textAlign: 'center',
+    marginTop: 20,
+    fontStyle: 'italic',
   },
-  manageBtn: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'center', 
-    paddingVertical: 20, 
-    marginTop: 5, 
-    borderTopWidth: 1, 
+  manageBtn: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 20,
+    marginTop: 5,
+    borderTopWidth: 1,
   },
-  manageBtnText: { 
-    fontSize: 16, 
-    fontWeight: 'bold' 
+  manageBtnText: {
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
