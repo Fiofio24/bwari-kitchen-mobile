@@ -1,5 +1,6 @@
 // Note: This file requires an Expo/React Native environment to compile correctly.
-import React, { useState, useEffect, useRef } from 'react';
+// Triggering a fresh build to resolve module resolution errors.
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   View, 
   Text, 
@@ -13,7 +14,7 @@ import {
   ActivityIndicator,
   Animated
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context'; 
 import { useTheme } from '../context/ThemeContext';
@@ -23,12 +24,13 @@ import { useCart } from '../context/CartContext';
 
 export default function CheckoutScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams(); 
   const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const { cartItems, clearCart } = useCart();
   
   // States
-  const [deliveryMethod, setDeliveryMethod] = useState<'delivery' | 'pickup'>('delivery'); // PRO UX FIX: Delivery vs Pickup Toggle
+  const [deliveryMethod, setDeliveryMethod] = useState<'delivery' | 'pickup'>('delivery'); 
   const [selectedPayment, setSelectedPayment] = useState('card');
   const [isProcessing, setIsProcessing] = useState(false);
   const [showVerification, setShowVerification] = useState(false);
@@ -46,10 +48,20 @@ export default function CheckoutScreen() {
   const paddingBottom = 15;
   const bottomNavHeight = 70 + Math.max(insets.bottom, 15);
 
-  // Order Calculations
-  const subtotal = cartItems.reduce((sum, item) => sum + (item.price * (item.quantity || 1)), 0);
+  const checkoutItems = useMemo(() => {
+    if (params.selectedItems) {
+      try {
+        const selectedIds = JSON.parse(params.selectedItems as string);
+        return cartItems.filter(item => selectedIds.includes(item.id));
+      } catch (e) {
+        console.warn("Failed to parse selected items", e);
+      }
+    }
+    return cartItems;
+  }, [params.selectedItems, cartItems]);
+
+  const subtotal = checkoutItems.reduce((sum, item) => sum + (item.price * (item.quantity || 1)), 0);
   
-  // PRO UX FIX: Delivery fee drops to 0 if they choose Pick Up
   const deliveryFee = (deliveryMethod === 'delivery' && subtotal > 0) ? 500 : 0;
   const total = subtotal + deliveryFee; 
 
@@ -98,7 +110,6 @@ export default function CheckoutScreen() {
 
   const handleVerifyPayment = () => {
     setVerificationStatus('verifying');
-    // Simulated Backend Check
     setTimeout(() => {
       setVerificationStatus('success');
       setTimeout(() => {
@@ -311,20 +322,42 @@ export default function CheckoutScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* SUMMARY */}
+        {/* ORDER SUMMARY */}
+        <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>ORDER SUMMARY</Text>
         <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <View style={styles.summaryRow}>
-            <Text style={[styles.summaryLabel, { color: colors.textMuted }]}>Subtotal</Text>
-            <Text style={[styles.summaryValue, { color: colors.text }]}>₦{subtotal.toLocaleString()}</Text>
-          </View>
-          <View style={styles.summaryRow}>
-            <Text style={[styles.summaryLabel, { color: colors.textMuted }]}>Delivery Fee</Text>
-            <Text style={[styles.summaryValue, { color: colors.text }]}>₦{deliveryFee.toLocaleString()}</Text>
-          </View>
-          <View style={[styles.divider, { backgroundColor: colors.border }]} />
-          <View style={styles.summaryRow}>
-            <Text style={[styles.totalLabel, { color: colors.text }]}>Total</Text>
-            <Text style={[styles.totalValue, { color: Colors.primary }]}>₦{total.toLocaleString()}</Text>
+          
+          {/* Display Items List */}
+          {checkoutItems.map((item: any, idx: number) => (
+            <View key={item.id} style={[styles.summaryItemRow, { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
+              <View style={styles.summaryItemLeft}>
+                <Text style={[styles.snText, { color: Colors.primary }]}>
+                  {item.quantity || 1}x
+                </Text>
+                <Text style={[styles.summaryItemName, { color: colors.text }]} numberOfLines={2}>
+                  {item.name}
+                </Text>
+              </View>
+              <Text style={[styles.summaryItemPrice, { color: colors.text }]}>
+                ₦{(item.price * (item.quantity || 1)).toLocaleString()}
+              </Text>
+            </View>
+          ))}
+
+          {/* Subtotal & Delivery Breakdown */}
+          <View style={styles.totalsContainer}>
+            <View style={styles.summaryRow}>
+              <Text style={[styles.summaryLabel, { color: colors.textMuted }]}>Subtotal</Text>
+              <Text style={[styles.summaryValue, { color: colors.text }]}>₦{subtotal.toLocaleString()}</Text>
+            </View>
+            <View style={styles.summaryRow}>
+              <Text style={[styles.summaryLabel, { color: colors.textMuted }]}>Delivery Fee</Text>
+              <Text style={[styles.summaryValue, { color: colors.text }]}>₦{deliveryFee.toLocaleString()}</Text>
+            </View>
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+            <View style={styles.summaryRow}>
+              <Text style={[styles.totalLabel, { color: colors.text }]}>Total</Text>
+              <Text style={[styles.totalValue, { color: Colors.primary }]}>₦{total.toLocaleString()}</Text>
+            </View>
           </View>
         </View>
       </ScrollView>
@@ -523,6 +556,35 @@ const styles = StyleSheet.create({
   },
   paymentSub: {
     fontSize: 12,
+  },
+  summaryItemRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  summaryItemLeft: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  snText: {
+    fontSize: 14,
+    fontWeight: '900',
+    marginRight: 8,
+  },
+  summaryItemName: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '500',
+    paddingRight: 10,
+  },
+  summaryItemPrice: {
+    fontSize: 15,
+    fontWeight: 'bold',
+  },
+  totalsContainer: {
+    marginTop: 15,
   },
   summaryRow: {
     flexDirection: 'row',

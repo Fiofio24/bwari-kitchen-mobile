@@ -49,16 +49,130 @@ export default function NotificationsScreen() {
 
   const getIconConfig = (type: string) => {
     switch(type) {
-      case 'order': return { name: 'fast-food', color: '#FF9800', bg: 'rgba(255, 152, 0, 0.15)' };
-      case 'promo': return { name: 'gift', color: Colors.primary, bg: 'rgba(211, 47, 47, 0.15)' };
-      case 'system': return { name: 'shield-checkmark', color: '#4CAF50', bg: 'rgba(76, 175, 80, 0.15)' };
-      default: return { name: 'notifications', color: colors.textMuted, bg: isDark ? 'rgba(255,255,255,0.05)' : '#F5F5F5' };
+      case 'order': 
+        return { 
+          name: 'fast-food', 
+          color: '#FF9800', 
+          bg: 'rgba(255, 152, 0, 0.15)' 
+        };
+      case 'promo': 
+        return { 
+          name: 'gift', 
+          color: Colors.primary, 
+          bg: 'rgba(211, 47, 47, 0.15)' 
+        };
+      case 'system': 
+        return { 
+          name: 'shield-checkmark', 
+          color: '#4CAF50', 
+          bg: 'rgba(76, 175, 80, 0.15)' 
+        };
+      default: 
+        return { 
+          name: 'notifications', 
+          color: colors.textMuted, 
+          bg: isDark ? 'rgba(255,255,255,0.05)' : '#F5F5F5' 
+        };
     }
   };
 
   const filteredNotifications = notifications.filter(n => 
     activeTab === 'all' ? true : n.type === activeTab
   );
+
+  // PRO UX FIX: Smart Date Grouping Logic
+  const recentNotifications = filteredNotifications.filter(n => 
+    n.time.includes('min') || n.time.includes('hour') || n.time.includes('Today')
+  );
+  
+  const earlierNotifications = filteredNotifications.filter(n => 
+    !(n.time.includes('min') || n.time.includes('hour') || n.time.includes('Today'))
+  );
+
+  // Render function for individual cards to keep the JSX clean
+  const renderNotificationCard = (notification: AppNotification) => {
+    const config = getIconConfig(notification.type);
+    
+    return (
+      <TouchableOpacity 
+        key={notification.id} 
+        style={[
+          styles.notificationCard, 
+          { 
+            backgroundColor: colors.surface, 
+            borderColor: colors.border,
+          },
+          !notification.read && { 
+            backgroundColor: isDark ? 'rgba(211,47,47,0.05)' : '#FFF5F5',
+            borderColor: isDark ? 'rgba(211,47,47,0.3)' : '#FFD6D6'
+          }
+        ]}
+        activeOpacity={0.9}
+        onPress={() => handleNotificationPress(notification)}
+      >
+        <View style={styles.cardTopRow}>
+          <View style={[styles.iconBox, { backgroundColor: config.bg }]}>
+            <Ionicons name={config.name as any} size={22} color={config.color} />
+          </View>
+          
+          <View style={styles.contentBox}>
+            <View style={styles.titleRow}>
+              <Text 
+                style={[
+                  styles.notificationTitle, 
+                  { color: colors.text },
+                  !notification.read && { fontWeight: '900' }
+                ]}
+                numberOfLines={1}
+              >
+                {notification.title}
+              </Text>
+              <Text style={[styles.timeText, { color: colors.textMuted }]}>
+                {notification.time}
+              </Text>
+            </View>
+            
+            <Text 
+              style={[
+                styles.messageText, 
+                { color: notification.read ? colors.textMuted : colors.text }
+              ]}
+            >
+              {notification.message}
+            </Text>
+          </View>
+
+          {!notification.read && (
+            <View style={[styles.unreadDot, { backgroundColor: Colors.primary }]} />
+          )}
+        </View>
+
+        {notification.image && (
+          <View style={styles.richMediaContainer}>
+            <Image 
+              source={{ uri: notification.image }} 
+              style={styles.richMediaImage} 
+            />
+          </View>
+        )}
+
+        {notification.action && (
+          <View style={[styles.actionRow, { borderTopColor: colors.border }]}>
+            <TouchableOpacity 
+              style={[styles.actionButton, { backgroundColor: 'rgba(211, 47, 47, 0.1)' }]}
+              onPress={() => handleActionPress(notification)}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.actionButtonText, { color: Colors.primary }]}>
+                {notification.action.label}
+              </Text>
+              <Ionicons name="arrow-forward" size={16} color={Colors.primary} style={{ marginLeft: 5 }} />
+            </TouchableOpacity>
+          </View>
+        )}
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -137,93 +251,28 @@ export default function NotificationsScreen() {
         </ScrollView>
       </View>
 
-      {/* RICH NOTIFICATIONS LIST */}
+      {/* RICH NOTIFICATIONS LIST WITH DATE GROUPING */}
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 20 }]}>
         {filteredNotifications.length > 0 ? (
-          filteredNotifications.map(notification => {
-            const config = getIconConfig(notification.type);
-            
-            return (
-              <TouchableOpacity 
-                key={notification.id} 
-                style={[
-                  styles.notificationCard, 
-                  { 
-                    backgroundColor: colors.surface, 
-                    borderColor: colors.border,
-                  },
-                  !notification.read && { 
-                    backgroundColor: isDark ? 'rgba(211,47,47,0.05)' : '#FFF5F5',
-                    borderColor: isDark ? 'rgba(211,47,47,0.3)' : '#FFD6D6'
-                  }
-                ]}
-                activeOpacity={0.9}
-                onPress={() => handleNotificationPress(notification)}
-              >
-                <View style={styles.cardTopRow}>
-                  <View style={[styles.iconBox, { backgroundColor: config.bg }]}>
-                    <Ionicons name={config.name as any} size={22} color={config.color} />
-                  </View>
-                  
-                  <View style={styles.contentBox}>
-                    <View style={styles.titleRow}>
-                      <Text 
-                        style={[
-                          styles.notificationTitle, 
-                          { color: colors.text },
-                          !notification.read && { fontWeight: '900' }
-                        ]}
-                        numberOfLines={1}
-                      >
-                        {notification.title}
-                      </Text>
-                      <Text style={[styles.timeText, { color: colors.textMuted }]}>
-                        {notification.time}
-                      </Text>
-                    </View>
-                    
-                    <Text 
-                      style={[
-                        styles.messageText, 
-                        { color: notification.read ? colors.textMuted : colors.text }
-                      ]}
-                    >
-                      {notification.message}
-                    </Text>
-                  </View>
+          <>
+            {recentNotifications.length > 0 && (
+              <View style={styles.dateGroupWrapper}>
+                <Text style={[styles.dateGroupHeader, { color: colors.textMuted }]}>
+                  NEW
+                </Text>
+                {recentNotifications.map(renderNotificationCard)}
+              </View>
+            )}
 
-                  {!notification.read && (
-                    <View style={[styles.unreadDot, { backgroundColor: Colors.primary }]} />
-                  )}
-                </View>
-
-                {notification.image && (
-                  <View style={styles.richMediaContainer}>
-                    <Image 
-                      source={{ uri: notification.image }} 
-                      style={styles.richMediaImage} 
-                    />
-                  </View>
-                )}
-
-                {notification.action && (
-                  <View style={[styles.actionRow, { borderTopColor: colors.border }]}>
-                    <TouchableOpacity 
-                      style={[styles.actionButton, { backgroundColor: 'rgba(211, 47, 47, 0.1)' }]}
-                      onPress={() => handleActionPress(notification)}
-                      activeOpacity={0.8}
-                    >
-                      <Text style={[styles.actionButtonText, { color: Colors.primary }]}>
-                        {notification.action.label}
-                      </Text>
-                      <Ionicons name="arrow-forward" size={16} color={Colors.primary} style={{ marginLeft: 5 }} />
-                    </TouchableOpacity>
-                  </View>
-                )}
-
-              </TouchableOpacity>
-            );
-          })
+            {earlierNotifications.length > 0 && (
+              <View style={styles.dateGroupWrapper}>
+                <Text style={[styles.dateGroupHeader, { color: colors.textMuted }]}>
+                  EARLIER
+                </Text>
+                {earlierNotifications.map(renderNotificationCard)}
+              </View>
+            )}
+          </>
         ) : (
           <View style={styles.emptyContainer}>
             <View style={[styles.emptyIconCircle, { backgroundColor: isDark ? colors.surface : '#F5F5F5' }]}>
@@ -317,6 +366,17 @@ const styles = StyleSheet.create({
   scrollContent: { 
     paddingTop: 10,
     paddingHorizontal: 20,
+  },
+  dateGroupWrapper: {
+    marginBottom: 10,
+  },
+  dateGroupHeader: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    letterSpacing: 1,
+    marginBottom: 15,
+    marginTop: 5,
+    marginLeft: 5,
   },
   notificationCard: {
     padding: 15,

@@ -1,4 +1,5 @@
 // Note: This file requires an Expo/React Native environment to compile correctly.
+// Triggering a fresh build to resolve module resolution errors.
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   View, 
@@ -52,7 +53,6 @@ export default function GridDishCard({
   const isExpandedRef = useRef(false);
   
   const expandAnim = useRef(new Animated.Value(0)).current;
-  // PRO UX FIX: Changed NodeJS.Timeout to ReturnType<typeof setTimeout> for strict TypeScript compatibility
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -106,36 +106,49 @@ export default function GridDishCard({
     outputRange: [28, 140] 
   });
 
-  const shadowStyle = isDark 
-    ? Platform.select({ 
+  // PRO UX FIX: Sold-out items have ZERO shadow to sink them into the background!
+  const shadowStyle = !isAvailable 
+    ? Platform.select({
         ios: { 
           shadowOpacity: 0 
-        }, 
+        },
         android: { 
           elevation: 0 
-        }, 
+        },
         web: { 
           boxShadow: 'none' 
         } as any 
       })
-    : Platform.select({
-        ios: { 
-          shadowColor: '#000', 
-          shadowOpacity: 0.1, 
-          shadowRadius: 5, 
-          shadowOffset: { 
-            width: 0, 
-            height: 2 
-          } 
-        },
-        android: { 
-          elevation: 4, 
-          shadowColor: '#000' 
-        },
-        web: { 
-          boxShadow: '0px 2px 5px rgba(0, 0, 0, 0.1)' 
-        } as any 
-      });
+    : isDark 
+      ? Platform.select({ 
+          ios: { 
+            shadowOpacity: 0 
+          }, 
+          android: { 
+            elevation: 0 
+          }, 
+          web: { 
+            boxShadow: 'none' 
+          } as any 
+        })
+      : Platform.select({
+          ios: { 
+            shadowColor: '#000', 
+            shadowOpacity: 0.1, 
+            shadowRadius: 5, 
+            shadowOffset: { 
+              width: 0, 
+              height: 2 
+            } 
+          },
+          android: { 
+            elevation: 4, 
+            shadowColor: '#000' 
+          },
+          web: { 
+            boxShadow: '0px 2px 5px rgba(0, 0, 0, 0.1)' 
+          } as any 
+        });
 
   const handleCardPress = () => {
     if (onPress) {

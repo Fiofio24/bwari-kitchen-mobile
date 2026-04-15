@@ -1,5 +1,4 @@
 // Note: This file requires an Expo/React Native environment to compile correctly.
-// Retrying build to resolve environment permissions issue.
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { 
   View, 
@@ -100,9 +99,23 @@ const CartItemCard = ({ item, isSelected, onToggle, onIncrease, onDecrease, onRe
   });
 
   return (
-    <View style={[
+    <Animated.View style={[
       styles.cartItem, 
-      { backgroundColor: isLocked ? (isDark ? '#1A1A1A' : '#E0E0E0') : colors.surface }
+      { backgroundColor: isLocked ? (isDark ? '#1A1A1A' : '#E0E0E0') : colors.surface },
+      // PRO UX FIX: Changed from red shadow to a standard professional dark shadow
+      isSelected && !isLocked ? {
+        borderColor: 'transparent',
+        shadowColor: '#000',
+        shadowOffset: { 
+          width: 0, 
+          height: 4 
+        },
+        shadowOpacity: 0.15,
+        shadowRadius: 8,
+        elevation: 6,
+      } : {
+        borderColor: 'transparent',
+      }
     ]}>
       
       {isLocked && (
@@ -123,7 +136,7 @@ const CartItemCard = ({ item, isSelected, onToggle, onIncrease, onDecrease, onRe
         style={styles.imageWrapper}
       >
         <Image 
-          source={{ uri: item.image }} 
+          source={typeof item.image === 'string' ? { uri: item.image } : item.image} 
           style={[styles.itemImage, isLocked && { opacity: 0.3 }]} 
           resizeMode="cover" 
         />
@@ -199,7 +212,7 @@ const CartItemCard = ({ item, isSelected, onToggle, onIncrease, onDecrease, onRe
           </View>
         </View>
       </View>
-    </View>
+    </Animated.View>
   );
 };
 
@@ -238,7 +251,6 @@ export default function CartScreen() {
   const isAllSelected = availableCartItems.length > 0 && selectedIds.length === availableCartItems.length;
   const selectedItemsList = cartItems.filter((item: any) => selectedIds.includes(item.id));
   
-  // Cart total is strictly the subtotal. Delivery fees are applied at Checkout based on the user's choice.
   const total = selectedItemsList.reduce((sum: number, item: any) => sum + (item.price * (item.quantity || 1)), 0);
 
   const paddingTop = Platform.OS === 'web' ? 50 : insets.top + 10;
@@ -248,7 +260,10 @@ export default function CartScreen() {
 
   const proceedToCheckout = () => {
     if (selectedIds.length > 0) {
-      router.push('/checkout');
+      router.push({
+        pathname: '/checkout',
+        params: { selectedItems: JSON.stringify(selectedIds) }
+      });
     }
   };
 
@@ -304,7 +319,6 @@ export default function CartScreen() {
             </View>
           </ScrollView>
 
-          {/* COLLAPSIBLE ORDER SUMMARY */}
           <View style={[styles.stickyFooter, { paddingBottom: insets.bottom + 20, backgroundColor: isDark ? colors.surface : '#FFF', borderTopColor: colors.border }]}>
             <View style={styles.summaryContainer}>
               
@@ -370,6 +384,7 @@ export default function CartScreen() {
         visible={isEditModalVisible} 
         onClose={() => setIsEditModalVisible(false)} 
         initialItem={editingItem} 
+        routeOnSave={false} 
       />
 
     </View>
@@ -441,7 +456,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     borderRadius: 20,
     marginBottom: 15,
-    overflow: 'hidden',
+    borderWidth: 1,
   },
   floatingBadge: {
     position: 'absolute',

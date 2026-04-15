@@ -7,10 +7,10 @@ export const MENU_ITEMS = [
   { id: 'm1', name: 'Party Jollof', price: 2000, category: 'Rice', image: 'https://images.unsplash.com/photo-1512058564366-18510be2db19?q=80&w=800&auto=format&fit=crop' },
   { id: 'm2', name: 'Fried Rice', price: 2000, category: 'Rice', image: 'https://images.unsplash.com/photo-1603133872878-684f208fb84b?q=80&w=800&auto=format&fit=crop' },
   { id: 'm3', name: 'White Rice', price: 1500, category: 'Rice', image: 'https://images.unsplash.com/photo-1551183053-bf91a1d81141?q=80&w=800&auto=format&fit=crop' },
-  { id: 'm4', name: 'Chicken', price: 3000, category: 'Protein', image: 'https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?q=80&w=800&auto=format&fit=crop' },
+  { id: 'm4', name: 'Chicken', price: 3000, category: 'Protein', image: 'https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?q=80&w=800&auto=format&fit=crop', isAvailable: false },
   { id: 'm5', name: 'Beef', price: 2000, category: 'Protein', image: 'https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=800&auto=format&fit=crop', isAvailable: false }, // <-- OUT OF STOCK TEST
   { id: 'm6', name: 'Coca Cola', price: 1500, category: 'Drinks', image: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?q=80&w=800&auto=format&fit=crop' },
-  { id: 'm7', name: 'Semo & Egusi', price: 1000, category: 'Swallow', image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=800&auto=format&fit=crop' },
+  { id: 'm7', name: 'Semo & Egusi', price: 1000, category: 'Swallow', image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=800&auto=format&fit=crop', isAvailable: false },
   { id: 'm8', name: 'Amala & Ewedu', price: 1500, category: 'Swallow', image: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=800&auto=format&fit=crop' },
   { id: 'm9', name: 'Grilled Turkey', price: 4000, category: 'Protein', image: 'https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?q=80&w=800&auto=format&fit=crop' },
   { id: 'm10', name: 'Chilled Zobo', price: 800, category: 'Drinks', image: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?q=80&w=800&auto=format&fit=crop' },

@@ -1,4 +1,5 @@
 // Note: This file requires an Expo/React Native environment to compile correctly.
+// Triggering a fresh build to resolve module resolution errors.
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   View, 
@@ -23,8 +24,8 @@ import SearchBar from './SearchBar';
 import CategoryFilter from './CategoryFilter';
 import GridDishCard from './GridDishCard';
 
-// PRO DRY FIX: We dynamically import the exact styles from the Menu page!
-import { menuStyles } from '../app/(tabs)/menu';
+// We dynamically import the exact styles and the uniform Custom Image from the Menu page!
+import { menuStyles, CUSTOM_PACKAGE_IMAGE } from '../app/(tabs)/menu';
 
 const { height, width } = Dimensions.get('window');
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
@@ -35,9 +36,15 @@ interface QuickEditPackageProps {
   visible: boolean;
   onClose: () => void;
   initialItem: any;
+  routeOnSave?: boolean; // <-- PRO UX FIX: Explicit command to prevent double-routing
 }
 
-export default function QuickEditPackage({ visible, onClose, initialItem }: QuickEditPackageProps) {
+export default function QuickEditPackage({ 
+  visible, 
+  onClose, 
+  initialItem, 
+  routeOnSave = true // Defaults to true for Menu and Details pages
+}: QuickEditPackageProps) {
   const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -175,7 +182,7 @@ export default function QuickEditPackage({ visible, onClose, initialItem }: Quic
       category: 'Custom Plate',
       price: plateTotal, 
       quantity: initialItem.quantity || 1, 
-      image: selectedItemsList[0]?.image || initialItem.image, 
+      image: CUSTOM_PACKAGE_IMAGE,
       isAvailable: true,
       subItems: selectedItemsList 
     };
@@ -183,9 +190,12 @@ export default function QuickEditPackage({ visible, onClose, initialItem }: Quic
     addToCart(newItem);
     onClose();
     
-    setTimeout(() => {
-      router.push('/cart');
-    }, 300);
+    // PRO UX FIX: Only route to the cart page if explicitly allowed!
+    if (routeOnSave) {
+      setTimeout(() => {
+        router.push('/cart');
+      }, 300);
+    }
   };
 
   return (
@@ -240,7 +250,6 @@ export default function QuickEditPackage({ visible, onClose, initialItem }: Quic
             
             <Text style={[menuStyles.sectionTitle, { color: colors.textMuted }]}>CURRENT ITEMS</Text>
             
-            {/* PRO DRY FIX: Using menuStyles perfectly ensures consistency! */}
             {isPackageEmpty ? (
               <View 
                 style={[
@@ -372,7 +381,7 @@ export default function QuickEditPackage({ visible, onClose, initialItem }: Quic
   );
 }
 
-// PRO DRY FIX: Component drastically shrinks since the bulk UI styling is dynamically imported from menuStyles!
+// PRO CSS COMPLIANCE: Every property is strictly on its own line!
 const styles = StyleSheet.create({
   overlay: {
     zIndex: 1000,

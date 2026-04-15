@@ -1,5 +1,6 @@
 // Note: This file requires an Expo/React Native environment to compile correctly.
-import React, { useState, useRef } from 'react';
+// Triggering a fresh build to resolve module resolution errors.
+import React, { useState, useRef, useCallback } from 'react';
 import { 
   View, 
   Text, 
@@ -8,7 +9,8 @@ import {
   ScrollView, 
   Animated, 
   useWindowDimensions, 
-  Platform 
+  Platform,
+  RefreshControl 
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -32,6 +34,7 @@ export default function FavoriteScreen() {
   const { favorites, toggleFavorite, isFavorite } = useFavorites();
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [refreshing, setRefreshing] = useState(false); // <-- Added Refresh State
   const toastAnim = useRef(new Animated.Value(-100)).current;
 
   const { width } = useWindowDimensions();
@@ -46,6 +49,21 @@ export default function FavoriteScreen() {
   const bottomNavHeight = 70 + Math.max(insets.bottom, 15);
   const paddingTop = Platform.OS === 'web' ? 50 : insets.top + 10;
   const paddingBottom = 15;
+
+  // PRO UX FIX: Global Refresh Simulation for Favorites
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    console.log("🔄 Global App Refresh Triggered from FAVORITES: Verifying availability...");
+    try {
+      const fetchRealData = new Promise(resolve => setTimeout(resolve, 1500)); 
+      await fetchRealData;
+    } catch (error) {
+      console.error("Error refreshing data:", error);
+    } finally {
+      setRefreshing(false); 
+      console.log("✅ Favorites Refresh Complete.");
+    }
+  }, []);
 
   const handleAddToCart = (dish: any) => {
     const newItem: any = {
@@ -96,54 +114,68 @@ export default function FavoriteScreen() {
         </View>
       </View>
 
-      {favorites.length > 0 ? (
-        <ScrollView 
-          showsVerticalScrollIndicator={false} 
-          contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomNavHeight + 20 }]}
-        >
-          <View style={styles.headerRow}>
-            <Text style={[styles.resultCount, { color: colors.textMuted }]}>
-              {favorites.length} {favorites.length === 1 ? 'Item' : 'Items'} Saved
-            </Text>
-          </View>
+      {/* PRO UX FIX: The entire content (even when empty) is now in a ScrollView to allow pull-to-refresh! */}
+      <ScrollView 
+        showsVerticalScrollIndicator={false} 
+        contentContainerStyle={[
+          favorites.length > 0 ? styles.scrollContent : { flexGrow: 1, justifyContent: 'center' },
+          { paddingBottom: bottomNavHeight + 20 }
+        ]}
+        refreshControl={
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={onRefresh} 
+            tintColor={Colors.primary} 
+            colors={[Colors.primary]} 
+            progressBackgroundColor={isDark ? colors.surface : '#FFF'} 
+          />
+        }
+      >
+        {favorites.length > 0 ? (
+          <>
+            <View style={styles.headerRow}>
+              <Text style={[styles.resultCount, { color: colors.textMuted }]}>
+                {favorites.length} {favorites.length === 1 ? 'Item' : 'Items'} Saved
+              </Text>
+            </View>
 
-          <View style={[styles.gridContainer, { gap: GRID_GAP }]}>
-            {favorites.map((dish) => {
-              const isAvail = checkAvailability(dish);
-              return (
-                <View style={{ width: CARD_WIDTH }} key={dish.id}>
-                  <GridDishCard 
-                    category={dish.category} 
-                    name={dish.name} 
-                    price={`₦${dish.price.toLocaleString()}`} 
-                    rating={dish.rating} 
-                    image={dish.image} 
-                    isAvailable={isAvail} 
-                    isFavorite={isFavorite(dish.id)} 
-                    onToggleFavorite={() => toggleFavorite(dish)}
-                    // PRO UX FIX: Tapping the card routes to the Details page just like Home
-                    onPress={() => router.push({ pathname: '/details', params: { id: dish.id } })}
-                    onAdd={() => handleAddToCart(dish)} 
-                  />
-                </View>
-              );
-            })}
+            <View style={[styles.gridContainer, { gap: GRID_GAP }]}>
+              {favorites.map((dish) => {
+                const isAvail = checkAvailability(dish);
+                return (
+                  <View style={{ width: CARD_WIDTH }} key={dish.id}>
+                    <GridDishCard 
+                      category={dish.category} 
+                      name={dish.name} 
+                      price={`₦${dish.price.toLocaleString()}`} 
+                      rating={dish.rating} 
+                      image={dish.image} 
+                      isAvailable={isAvail} 
+                      isFavorite={isFavorite(dish.id)} 
+                      onToggleFavorite={() => toggleFavorite(dish)}
+                      onPress={() => router.push({ pathname: '/details', params: { id: dish.id } })}
+                      onAdd={() => handleAddToCart(dish)} 
+                    />
+                  </View>
+                );
+              })}
+            </View>
+          </>
+        ) : (
+          <View style={styles.emptyContainer}>
+            <View style={[styles.iconCircle, { backgroundColor: isDark ? colors.surface : '#FFEEEE' }]}>
+              <Ionicons name="heart" size={80} color={isDark ? colors.textMuted : '#FFCCCC'} />
+            </View>
+            <Text style={[styles.emptyTitle, { color: colors.text }]}>No Favorites Yet</Text>
+            <Text style={[styles.emptySubtitle, { color: colors.textMuted }]}>
+              You haven&apos;t added any meals to your favorites. Tap the heart icon on any meal to save it for later!
+            </Text>
+            <TouchableOpacity style={styles.browseBtn} onPress={() => router.push('/menu')} activeOpacity={0.8}>
+              <Text style={styles.browseBtnText}>Browse Menu</Text>
+            </TouchableOpacity>
           </View>
-        </ScrollView>
-      ) : (
-        <View style={styles.emptyContainer}>
-          <View style={[styles.iconCircle, { backgroundColor: isDark ? colors.surface : '#FFEEEE' }]}>
-            <Ionicons name="heart" size={80} color={isDark ? colors.textMuted : '#FFCCCC'} />
-          </View>
-          <Text style={[styles.emptyTitle, { color: colors.text }]}>No Favorites Yet</Text>
-          <Text style={[styles.emptySubtitle, { color: colors.textMuted }]}>
-            You haven&apos;t added any meals to your favorites. Tap the heart icon on any meal to save it for later!
-          </Text>
-          <TouchableOpacity style={styles.browseBtn} onPress={() => router.push('/menu')} activeOpacity={0.8}>
-            <Text style={styles.browseBtnText}>Browse Menu</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+        )}
+      </ScrollView>
 
       <Animated.View style={[styles.toastContainer, { transform: [{ translateY: toastAnim }], backgroundColor: isDark ? '#333' : '#222' }]}>
         <Ionicons name="checkmark-circle" size={24} color="#4CAF50" />
@@ -215,7 +247,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   emptyContainer: { 
-    flex: 1, 
     justifyContent: 'center', 
     alignItems: 'center', 
     paddingHorizontal: 40, 

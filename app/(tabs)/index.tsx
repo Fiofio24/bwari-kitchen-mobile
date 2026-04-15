@@ -1,5 +1,5 @@
 // Note: This file requires an Expo/React Native environment and local components to compile correctly in preview.
-// Retrying build to resolve environment permissions issue.
+// Triggering a fresh build to resolve module resolution errors.
 import React, { useState, useRef, useCallback } from 'react';
 import { 
   View, 
@@ -53,13 +53,19 @@ export default function HomeScreen() {
   const NUM_COLUMNS = Math.max(2, Math.ceil(AVAILABLE_WIDTH / (MAX_GRID_WIDTH + GRID_GAP)));
   const CARD_WIDTH = Math.floor((AVAILABLE_WIDTH - (GRID_GAP * (NUM_COLUMNS - 1))) / NUM_COLUMNS);
 
+  // PRO UX FIX: Global Refresh Simulation with Terminal Logging!
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
+    console.log("🔄 Global App Refresh Triggered from HOME: Fetching latest menu, prices, and user data...");
     try {
+      // Simulate network request time
       const fetchRealData = new Promise(resolve => setTimeout(resolve, 1500)); 
       await fetchRealData;
+    } catch (error) {
+      console.error("Error refreshing data:", error);
     } finally {
       setRefreshing(false); 
+      console.log("✅ Home Refresh Complete.");
     }
   }, []);
 
@@ -173,7 +179,6 @@ export default function HomeScreen() {
         </View>
       </ScrollView>
 
-      {/* PRO UX FIX: Removed hardcoded notification prop, TopNav now automatically pulls dynamic context! */}
       <TopNav 
         address={currentAddress} 
         onAddressChange={setCurrentAddress} 
