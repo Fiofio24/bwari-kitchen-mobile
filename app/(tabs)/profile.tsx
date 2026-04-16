@@ -20,12 +20,12 @@ import { useUser } from '../../context/UserContext';
 import { Colors } from '../../constants/Colors';
 import { StatusBar } from 'expo-status-bar';
 import Sidebar from '../../components/Sidebar';
-import { useRouter } from 'expo-router'; // <-- Added Router
+import { useRouter } from 'expo-router'; 
 
 export default function ProfileScreen() {
   const { colors, isDark, setThemeMode } = useTheme();
   const { userData, updateAvatar } = useUser(); 
-  const router = useRouter(); // <-- Initialized Router
+  const router = useRouter(); 
   
   const insets = useSafeAreaInsets();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -121,7 +121,6 @@ export default function ProfileScreen() {
           </View>
 
           <View style={styles.statsRow}>
-            {/* FIXED: Wrapped the Orders Stat in a TouchableOpacity pointing to our new page */}
             <TouchableOpacity 
               style={[styles.statItem, { borderRightWidth: 1, borderRightColor: colors.border }]}
               onPress={() => router.push('/my-orders')}
@@ -146,9 +145,22 @@ export default function ProfileScreen() {
 
         <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>ACCOUNT SETTINGS</Text>
         <View style={[styles.menuBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <ProfileMenuItem icon="person-outline" label="Personal Information" />
-          <ProfileMenuItem icon="location-outline" label="Saved Addresses" />
-          <ProfileMenuItem icon="card-outline" label="Payment Methods" subLabel="Manage cards" />
+          <ProfileMenuItem 
+            icon="person-outline" 
+            label="Personal Information" 
+            onPress={() => router.push('/personal-info')} // <-- Added Route
+          />
+          <ProfileMenuItem 
+            icon="location-outline" 
+            label="Saved Addresses" 
+            onPress={() => router.push('/saved-addresses')} // <-- Added Route
+          />
+          <ProfileMenuItem 
+            icon="card-outline" 
+            label="Payment Methods" 
+            subLabel="Manage cards" 
+            onPress={() => router.push('/payment-methods')} // <-- Added Route
+          />
         </View>
 
         <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>SECURITY & APP</Text>
@@ -160,7 +172,11 @@ export default function ProfileScreen() {
 
         <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>SUPPORT & LEGAL</Text>
         <View style={[styles.menuBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <ProfileMenuItem icon="help-buoy-outline" label="Help Center" />
+          <ProfileMenuItem 
+            icon="help-buoy-outline" 
+            label="Help Center" 
+            onPress={() => router.push('/help')} // <-- Added Route for Help & Support
+          />
           <ProfileMenuItem icon="document-text-outline" label="Terms & Conditions" />
           <ProfileMenuItem icon="trash-outline" label="Delete Account" isDestructive={true} />
           <ProfileMenuItem icon="log-out-outline" label="Sign Out" isDestructive={true} />
