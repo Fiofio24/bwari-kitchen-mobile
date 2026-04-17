@@ -1,7 +1,8 @@
-import express from 'express'
+import express, { Request, Response, NextFunction } from 'express'
 import cors from 'cors'
 import helmet from 'helmet'
 import dotenv from 'dotenv'
+import authRoutes from './routes/auth'
 
 dotenv.config()
 
@@ -13,7 +14,7 @@ app.use(helmet())
 app.use(cors())
 app.use(express.json())
 
-// Health check — useful for the frontend team to confirm API is alive
+// Routes
 app.get('/health', (req, res) => {
   res.json({
     status: 'ok',
@@ -22,10 +23,15 @@ app.get('/health', (req, res) => {
   })
 })
 
-// Routes will be imported here as you build them
-// app.use('/api/auth', authRoutes)
-// app.use('/api/menu', menuRoutes)
-// app.use('/api/orders', orderRoutes)
+app.use('/api/auth', authRoutes)
+
+// Global error handler — catches anything thrown in async controllers
+app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+  console.error(err.stack)
+  res.status(500).json({
+    message: 'Something went wrong. Please try again.',
+  })
+})
 
 app.listen(PORT, () => {
   console.log(`🍽️  Bwari Kitchen API running on port ${PORT}`)
