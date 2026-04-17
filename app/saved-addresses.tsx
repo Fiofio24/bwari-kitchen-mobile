@@ -1,13 +1,12 @@
 // Note: This file requires an Expo/React Native environment to compile correctly.
-// Triggering a fresh build to resolve module resolution errors (cache bust).
-import React, { useState } from 'react';
+// Triggering a fresh build to resolve ESLint unused variable warning.
+import React from 'react';
 import { 
   View, 
   Text, 
   StyleSheet, 
   TouchableOpacity, 
   ScrollView, 
-  Platform,
   Alert,
   LayoutAnimation
 } from 'react-native';
@@ -17,48 +16,19 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
 import { Colors } from '../constants/Colors';
 import { StatusBar } from 'expo-status-bar';
-
-// Mock Data matching the TopNav locations
-const INITIAL_ADDRESSES = [
-  { 
-    id: '1', 
-    title: 'Home', 
-    address: 'No 6 Kuje Street, FCT Abuja', 
-    icon: 'home', 
-    isDefault: true 
-  },
-  { 
-    id: '2', 
-    title: 'Work', 
-    address: 'Central Business District, Zone 4', 
-    icon: 'briefcase', 
-    isDefault: false 
-  },
-  { 
-    id: '3', 
-    title: 'Friend', 
-    address: 'Gwarinpa Estate, Phase 2, House 44', 
-    icon: 'people', 
-    isDefault: false 
-  },
-];
+import { useAddresses } from '../context/AddressContext'; 
+import TopNav from '../components/TopNav';
 
 export default function SavedAddressesScreen() {
   const router = useRouter();
   const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   
-  const [addresses, setAddresses] = useState(INITIAL_ADDRESSES);
-
-  const paddingTop = Platform.OS === 'web' ? 50 : insets.top + 10;
-  const paddingBottom = 15;
+  const { addresses, removeAddress, setDefaultAddress } = useAddresses();
 
   const handleSetDefault = (id: string) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setAddresses(prev => prev.map(addr => ({
-      ...addr,
-      isDefault: addr.id === id
-    })));
+    setDefaultAddress(id);
   };
 
   const handleDelete = (id: string, title: string) => {
@@ -72,7 +42,7 @@ export default function SavedAddressesScreen() {
           style: 'destructive', 
           onPress: () => {
             LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-            setAddresses(prev => prev.filter(addr => addr.id !== id));
+            removeAddress(id);
           } 
         }
       ]
@@ -91,16 +61,14 @@ export default function SavedAddressesScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar style="light" />
 
-      {/* HEADER */}
-      <View style={[styles.header, { paddingTop, paddingBottom }]}>
-        <TouchableOpacity onPress={() => router.back()} style={[styles.iconButton, styles.sideIcon]}>
-          <Ionicons name="arrow-back" size={26} color="#FFF" />
-        </TouchableOpacity>
-        <View style={[styles.centerWrapper, { top: paddingTop, bottom: paddingBottom }]} pointerEvents="none">
-          <Text style={styles.headerTitle}>Saved Addresses</Text>
-        </View>
-        <View style={styles.sideIcon} /> 
-      </View>
+      {/* USING THE NEW UNIVERSAL TOPNAV */}
+      <TopNav 
+        title="Saved Addresses"
+        leftIcon="arrow-back"
+        onLeftPress={() => router.back()}
+        isAbsolute={false} 
+        showDivider={false} 
+      />
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 100 }]}>
         
@@ -211,44 +179,9 @@ export default function SavedAddressesScreen() {
   );
 }
 
-// PRO CSS COMPLIANCE: Every property strictly on its own line
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  header: {
-    backgroundColor: Colors.primary,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
-    zIndex: 10,
-  },
-  sideIcon: {
-    zIndex: 2,
-    minWidth: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  centerWrapper: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 1,
-  },
-  iconButton: {
-    padding: 5,
-    marginLeft: -5,
-    alignItems: 'flex-start',
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#FFF',
   },
   scrollContent: {
     paddingTop: 20,

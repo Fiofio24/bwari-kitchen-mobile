@@ -1,5 +1,5 @@
 // Note: This file requires an Expo/React Native environment to compile correctly.
-// Triggering a fresh build to resolve module resolution errors.
+// Triggering a fresh build to resolve module resolution errors (Quick Edit Package image fix).
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   View, 
@@ -10,7 +10,8 @@ import {
   Animated, 
   Dimensions, 
   TouchableWithoutFeedback, 
-  ScrollView
+  ScrollView,
+  Image
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
@@ -260,7 +261,11 @@ export default function QuickEditPackage({
                   }
                 ]}
               >
-                <Ionicons name="cube-outline" size={40} color={Colors.primary} />
+                <Image 
+                  source={require('../assets/images/Icon&logo/empty-package.png')}
+                  style={[menuStyles.emptyPackageIcon, { tintColor: Colors.primary }]}
+                  resizeMode="contain"
+                />
                 <Text style={[menuStyles.emptyBoxTitle, { color: Colors.primary }]}>Your package is empty</Text>
                 <Text style={[menuStyles.emptyBoxSub, { color: Colors.primary }]}>Click on any food item to add to package</Text>
               </View>

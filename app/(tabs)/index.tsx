@@ -1,5 +1,5 @@
-// Note: This file requires an Expo/React Native environment and local components to compile correctly in preview.
-// Triggering a fresh build to resolve module resolution errors.
+// Note: This file requires an Expo/React Native environment to compile correctly.
+// BUG FIX: Moved TopNav below ScrollView so it correctly layers on top, and inlined the slots!
 import React, { useState, useRef, useCallback } from 'react';
 import { 
   View, 
@@ -9,7 +9,8 @@ import {
   TouchableOpacity, 
   useWindowDimensions, 
   Animated, 
-  RefreshControl 
+  RefreshControl,
+  Platform
 } from 'react-native'; 
 import { Colors } from '../../constants/Colors';
 import { useRouter } from 'expo-router';
@@ -28,17 +29,26 @@ import { useCart } from '../../context/CartContext';
 import { useFavorites } from '../../context/FavoriteContext'; 
 import { COMBO_PACKAGES, CATEGORIES, MENU_ITEMS } from '../../constants/menuData'; 
 
+// Imported components for the TopNav slots
+import CartBadgeIcon from '../../components/CartBadgeIcon';
+import AddressSelectorModal from '../../components/AddressSelectorModal';
+import { useNotifications } from '../../context/NotificationContext';
+import { useAddresses } from '../../context/AddressContext';
+
 const USER_PROFILE = { name: "User" };
 
 export default function HomeScreen() {
   const router = useRouter(); 
   const { addToCart } = useCart(); 
   const { toggleFavorite, isFavorite } = useFavorites(); 
+  const { unreadCount } = useNotifications();
+  const { activeAddress } = useAddresses();
+  
   const [activeCategory, setActiveCategory] = useState('All');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [currentAddress, setCurrentAddress] = useState("No 6 Kuje Street...");
   const [isScrolled, setIsScrolled] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [isAddressModalVisible, setIsAddressModalVisible] = useState(false);
   
   const insets = useSafeAreaInsets();
   const shadowTripwire = 100 + insets.top; 
@@ -53,19 +63,16 @@ export default function HomeScreen() {
   const NUM_COLUMNS = Math.max(2, Math.ceil(AVAILABLE_WIDTH / (MAX_GRID_WIDTH + GRID_GAP)));
   const CARD_WIDTH = Math.floor((AVAILABLE_WIDTH - (GRID_GAP * (NUM_COLUMNS - 1))) / NUM_COLUMNS);
 
-  // PRO UX FIX: Global Refresh Simulation with Terminal Logging!
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    console.log("🔄 Global App Refresh Triggered from HOME: Fetching latest menu, prices, and user data...");
+    console.log("🔄 Global App Refresh Triggered from HOME...");
     try {
-      // Simulate network request time
       const fetchRealData = new Promise(resolve => setTimeout(resolve, 1500)); 
       await fetchRealData;
     } catch (error) {
       console.error("Error refreshing data:", error);
     } finally {
       setRefreshing(false); 
-      console.log("✅ Home Refresh Complete.");
     }
   }, []);
 
@@ -105,6 +112,7 @@ export default function HomeScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+      
       <ScrollView 
         showsVerticalScrollIndicator={false} 
         contentContainerStyle={{ paddingBottom: 100 }}
@@ -129,7 +137,6 @@ export default function HomeScreen() {
         </View>
 
         <PromoSlider />
-        
         <ForYouCard onAddToCart={handleAddToCart} />
 
         <View style={styles.headerRow}>
@@ -179,11 +186,43 @@ export default function HomeScreen() {
         </View>
       </ScrollView>
 
+      {/* USING THE NEW UNIVERSAL TOPNAV - Placed below ScrollView so it renders on top! */}
       <TopNav 
-        address={currentAddress} 
-        onAddressChange={setCurrentAddress} 
-        onOpenMenu={() => setIsSidebarOpen(true)} 
-        isScrolled={isScrolled} 
+        leftIcon="menu"
+        onLeftPress={() => setIsSidebarOpen(true)}
+        isScrolled={isScrolled}
+        isAbsolute={true}
+        centerComponent={
+          <TouchableOpacity style={styles.locationContainer} onPress={() => setIsAddressModalVisible(true)} activeOpacity={0.8}>
+            <Text style={styles.deliverToText}>Deliver to</Text>
+            <View style={styles.addressRow}>
+              <Ionicons name="location" size={14} color="#FFC107" />
+              <Text style={styles.addressText} numberOfLines={1} ellipsizeMode="tail">
+                {activeAddress?.address || "Select Location"}
+              </Text>
+              <Ionicons name="chevron-down" size={14} color="#FFF" style={styles.chevronIcon} />
+            </View>
+          </TouchableOpacity>
+        }
+        rightComponent={
+          <View style={styles.headerIcons}>
+            <CartBadgeIcon onPress={() => router.push('/cart')} />
+            <TouchableOpacity 
+              style={[styles.iconWrapper, styles.bellIcon]}
+              activeOpacity={0.7}
+              onPress={() => router.push('/notifications')}
+            >
+              <Ionicons name="notifications-outline" size={26} color="#FFF" />
+              {unreadCount > 0 && (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          </View>
+        }
       />
 
       <Animated.View style={[styles.toastContainer, { transform: [{ translateY: toastAnim }], backgroundColor: isDark ? '#333' : '#222' }]}>
@@ -192,10 +231,16 @@ export default function HomeScreen() {
       </Animated.View>
    
       <Sidebar visible={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+      
+      <AddressSelectorModal 
+        visible={isAddressModalVisible} 
+        onClose={() => setIsAddressModalVisible(false)} 
+      />
     </View>
   );
 }
 
+// PRO CSS COMPLIANCE: Every property strictly on its own line
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -203,6 +248,7 @@ const styles = StyleSheet.create({
   topLayoutContainer: {
     marginBottom: 20,
     zIndex: 5,
+    marginTop: Platform.OS === 'web' ? 80 : 50, 
   },
   searchBarWrapper: {
     paddingHorizontal: 20,
@@ -257,10 +303,7 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     elevation: 10,
     shadowColor: '#000',
-    shadowOffset: { 
-      width: 0, 
-      height: 5 
-    },
+    shadowOffset: { width: 0, height: 5 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     zIndex: 100,
@@ -270,6 +313,60 @@ const styles = StyleSheet.create({
   toastText: {
     color: '#FFF',
     fontSize: 16,
+    fontWeight: 'bold',
+  },
+  
+  // Custom Home Header Styles passed to TopNav slots
+  locationContainer: {
+    alignItems: 'center',
+    width: '100%', 
+  },
+  deliverToText: {
+    color: '#FFCCCC',
+    fontSize: 12,
+    textAlign: 'center',
+  },
+  addressRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 2,
+    maxWidth: '100%',
+  },
+  addressText: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    fontSize: 14,
+    marginLeft: 4,
+    flexShrink: 1, 
+  },
+  chevronIcon: {
+    marginLeft: 4,
+  },
+  headerIcons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  iconWrapper: {
+    position: 'relative',
+    padding: 4,
+  },
+  bellIcon: {
+    marginLeft: 10,
+  },
+  badge: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    minWidth: 16,
+    height: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  badgeText: {
+    color: Colors.primary,
+    fontSize: 10,
     fontWeight: 'bold',
   },
 });

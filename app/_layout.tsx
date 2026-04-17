@@ -8,10 +8,9 @@ import * as SplashScreen from 'expo-splash-screen';
 import { CartProvider } from '../context/CartContext';
 import { FavoriteProvider } from '../context/FavoriteContext';
 import { UserProvider } from '../context/UserContext'; 
-import { NotificationProvider } from '../context/NotificationContext'; // <-- PRO UX FIX: Global Notifications
+import { NotificationProvider } from '../context/NotificationContext'; 
+import { AddressProvider } from '../context/AddressContext'; // <-- PRO UX FIX: Connected Global Addresses
 
-// This prevents the splash screen from hiding automatically 
-// until we are sure the app is ready.
 SplashScreen.preventAutoHideAsync();
 
 function RootContent() {
@@ -20,7 +19,6 @@ function RootContent() {
   useEffect(() => {
     async function prepareApp() {
       try {
-        // Pre-load fonts or API data here if needed
         await new Promise(resolve => setTimeout(resolve, 2000));
       } catch (e) {
         console.warn(e);
@@ -33,7 +31,6 @@ function RootContent() {
 
   useEffect(() => {
     if (appIsReady) {
-      // Hide the splash screen once everything is loaded
       SplashScreen.hideAsync();
     }
   }, [appIsReady]);
@@ -74,13 +71,15 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <ThemeProvider>
         <UserProvider>
-          <CartProvider> 
-            <FavoriteProvider>
-              <NotificationProvider>
-                <RootContent />
-              </NotificationProvider>
-            </FavoriteProvider>
-          </CartProvider>
+          <AddressProvider>
+            <CartProvider> 
+              <FavoriteProvider>
+                <NotificationProvider>
+                  <RootContent />
+                </NotificationProvider>
+              </FavoriteProvider>
+            </CartProvider>
+          </AddressProvider>
         </UserProvider>
       </ThemeProvider>
     </SafeAreaProvider>

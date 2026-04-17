@@ -1,4 +1,5 @@
 // Note: This file requires an Expo/React Native environment to compile correctly.
+// Triggering a fresh build to resolve module resolution errors (local image path fix).
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { 
   View, 
@@ -9,7 +10,8 @@ import {
   Platform, 
   Animated, 
   useWindowDimensions,
-  RefreshControl 
+  RefreshControl,
+  Image
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -28,10 +30,7 @@ import GridDishCard from '../../components/GridDishCard';
 
 const MENU_CATEGORIES = ['Main', 'Protein', 'Swallow', 'Snacks', 'Drinks', 'Rice'];
 
-// PRO UX FIX: The preview environment bundler crashes if a local file is missing.
-// I have provided the URL here so the Canvas compiles. 
-// For your local app, you can change this back to: require('../../assets/images/custom-plate.png')
-export const CUSTOM_PACKAGE_IMAGE = require('../../assets/images/custom-plate.png')
+export const CUSTOM_PACKAGE_IMAGE = require('../../assets/images/custom-plate.png');
 
 export default function MenuScreen() {
   const router = useRouter();
@@ -46,7 +45,7 @@ export default function MenuScreen() {
 
   const [activeCategory, setActiveCategory] = useState('Main');
   const [customPlate, setCustomPlate] = useState<Record<string, number>>({});
-  const [refreshing, setRefreshing] = useState(false); // <-- Added Refresh State
+  const [refreshing, setRefreshing] = useState(false); 
 
   const { width } = useWindowDimensions();
   const GRID_PADDING = 20; 
@@ -60,7 +59,6 @@ export default function MenuScreen() {
   const filteredItems = MENU_ITEMS.filter(item => item.category === activeCategory || activeCategory === 'Main');
   const bottomNavHeight = 70 + Math.max(insets.bottom, 15);
 
-  // PRO UX FIX: Global Refresh Simulation for Menu
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     console.log("🔄 Global App Refresh Triggered from MENU: Syncing latest items...");
@@ -219,7 +217,12 @@ export default function MenuScreen() {
 
         {isPackageEmpty ? (
           <View style={[menuStyles.emptyBox, { borderColor: isDark ? colors.border : '#FFCCCC', backgroundColor: isDark ? 'rgba(255,0,0,0.05)' : '#FFF0F0' }]}>
-            <Ionicons name="cube-outline" size={50} color={Colors.primary} style={{ opacity: 0.5 }} />
+            <Image 
+              // UNCOMMENT THIS IN YOUR LOCAL ENVIRONMENT:
+              source={require('../../assets/images/Icon&logo/empty-package.png')}
+              style={[menuStyles.emptyPackageIcon, { tintColor: Colors.primary }]}
+              resizeMode="contain"
+            />
             <Text style={[menuStyles.emptyBoxTitle, { color: Colors.primary }]}>Your package is empty</Text>
             <Text style={[menuStyles.emptyBoxSub, { color: Colors.primary }]}>Click on any food item to add to package</Text>
           </View>
@@ -399,10 +402,15 @@ export const menuStyles = StyleSheet.create({
     marginBottom: 25, 
     marginHorizontal: 20,
   },
+  emptyPackageIcon: {
+    width: 110,
+    height: 110,
+    marginBottom: 0,
+  },
   emptyBoxTitle: { 
     fontSize: 18, 
     fontWeight: 'bold', 
-    marginTop: 10, 
+    marginTop: 5, 
     marginBottom: 5,
   },
   emptyBoxSub: { 

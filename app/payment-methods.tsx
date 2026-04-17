@@ -1,5 +1,5 @@
 // Note: This file requires an Expo/React Native environment to compile correctly.
-// Triggering a fresh build to resolve module resolution errors (cache bust).
+// Triggering a fresh build to resolve module resolution errors (wallet removed - v2).
 import React, { useState } from 'react';
 import { 
   View, 
@@ -9,7 +9,8 @@ import {
   ScrollView, 
   Platform,
   Alert,
-  LayoutAnimation
+  LayoutAnimation,
+  Switch
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,7 +18,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
 import { Colors } from '../constants/Colors';
 import { StatusBar } from 'expo-status-bar';
-import { LinearGradient } from 'expo-linear-gradient';
 
 // Mock Data for Saved Cards
 const INITIAL_CARDS = [
@@ -45,7 +45,7 @@ export default function PaymentMethodsScreen() {
   const insets = useSafeAreaInsets();
   
   const [cards, setCards] = useState(INITIAL_CARDS);
-  const [walletBalance] = useState(15450);
+  const [cashOnDelivery, setCashOnDelivery] = useState(false);
 
   const paddingTop = Platform.OS === 'web' ? 50 : insets.top + 10;
   const paddingBottom = 15;
@@ -56,6 +56,20 @@ export default function PaymentMethodsScreen() {
       ...card,
       isDefault: card.id === id
     })));
+    // If they set a card as default, turn off COD
+    if (cashOnDelivery) setCashOnDelivery(false);
+  };
+
+  const handleToggleCOD = (value: boolean) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setCashOnDelivery(value);
+    // If they turn ON Cash on Delivery, remove default status from cards
+    if (value) {
+      setCards(prev => prev.map(card => ({ ...card, isDefault: false })));
+    } else if (cards.length > 0) {
+      // If they turn it off, default back to the first card
+      setCards(prev => prev.map((card, index) => ({ ...card, isDefault: index === 0 })));
+    }
   };
 
   const handleDelete = (id: string, type: string, last4: string) => {
@@ -80,10 +94,6 @@ export default function PaymentMethodsScreen() {
     Alert.alert('Add Payment Method', 'This would open a secure payment gateway (like Paystack or Flutterwave) to bind a new card.');
   };
 
-  const handleTopUp = () => {
-    Alert.alert('Top Up Wallet', 'Redirecting to wallet funding page...');
-  };
-
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar style="light" />
@@ -99,38 +109,18 @@ export default function PaymentMethodsScreen() {
         <View style={styles.sideIcon} /> 
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 100 }]}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 120 }]}>
         
-        {/* BWARI WALLET CARD */}
-        <Text style={[styles.sectionTitle, { color: colors.textMuted, marginTop: 5 }]}>
-          MY WALLET
-        </Text>
-        
-        <LinearGradient
-          colors={[isDark ? '#333' : '#2C3E50', isDark ? '#111' : '#000']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.walletCard}
-        >
-          <View style={styles.walletTopRow}>
-            <View>
-              <Text style={styles.walletLabel}>Bwari Wallet Balance</Text>
-              <Text style={styles.walletBalance}>₦{walletBalance.toLocaleString()}</Text>
-            </View>
-            <Ionicons name="wallet" size={40} color="rgba(255,255,255,0.2)" />
-          </View>
-          
-          <TouchableOpacity 
-            style={[styles.topUpBtn, { backgroundColor: Colors.primary }]}
-            activeOpacity={0.8}
-            onPress={handleTopUp}
-          >
-            <Ionicons name="add-circle-outline" size={18} color="#FFF" style={{ marginRight: 6 }} />
-            <Text style={styles.topUpBtnText}>Top Up Wallet</Text>
-          </TouchableOpacity>
-        </LinearGradient>
+        <View style={styles.headerSection}>
+          <Text style={[styles.titleText, { color: colors.text }]}>
+            Payment Options
+          </Text>
+          <Text style={[styles.subText, { color: colors.textMuted }]}>
+            Manage how you pay for your delicious Bwari Kitchen meals.
+          </Text>
+        </View>
 
-        <Text style={[styles.sectionTitle, { color: colors.textMuted, marginTop: 20 }]}>
+        <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>
           SAVED CARDS
         </Text>
 
@@ -188,6 +178,48 @@ export default function PaymentMethodsScreen() {
           </View>
         )}
 
+        <Text style={[styles.sectionTitle, { color: colors.textMuted, marginTop: 25 }]}>
+          OTHER METHODS
+        </Text>
+
+        {/* CASH ON DELIVERY CARD */}
+        <TouchableOpacity 
+          style={[
+            styles.codCard, 
+            { backgroundColor: colors.surface, borderColor: cashOnDelivery ? Colors.primary : colors.border },
+            cashOnDelivery && styles.defaultCardShadow
+          ]}
+          activeOpacity={0.8}
+          onPress={() => handleToggleCOD(!cashOnDelivery)}
+        >
+          <View style={styles.codRow}>
+            <View style={[styles.codIconBox, { backgroundColor: 'rgba(76, 175, 80, 0.1)' }]}>
+              <Ionicons name="cash-outline" size={24} color="#4CAF50" />
+            </View>
+            <View style={styles.codTextContainer}>
+              <Text style={[styles.codTitle, { color: colors.text }]}>Cash on Delivery</Text>
+              <Text style={[styles.codSub, { color: colors.textMuted }]}>Pay with cash or transfer to rider</Text>
+            </View>
+            <Switch 
+              value={cashOnDelivery} 
+              onValueChange={handleToggleCOD} 
+              trackColor={{ false: '#767577', true: 'rgba(211, 47, 47, 0.3)' }} 
+              thumbColor={cashOnDelivery ? Colors.primary : '#f4f3f4'} 
+            />
+          </View>
+        </TouchableOpacity>
+
+        {/* SECURITY TRUST BADGE */}
+        <View style={styles.securityBanner}>
+          <Ionicons name="shield-checkmark" size={30} color={isDark ? colors.textMuted : '#4CAF50'} />
+          <View style={styles.securityTextContainer}>
+            <Text style={[styles.securityTitle, { color: colors.text }]}>Bank-Grade Security</Text>
+            <Text style={[styles.securitySub, { color: colors.textMuted }]}>
+              Bwari Kitchen uses PCI DSS compliant 256-bit encryption. Your card details are never saved on our servers.
+            </Text>
+          </View>
+        </View>
+
       </ScrollView>
 
       {/* BOTTOM ADD BUTTON */}
@@ -204,7 +236,7 @@ export default function PaymentMethodsScreen() {
           activeOpacity={0.8}
           onPress={handleAddCard}
         >
-          <Ionicons name="card" size={20} color="#FFF" style={{ marginRight: 8 }} />
+          <Ionicons name="add" size={20} color="#FFF" style={{ marginRight: 8 }} />
           <Text style={styles.addBtnText}>Add New Card</Text>
         </TouchableOpacity>
       </View>
@@ -256,56 +288,25 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingHorizontal: 20,
   },
+  headerSection: {
+    marginBottom: 25,
+    paddingHorizontal: 5,
+  },
+  titleText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  subText: {
+    fontSize: 14,
+    lineHeight: 22,
+  },
   sectionTitle: {
     fontSize: 12,
     fontWeight: 'bold',
     marginBottom: 12,
     marginLeft: 5,
     letterSpacing: 1.5,
-  },
-  walletCard: {
-    borderRadius: 20,
-    padding: 20,
-    marginBottom: 20,
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { 
-      width: 0, 
-      height: 4 
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-  },
-  walletTopRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 20,
-  },
-  walletLabel: {
-    color: 'rgba(255,255,255,0.7)',
-    fontSize: 13,
-    fontWeight: '600',
-    marginBottom: 4,
-    letterSpacing: 0.5,
-  },
-  walletBalance: {
-    color: '#FFF',
-    fontSize: 32,
-    fontWeight: '900',
-  },
-  topUpBtn: {
-    alignSelf: 'flex-start',
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 15,
-  },
-  topUpBtnText: {
-    color: '#FFF',
-    fontSize: 14,
-    fontWeight: 'bold',
   },
   cardItem: {
     borderWidth: 1,
@@ -374,10 +375,71 @@ const styles = StyleSheet.create({
     padding: 10,
     marginLeft: 5,
   },
+  codCard: {
+    borderWidth: 1,
+    borderRadius: 20,
+    padding: 18,
+    marginBottom: 25,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { 
+      width: 0, 
+      height: 2 
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+  },
+  codRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  codIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 15,
+  },
+  codTextContainer: {
+    flex: 1,
+    paddingRight: 10,
+  },
+  codTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  codSub: {
+    fontSize: 12,
+  },
+  securityBanner: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: 'rgba(76, 175, 80, 0.05)',
+    padding: 20,
+    borderRadius: 20,
+    marginTop: 10,
+    marginBottom: 20,
+  },
+  securityTextContainer: {
+    flex: 1,
+    marginLeft: 15,
+  },
+  securityTitle: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    marginBottom: 6,
+  },
+  securitySub: {
+    fontSize: 12,
+    lineHeight: 18,
+  },
   emptyState: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 40,
+    marginTop: 20,
+    marginBottom: 20,
     paddingHorizontal: 20,
   },
   emptyTitle: {

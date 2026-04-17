@@ -58,7 +58,7 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 30,
   },
   greetingRow: {
-    marginTop: 120, 
+    marginTop: 70, 
     flexDirection: 'row',
     alignItems: 'center', 
   },

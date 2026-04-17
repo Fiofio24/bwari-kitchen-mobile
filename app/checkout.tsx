@@ -1,5 +1,5 @@
 // Note: This file requires an Expo/React Native environment to compile correctly.
-// Triggering a fresh build to resolve module resolution errors.
+// Triggering a fresh build to resolve ESLint unescaped entities warning.
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   View, 
@@ -21,13 +21,18 @@ import { useTheme } from '../context/ThemeContext';
 import { Colors } from '../constants/Colors';
 import { StatusBar } from 'expo-status-bar';
 import { useCart } from '../context/CartContext';
+import { useAddresses } from '../context/AddressContext'; 
+import AddressSelectorModal from '../components/AddressSelectorModal'; 
+import TopNav from '../components/TopNav';
 
 export default function CheckoutScreen() {
   const router = useRouter();
   const params = useLocalSearchParams(); 
   const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
-  const { cartItems, clearCart } = useCart();
+  
+  const { cartItems, removeMultipleFromCart } = useCart();
+  const { activeAddress } = useAddresses(); 
   
   // States
   const [deliveryMethod, setDeliveryMethod] = useState<'delivery' | 'pickup'>('delivery'); 
@@ -39,13 +44,14 @@ export default function CheckoutScreen() {
 
   const [orderNote, setOrderNote] = useState('');
   const [noCutlery, setNoCutlery] = useState(true);
+  
+  const [isAddressModalVisible, setIsAddressModalVisible] = useState(false); 
 
   // Animations
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   // Layout calculations
   const paddingTop = Platform.OS === 'web' ? 50 : insets.top + 10;
-  const paddingBottom = 15;
   const bottomNavHeight = 70 + Math.max(insets.bottom, 15);
 
   const checkoutItems = useMemo(() => {
@@ -119,9 +125,12 @@ export default function CheckoutScreen() {
   };
 
   const finalizeOrder = () => {
-    clearCart();
+    const purchasedIds = checkoutItems.map((item: any) => item.id);
+    removeMultipleFromCart(purchasedIds);
+
     if (Platform.OS === 'web') window.alert('Payment Successful! Order Placed.');
     else Alert.alert('Order Placed!', 'Your food is on the way.');
+    
     router.replace('/(tabs)');
   };
 
@@ -188,7 +197,10 @@ export default function CheckoutScreen() {
                 <Ionicons name="checkmark-circle" size={100} color="#4CAF50" />
               </Animated.View>
               <Text style={[styles.successTitle, { color: colors.text }]}>Payment Confirmed!</Text>
-              <Text style={[styles.successSub, { color: colors.textMuted }]}>We&apos;ve received your transfer. Preparing your meal now.</Text>
+              {/* LINT FIX: Escaped the apostrophe below */}
+              <Text style={[styles.successSub, { color: colors.textMuted }]}>
+                We&apos;ve received your transfer. Preparing your meal now.
+              </Text>
             </View>
           )}
         </ScrollView>
@@ -200,19 +212,17 @@ export default function CheckoutScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar style="light" />
 
-      <View style={[styles.header, { paddingTop, paddingBottom }]}>
-        <TouchableOpacity onPress={() => router.back()} style={[styles.iconButton, styles.sideIcon]}>
-          <Ionicons name="arrow-back" size={26} color="#FFF" />
-        </TouchableOpacity>
-        <View style={[styles.centerWrapper, { top: paddingTop, bottom: paddingBottom }]} pointerEvents="none">
-          <Text style={styles.headerTitle}>Checkout</Text>
-        </View>
-        <View style={styles.sideIcon} /> 
-      </View>
+      {/* USING THE NEW UNIVERSAL TOPNAV */}
+      <TopNav 
+        title="Checkout"
+        leftIcon="arrow-back"
+        onLeftPress={() => router.back()}
+        isAbsolute={false} 
+        showDivider={false} 
+      />
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomNavHeight + 60 }]}>
         
-        {/* ETA BANNER */}
         <View style={[styles.etaBanner, { backgroundColor: isDark ? colors.surface : '#E8F5E9', borderColor: '#81C784' }]}>
           <Ionicons name="time" size={24} color="#388E3C" />
           <View style={styles.etaTextContainer}>
@@ -221,7 +231,6 @@ export default function CheckoutScreen() {
           </View>
         </View>
 
-        {/* ORDER FULFILLMENT TOGGLE */}
         <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>ORDER FULFILLMENT</Text>
         
         <View style={[styles.methodToggleContainer, { backgroundColor: isDark ? colors.surface : '#F5F5F5' }]}>
@@ -250,7 +259,6 @@ export default function CheckoutScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* CONDITIONAL DETAILS CARD */}
         <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           
           {deliveryMethod === 'delivery' ? (
@@ -260,10 +268,14 @@ export default function CheckoutScreen() {
                   <Ionicons name="location" size={24} color={Colors.primary} />
                 </View>
                 <View style={styles.addressTextContainer}>
-                  <Text style={[styles.addressTitle, { color: colors.text }]}>Home</Text>
-                  <Text style={[styles.addressDetail, { color: colors.textMuted }]}>No 6 Kuje Street, FCT Abuja</Text>
+                  <Text style={[styles.addressTitle, { color: colors.text }]} numberOfLines={1}>
+                    {activeAddress?.title || "Custom Location"}
+                  </Text>
+                  <Text style={[styles.addressDetail, { color: colors.textMuted }]} numberOfLines={1}>
+                    {activeAddress?.address || "No location selected"}
+                  </Text>
                 </View>
-                <TouchableOpacity>
+                <TouchableOpacity onPress={() => setIsAddressModalVisible(true)}>
                   <Text style={styles.editText}>Change</Text>
                 </TouchableOpacity>
               </View>
@@ -306,7 +318,6 @@ export default function CheckoutScreen() {
           </View>
         </View>
 
-        {/* PAYMENT METHOD */}
         <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>PAYMENT METHOD</Text>
         <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <TouchableOpacity style={[styles.paymentOption, { borderBottomWidth: 1, borderBottomColor: colors.border }]} onPress={() => setSelectedPayment('card')}>
@@ -322,11 +333,9 @@ export default function CheckoutScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* ORDER SUMMARY */}
         <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>ORDER SUMMARY</Text>
         <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           
-          {/* Display Items List */}
           {checkoutItems.map((item: any, idx: number) => (
             <View key={item.id} style={[styles.summaryItemRow, { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
               <View style={styles.summaryItemLeft}>
@@ -343,7 +352,6 @@ export default function CheckoutScreen() {
             </View>
           ))}
 
-          {/* Subtotal & Delivery Breakdown */}
           <View style={styles.totalsContainer}>
             <View style={styles.summaryRow}>
               <Text style={[styles.summaryLabel, { color: colors.textMuted }]}>Subtotal</Text>
@@ -362,8 +370,14 @@ export default function CheckoutScreen() {
         </View>
       </ScrollView>
 
-      {/* FOOTER */}
-      <View style={[styles.stickyFooter, { paddingBottom: Math.max(insets.bottom, 20), backgroundColor: isDark ? colors.surface : '#FFF', borderTopColor: colors.border }]}>
+      <View style={[
+        styles.stickyFooter, 
+        { 
+          paddingBottom: insets.bottom + 20, 
+          backgroundColor: isDark ? colors.surface : '#FFF', 
+          borderTopColor: colors.border 
+        }
+      ]}>
         <View style={styles.footerContent}>
           <View style={styles.footerTextContainer}>
             <Text style={[styles.footerTotalLabel, { color: colors.textMuted }]}>Total Payment</Text>
@@ -374,44 +388,20 @@ export default function CheckoutScreen() {
           </TouchableOpacity>
         </View>
       </View>
+
+      <AddressSelectorModal 
+        visible={isAddressModalVisible} 
+        onClose={() => setIsAddressModalVisible(false)} 
+      />
+
     </View>
   );
 }
 
+// PRO CSS COMPLIANCE: Every property strictly on its own line
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  header: {
-    backgroundColor: Colors.primary,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
-    zIndex: 10,
-  },
-  sideIcon: {
-    zIndex: 2,
-    minWidth: 40,
-  },
-  centerWrapper: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 1,
-  },
-  iconButton: {
-    padding: 5,
-    marginLeft: -5,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#FFF',
   },
   scrollContent: {
     paddingTop: 20,
@@ -495,6 +485,7 @@ const styles = StyleSheet.create({
   },
   addressTextContainer: {
     flex: 1,
+    paddingRight: 10,
   },
   addressTitle: {
     fontSize: 16,
