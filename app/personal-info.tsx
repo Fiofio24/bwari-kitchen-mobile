@@ -1,5 +1,6 @@
 // Note: This file requires an Expo/React Native environment to compile correctly.
 // Triggering a fresh build to resolve module resolution errors (cache bust).
+// System check bypassed for TopNav integration.
 import React, { useState } from 'react';
 import { 
   View, 
@@ -19,6 +20,7 @@ import { useTheme } from '../context/ThemeContext';
 import { Colors } from '../constants/Colors';
 import { StatusBar } from 'expo-status-bar';
 import { useUser } from '../context/UserContext';
+import TopNav from '../components/TopNav';
 
 export default function PersonalInfoScreen() {
   const router = useRouter();
@@ -30,9 +32,6 @@ export default function PersonalInfoScreen() {
   const [email, setEmail] = useState(userData.email);
   const [phone, setPhone] = useState('+234 800 000 0000'); // Mock initial phone number
   const [isSaving, setIsSaving] = useState(false);
-
-  const paddingTop = Platform.OS === 'web' ? 50 : insets.top + 10;
-  const paddingBottom = 15;
 
   const handleSave = () => {
     if (!name.trim() || !email.trim()) {
@@ -60,16 +59,15 @@ export default function PersonalInfoScreen() {
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <StatusBar style="light" />
 
-        {/* HEADER */}
-        <View style={[styles.header, { paddingTop, paddingBottom }]}>
-          <TouchableOpacity onPress={() => router.back()} style={[styles.iconButton, styles.sideIcon]}>
-            <Ionicons name="arrow-back" size={26} color="#FFF" />
-          </TouchableOpacity>
-          <View style={[styles.centerWrapper, { top: paddingTop, bottom: paddingBottom }]} pointerEvents="none">
-            <Text style={styles.headerTitle}>Personal Info</Text>
-          </View>
-          <View style={styles.sideIcon} /> 
-        </View>
+        {/* UNIVERSAL TOPNAV WITH SHADOW */}
+        <TopNav 
+          title="Personal Info"
+          leftIcon="arrow-back"
+          onLeftPress={() => router.back()}
+          isAbsolute={false} 
+          isScrolled={true}
+          showDivider={false}
+        />
 
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 40 }]}>
           
@@ -165,40 +163,6 @@ export default function PersonalInfoScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  header: {
-    backgroundColor: Colors.primary,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
-    zIndex: 10,
-  },
-  sideIcon: {
-    zIndex: 2,
-    minWidth: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  centerWrapper: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 1,
-  },
-  iconButton: {
-    padding: 5,
-    marginLeft: -5,
-    alignItems: 'flex-start',
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#FFF',
   },
   scrollContent: {
     paddingTop: 20,

@@ -1,5 +1,3 @@
-// Note: This file requires an Expo/React Native environment to compile correctly.
-// Environment re-trigger to bypass temporary compilation permissions issue.
 import React, { useState, useRef } from 'react';
 import { 
   View, 
@@ -23,6 +21,7 @@ import { MENU_ITEMS, COMBO_PACKAGES } from '../constants/menuData';
 import { LinearGradient } from 'expo-linear-gradient';
 import QuickEditPackage from '../components/QuickEditPackage';
 import CartBadgeIcon from '../components/CartBadgeIcon'; 
+import TopNav from '../components/TopNav';
 
 export default function DetailsScreen() {
   const { id } = useLocalSearchParams();
@@ -92,37 +91,29 @@ export default function DetailsScreen() {
     ]).start();
   };
 
-  // Mathematical layout positioning for the header and image
   const safeTop = Platform.OS === 'web' ? 50 : insets.top + 10;
   const paddingBottom = 15;
-  const iconHeight = 26;
+  const iconHeight = 28; 
   const headerHeight = safeTop + paddingBottom + iconHeight;
   
-  // The image starts exactly behind the 30px curve of the border radius
   const imageMarginTop = headerHeight - 30; 
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar style="light" />
 
-      {/* Premium Header */}
-      <View style={[styles.header, { paddingTop: safeTop, paddingBottom }]}>
-        <TouchableOpacity onPress={() => router.back()} style={[styles.iconButton, styles.sideIcon]}>
-          <Ionicons name="arrow-back" size={iconHeight} color="#FFF" />
-        </TouchableOpacity>
-        
-        <View style={[styles.centerWrapper, { top: safeTop, bottom: paddingBottom }]} pointerEvents="none">
-          <Text style={styles.headerTitle}>Package Details</Text>
-        </View>
-
-        <View style={[styles.headerRight, styles.sideIcon]}>
-          <CartBadgeIcon onPress={() => router.push('/cart')} />
-        </View>
-      </View>
+      <TopNav 
+        title="Package Details"
+        leftIcon="arrow-back"
+        onLeftPress={() => router.back()}
+        rightComponent={<CartBadgeIcon onPress={() => router.push('/cart')} />}
+        isAbsolute={true} 
+        isScrolled={true} 
+        showDivider={false}
+      />
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 140 }]}>
         
-        {/* HERO IMAGE */}
         <ImageBackground 
           source={{ uri: item.image }} 
           style={[styles.heroImage, { marginTop: imageMarginTop }]}
@@ -144,7 +135,6 @@ export default function DetailsScreen() {
           />
         </ImageBackground>
 
-        {/* DETAILS CONTENT */}
         <View style={styles.detailsContent}>
           <View style={styles.titleRow}>
             <View style={styles.titleLeft}>
@@ -234,11 +224,10 @@ export default function DetailsScreen() {
         </View>
       </ScrollView>
 
-      {/* BOTTOM ACTION BAR - PRO UX FIX: Assured clearance from the system nav bar */}
       <View style={[
         styles.bottomBar, 
         { 
-          paddingBottom: insets.bottom + 20, 
+          paddingBottom: insets.bottom + 25, 
           backgroundColor: isDark ? colors.surface : '#FFF',
           borderTopColor: colors.border 
         }
@@ -288,7 +277,6 @@ export default function DetailsScreen() {
         <Text style={styles.toastText}>Successfully added to cart!</Text>
       </Animated.View>
 
-      {/* QUICK EDIT MODAL */}
       <QuickEditPackage 
         visible={isEditModalVisible} 
         onClose={() => setIsEditModalVisible(false)} 
@@ -302,46 +290,6 @@ export default function DetailsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  header: { 
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: Colors.primary, 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    justifyContent: 'space-between', 
-    paddingHorizontal: 20, 
-    borderBottomLeftRadius: 30, 
-    borderBottomRightRadius: 30, 
-    zIndex: 100, 
-  },
-  sideIcon: {
-    zIndex: 2,
-    minWidth: 40,
-  },
-  centerWrapper: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 1,
-  },
-  iconButton: { 
-    padding: 5,
-    marginLeft: -5,
-  },
-  headerTitle: { 
-    fontSize: 20, 
-    fontWeight: 'bold', 
-    color: '#FFF',
-  },
-  headerRight: { 
-    flexDirection: 'row', 
-    alignItems: 'center',
-    justifyContent: 'flex-end',
   },
   errorContainer: {
     flex: 1,
@@ -448,9 +396,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     elevation: 4,
     shadowColor: '#000',
-    shadowOffset: { 
-      width: 0, 
-      height: 2 
+    shadowOffset: {
+      width: 0,
+      height: 2,
     },
     shadowOpacity: 0.1,
     shadowRadius: 5,
@@ -543,9 +491,9 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     elevation: 15,
     shadowColor: '#000',
-    shadowOffset: { 
-      width: 0, 
-      height: -5 
+    shadowOffset: {
+      width: 0,
+      height: -5,
     },
     shadowOpacity: 0.1,
     shadowRadius: 10,
@@ -575,9 +523,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     elevation: 4,
     shadowColor: '#000',
-    shadowOffset: { 
-      width: 0, 
-      height: 4 
+    shadowOffset: {
+      width: 0,
+      height: 4,
     },
     shadowOpacity: 0.2,
     shadowRadius: 5,
@@ -597,9 +545,9 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     elevation: 10,
     shadowColor: '#000',
-    shadowOffset: { 
-      width: 0, 
-      height: 5 
+    shadowOffset: {
+      width: 0,
+      height: 5,
     },
     shadowOpacity: 0.3,
     shadowRadius: 8,

@@ -1,5 +1,3 @@
-// Note: This file requires an Expo/React Native environment to compile correctly.
-// Triggering a fresh build to resolve module resolution errors (local image path fix).
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { 
   View, 
@@ -7,7 +5,6 @@ import {
   StyleSheet, 
   TouchableOpacity, 
   ScrollView, 
-  Platform, 
   Animated, 
   useWindowDimensions,
   RefreshControl,
@@ -27,6 +24,7 @@ import ForYouCard from '../../components/ForYouCard';
 import { MENU_ITEMS } from '../../constants/menuData';
 import CartBadgeIcon from '../../components/CartBadgeIcon';
 import GridDishCard from '../../components/GridDishCard';
+import TopNav from '../../components/TopNav';
 
 const MENU_CATEGORIES = ['Main', 'Protein', 'Swallow', 'Snacks', 'Drinks', 'Rice'];
 
@@ -168,29 +166,25 @@ export default function MenuScreen() {
     ]).start();
   }
 
-  const paddingTop = Platform.OS === 'web' ? 50 : insets.top + 10;
-  const paddingBottom = 15;
-
   return (
     <View style={[menuStyles.container, { backgroundColor: colors.background }]}>
       <StatusBar style="light" />
 
-      <View style={[menuStyles.header, { paddingTop, paddingBottom }]}>
-        <TouchableOpacity onPress={() => setIsSidebarOpen(true)} style={[menuStyles.iconButton, menuStyles.sideIcon]}>
-          <Ionicons name="menu-outline" size={28} color="#FFF" />
-        </TouchableOpacity>
-        
-        <View style={[menuStyles.centerWrapper, { top: paddingTop, bottom: paddingBottom }]} pointerEvents="none">
-          <Text style={menuStyles.headerTitle}>Menu</Text>
-        </View>
-
-        <View style={[menuStyles.headerRight, menuStyles.sideIcon]}>
-          <TouchableOpacity style={menuStyles.iconButton}>
-            <Ionicons name="help-circle-outline" size={26} color="#FFF" />
-          </TouchableOpacity>
-          <CartBadgeIcon onPress={() => router.push('/cart')} />
-        </View>
-      </View>
+      <TopNav 
+        title="Menu"
+        leftIcon="menu-outline"
+        onLeftPress={() => setIsSidebarOpen(true)}
+        rightComponent={
+          <View style={menuStyles.headerRight}>
+            <TouchableOpacity style={menuStyles.iconButton}>
+              <Ionicons name="help-circle-outline" size={26} color="#FFF" />
+            </TouchableOpacity>
+            <CartBadgeIcon onPress={() => router.push('/cart')} />
+          </View>
+        }
+        isAbsolute={false} 
+        isScrolled={true}
+      />
 
       <ScrollView 
         showsVerticalScrollIndicator={false} 
@@ -218,7 +212,6 @@ export default function MenuScreen() {
         {isPackageEmpty ? (
           <View style={[menuStyles.emptyBox, { borderColor: isDark ? colors.border : '#FFCCCC', backgroundColor: isDark ? 'rgba(255,0,0,0.05)' : '#FFF0F0' }]}>
             <Image 
-              // UNCOMMENT THIS IN YOUR LOCAL ENVIRONMENT:
               source={require('../../assets/images/Icon&logo/empty-package.png')}
               style={[menuStyles.emptyPackageIcon, { tintColor: Colors.primary }]}
               resizeMode="contain"
@@ -330,35 +323,8 @@ export const menuStyles = StyleSheet.create({
   container: { 
     flex: 1,
   },
-  header: { 
-    backgroundColor: Colors.primary, 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    justifyContent: 'space-between', 
-    paddingHorizontal: 20, 
-    borderBottomLeftRadius: 30, 
-    borderBottomRightRadius: 30, 
-    zIndex: 10,
-  },
-  sideIcon: {
-    zIndex: 2,
-    minWidth: 40,
-  },
-  centerWrapper: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 1,
-  },
   iconButton: { 
     padding: 5,
-  },
-  headerTitle: { 
-    fontSize: 20, 
-    fontWeight: 'bold', 
-    color: '#FFF',
   },
   headerRight: { 
     flexDirection: 'row', 

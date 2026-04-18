@@ -1,4 +1,3 @@
-// Note: This file requires an Expo/React Native environment to compile correctly.
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { 
   View, 
@@ -7,7 +6,6 @@ import {
   TouchableOpacity, 
   ScrollView, 
   Image, 
-  Platform, 
   Animated,
   DeviceEventEmitter,
   LayoutAnimation
@@ -21,6 +19,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useCart } from '../context/CartContext';
 import { MENU_ITEMS } from '../constants/menuData';
 import QuickEditPackage from '../components/QuickEditPackage';
+import TopNav from '../components/TopNav';
 
 const CartItemCard = ({ item, isSelected, onToggle, onIncrease, onDecrease, onRemove, onEdit, colors, isDark }: any) => {
   const scaleAnim = useRef(new Animated.Value(isSelected ? 1 : 0)).current;
@@ -102,7 +101,6 @@ const CartItemCard = ({ item, isSelected, onToggle, onIncrease, onDecrease, onRe
     <Animated.View style={[
       styles.cartItem, 
       { backgroundColor: isLocked ? (isDark ? '#1A1A1A' : '#E0E0E0') : colors.surface },
-      // PRO UX FIX: Changed from red shadow to a standard professional dark shadow
       isSelected && !isLocked ? {
         borderColor: 'transparent',
         shadowColor: '#000',
@@ -253,9 +251,6 @@ export default function CartScreen() {
   
   const total = selectedItemsList.reduce((sum: number, item: any) => sum + (item.price * (item.quantity || 1)), 0);
 
-  const paddingTop = Platform.OS === 'web' ? 50 : insets.top + 10;
-  const paddingBottom = 15;
-
   const handleRemove = (id: string) => { removeFromCart(id); };
 
   const proceedToCheckout = () => {
@@ -280,17 +275,15 @@ export default function CartScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar style="light" />
-      <View style={[styles.topNavContainer, { paddingTop, paddingBottom }]}>
-        <TouchableOpacity onPress={() => router.back()} style={[styles.backButton, styles.sideIcon]}>
-          <Ionicons name="arrow-back" size={26} color="#FFF" />
-        </TouchableOpacity>
-        
-        <View style={[styles.centerWrapper, { top: paddingTop, bottom: paddingBottom }]} pointerEvents="none">
-          <Text style={styles.topNavTitle}>My Cart</Text>
-        </View>
-
-        <View style={styles.sideIcon} /> 
-      </View>
+      
+      {/* UNIVERSAL TOPNAV WITH SHADOW APPLIED */}
+      <TopNav 
+        title="My Cart"
+        leftIcon="arrow-back"
+        onLeftPress={() => router.back()}
+        isAbsolute={false} 
+        isScrolled={true} 
+      />
 
       {cartItems.length > 0 ? (
         <>
@@ -394,37 +387,6 @@ export default function CartScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  topNavContainer: {
-    backgroundColor: Colors.primary,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
-    zIndex: 10,
-  },
-  sideIcon: {
-    zIndex: 2,
-    minWidth: 40,
-  },
-  centerWrapper: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 1,
-  },
-  backButton: {
-    padding: 5,
-    marginLeft: -5,
-  },
-  topNavTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#FFF',
   },
   scrollContent: {
     paddingHorizontal: 20,
@@ -597,6 +559,14 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
     borderTopWidth: 1,
+    elevation: 20,
+    shadowColor: '#000',
+    shadowOffset: { 
+      width: 0, 
+      height: -6 
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 15,
   },
   summaryContainer: {
     paddingHorizontal: 20,

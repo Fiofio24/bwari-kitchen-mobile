@@ -1,5 +1,3 @@
-// Note: This file requires an Expo/React Native environment to compile correctly.
-// Triggering a fresh build to resolve system permissions and esbuild access errors.
 import React, { useState } from 'react';
 import { 
   View, 
@@ -7,7 +5,6 @@ import {
   StyleSheet, 
   TouchableOpacity, 
   ScrollView, 
-  Platform,
   LayoutAnimation,
   Image
 } from 'react-native';
@@ -18,6 +15,7 @@ import { useTheme } from '../context/ThemeContext';
 import { Colors } from '../constants/Colors';
 import { StatusBar } from 'expo-status-bar';
 import { useNotifications, AppNotification } from '../context/NotificationContext'; 
+import TopNav from '../components/TopNav';
 
 export default function NotificationsScreen() {
   const router = useRouter();
@@ -26,9 +24,6 @@ export default function NotificationsScreen() {
   
   const { notifications, markAsRead, markAllAsRead, unreadCount } = useNotifications();
   const [activeTab, setActiveTab] = useState<'all' | 'order' | 'promo'>('all');
-
-  const paddingTop = Platform.OS === 'web' ? 50 : insets.top + 10;
-  const paddingBottom = 15;
 
   const handleMarkAllAsRead = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -80,7 +75,6 @@ export default function NotificationsScreen() {
     activeTab === 'all' ? true : n.type === activeTab
   );
 
-  // PRO UX FIX: Smart Date Grouping Logic
   const recentNotifications = filteredNotifications.filter(n => 
     n.time.includes('min') || n.time.includes('hour') || n.time.includes('Today')
   );
@@ -89,7 +83,6 @@ export default function NotificationsScreen() {
     !(n.time.includes('min') || n.time.includes('hour') || n.time.includes('Today'))
   );
 
-  // Render function for individual cards to keep the JSX clean
   const renderNotificationCard = (notification: AppNotification) => {
     const config = getIconConfig(notification.type);
     
@@ -178,36 +171,38 @@ export default function NotificationsScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar style="light" />
 
-      {/* PREMIUM HEADER */}
-      <View style={[styles.header, { paddingTop, paddingBottom }]}>
-        <TouchableOpacity onPress={() => router.back()} style={[styles.iconButton, styles.sideIcon]}>
-          <Ionicons name="arrow-back" size={26} color="#FFF" />
-        </TouchableOpacity>
-        
-        <View style={[styles.centerWrapper, { top: paddingTop, bottom: paddingBottom }]} pointerEvents="none">
-          <Text style={styles.headerTitle}>Notifications</Text>
-        </View>
-
-        <View style={[styles.headerRight, styles.sideIcon]}>
-          <TouchableOpacity 
-            style={styles.actionIcon} 
-            onPress={() => router.push('/profile')}
-          >
-            <Ionicons name="settings-outline" size={24} color="#FFF" />
-          </TouchableOpacity> 
-          <TouchableOpacity 
-            style={styles.actionIcon} 
-            onPress={handleMarkAllAsRead}
-            disabled={unreadCount === 0}
-          >
-            <Ionicons 
-              name="checkmark-done-outline" 
-              size={26} 
-              color={unreadCount > 0 ? "#FFF" : "rgba(255,255,255,0.4)"} 
-            />
-          </TouchableOpacity> 
-        </View>
-      </View>
+      {/* PREMIUM UNIVERSAL TOPNAV */}
+      <TopNav 
+        title="Notifications"
+        leftIcon="arrow-back"
+        onLeftPress={() => router.back()}
+        isAbsolute={false} 
+        isScrolled={true}
+        showDivider={false}
+        rightComponent={
+          <View style={styles.headerRight}>
+            <TouchableOpacity 
+              style={styles.actionIcon} 
+              onPress={() => router.push('/profile')}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="settings-outline" size={24} color="#FFF" />
+            </TouchableOpacity> 
+            <TouchableOpacity 
+              style={styles.actionIcon} 
+              onPress={handleMarkAllAsRead}
+              disabled={unreadCount === 0}
+              activeOpacity={0.8}
+            >
+              <Ionicons 
+                name="checkmark-done-outline" 
+                size={26} 
+                color={unreadCount > 0 ? "#FFF" : "rgba(255,255,255,0.4)"} 
+              />
+            </TouchableOpacity> 
+          </View>
+        }
+      />
 
       {/* FILTER TABS */}
       <View style={styles.tabContainer}>
@@ -294,40 +289,6 @@ export default function NotificationsScreen() {
 const styles = StyleSheet.create({
   container: { 
     flex: 1,
-  },
-  header: { 
-    backgroundColor: Colors.primary, 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    justifyContent: 'space-between', 
-    paddingHorizontal: 20, 
-    borderBottomLeftRadius: 30, 
-    borderBottomRightRadius: 30, 
-    zIndex: 10,
-  },
-  sideIcon: { 
-    zIndex: 2, 
-    minWidth: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  centerWrapper: { 
-    position: 'absolute', 
-    left: 0, 
-    right: 0, 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    zIndex: 1,
-  },
-  iconButton: { 
-    padding: 5, 
-    marginLeft: -5,
-    alignItems: 'flex-start',
-  },
-  headerTitle: { 
-    fontSize: 20, 
-    fontWeight: 'bold', 
-    color: '#FFF',
   },
   headerRight: {
     flexDirection: 'row',

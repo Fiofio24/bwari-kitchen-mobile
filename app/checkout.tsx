@@ -1,5 +1,3 @@
-// Note: This file requires an Expo/React Native environment to compile correctly.
-// Triggering a fresh build to resolve ESLint unescaped entities warning.
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   View, 
@@ -197,7 +195,6 @@ export default function CheckoutScreen() {
                 <Ionicons name="checkmark-circle" size={100} color="#4CAF50" />
               </Animated.View>
               <Text style={[styles.successTitle, { color: colors.text }]}>Payment Confirmed!</Text>
-              {/* LINT FIX: Escaped the apostrophe below */}
               <Text style={[styles.successSub, { color: colors.textMuted }]}>
                 We&apos;ve received your transfer. Preparing your meal now.
               </Text>
@@ -219,6 +216,7 @@ export default function CheckoutScreen() {
         onLeftPress={() => router.back()}
         isAbsolute={false} 
         showDivider={false} 
+        isScrolled={true}
       />
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomNavHeight + 60 }]}>
@@ -321,14 +319,24 @@ export default function CheckoutScreen() {
         <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>PAYMENT METHOD</Text>
         <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <TouchableOpacity style={[styles.paymentOption, { borderBottomWidth: 1, borderBottomColor: colors.border }]} onPress={() => setSelectedPayment('card')}>
-            <View style={[styles.paymentIconBox, { backgroundColor: '#F3E5F5' }]}><Ionicons name="card" size={20} color="#9C27B0" /></View>
-            <View style={styles.paymentTextContainer}><Text style={[styles.paymentTitle, { color: colors.text }]}>Credit/Debit Card</Text><Text style={[styles.paymentSub, { color: colors.textMuted }]}>Visa or Mastercard</Text></View>
+            <View style={[styles.paymentIconBox, { backgroundColor: '#F3E5F5' }]}>
+              <Ionicons name="card" size={20} color="#9C27B0" />
+            </View>
+            <View style={styles.paymentTextContainer}>
+              <Text style={[styles.paymentTitle, { color: colors.text }]}>Credit/Debit Card</Text>
+              <Text style={[styles.paymentSub, { color: colors.textMuted }]}>Visa or Mastercard</Text>
+            </View>
             <Ionicons name={selectedPayment === 'card' ? "radio-button-on" : "radio-button-off"} size={24} color={selectedPayment === 'card' ? Colors.primary : colors.textMuted} />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.paymentOption} onPress={() => setSelectedPayment('bank')}>
-            <View style={[styles.paymentIconBox, { backgroundColor: '#E3F2FD' }]}><Ionicons name="business" size={20} color="#1976D2" /></View>
-            <View style={styles.paymentTextContainer}><Text style={[styles.paymentTitle, { color: colors.text }]}>Bank Transfer</Text><Text style={[styles.paymentSub, { color: colors.textMuted }]}>Instant live verification</Text></View>
+            <View style={[styles.paymentIconBox, { backgroundColor: '#E3F2FD' }]}>
+              <Ionicons name="business" size={20} color="#1976D2" />
+            </View>
+            <View style={styles.paymentTextContainer}>
+              <Text style={[styles.paymentTitle, { color: colors.text }]}>Bank Transfer</Text>
+              <Text style={[styles.paymentSub, { color: colors.textMuted }]}>Instant live verification</Text>
+            </View>
             <Ionicons name={selectedPayment === 'bank' ? "radio-button-on" : "radio-button-off"} size={24} color={selectedPayment === 'bank' ? Colors.primary : colors.textMuted} />
           </TouchableOpacity>
         </View>
@@ -611,6 +619,11 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     paddingTop: 20,
     paddingHorizontal: 20,
+    elevation: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 15,
   },
   footerContent: {
     flexDirection: 'row',

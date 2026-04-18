@@ -1,4 +1,3 @@
-// Note: This file requires an Expo/React Native environment to compile correctly.
 import React, { useState } from 'react';
 import { 
   View, 
@@ -7,9 +6,7 @@ import {
   TouchableOpacity, 
   ScrollView, 
   TextInput, 
-  Platform,
-  Alert,
-//   Animated
+  Alert
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
 import { Colors } from '../constants/Colors';
 import { StatusBar } from 'expo-status-bar';
+import TopNav from '../components/TopNav';
 
 const PROMO_DATA = [
   {
@@ -56,9 +54,6 @@ export default function PromoScreen() {
   const [inputCode, setInputCode] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  const paddingTop = Platform.OS === 'web' ? 50 : insets.top + 10;
-  const paddingBottom = 15;
-
   const handleApplyInput = () => {
     if (!inputCode.trim()) {
       Alert.alert('Error', 'Please enter a promo code first.');
@@ -85,16 +80,15 @@ export default function PromoScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar style="light" />
 
-      {/* HEADER */}
-      <View style={[styles.header, { paddingTop, paddingBottom }]}>
-        <TouchableOpacity onPress={() => router.back()} style={[styles.iconButton, styles.sideIcon]}>
-          <Ionicons name="arrow-back" size={26} color="#FFF" />
-        </TouchableOpacity>
-        <View style={[styles.centerWrapper, { top: paddingTop, bottom: paddingBottom }]} pointerEvents="none">
-          <Text style={styles.headerTitle}>Offers & Promo</Text>
-        </View>
-        <View style={styles.sideIcon} /> 
-      </View>
+      {/* UNIVERSAL TOPNAV WITH SHADOW */}
+      <TopNav 
+        title="Offers & Promo"
+        leftIcon="arrow-back"
+        onLeftPress={() => router.back()}
+        isAbsolute={false} 
+        isScrolled={true}
+        showDivider={false}
+      />
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 40 }]}>
         
@@ -180,37 +174,6 @@ export default function PromoScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  header: {
-    backgroundColor: Colors.primary,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
-    zIndex: 10,
-  },
-  sideIcon: {
-    zIndex: 2,
-    minWidth: 40,
-  },
-  centerWrapper: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 1,
-  },
-  iconButton: {
-    padding: 5,
-    marginLeft: -5,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#FFF',
   },
   scrollContent: {
     paddingTop: 20,

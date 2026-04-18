@@ -1,5 +1,3 @@
-// Note: This file requires an Expo/React Native environment to compile correctly.
-// Triggering a fresh build to resolve module resolution errors (wallet removed - v2).
 import React, { useState } from 'react';
 import { 
   View, 
@@ -7,7 +5,6 @@ import {
   StyleSheet, 
   TouchableOpacity, 
   ScrollView, 
-  Platform,
   Alert,
   LayoutAnimation,
   Switch
@@ -18,6 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
 import { Colors } from '../constants/Colors';
 import { StatusBar } from 'expo-status-bar';
+import TopNav from '../components/TopNav';
 
 // Mock Data for Saved Cards
 const INITIAL_CARDS = [
@@ -46,9 +44,6 @@ export default function PaymentMethodsScreen() {
   
   const [cards, setCards] = useState(INITIAL_CARDS);
   const [cashOnDelivery, setCashOnDelivery] = useState(false);
-
-  const paddingTop = Platform.OS === 'web' ? 50 : insets.top + 10;
-  const paddingBottom = 15;
 
   const handleSetDefault = (id: string) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -98,16 +93,15 @@ export default function PaymentMethodsScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar style="light" />
 
-      {/* HEADER */}
-      <View style={[styles.header, { paddingTop, paddingBottom }]}>
-        <TouchableOpacity onPress={() => router.back()} style={[styles.iconButton, styles.sideIcon]}>
-          <Ionicons name="arrow-back" size={26} color="#FFF" />
-        </TouchableOpacity>
-        <View style={[styles.centerWrapper, { top: paddingTop, bottom: paddingBottom }]} pointerEvents="none">
-          <Text style={styles.headerTitle}>Payment Methods</Text>
-        </View>
-        <View style={styles.sideIcon} /> 
-      </View>
+      {/* UNIVERSAL TOPNAV WITH SHADOW */}
+      <TopNav 
+        title="Payment Methods"
+        leftIcon="arrow-back"
+        onLeftPress={() => router.back()}
+        isAbsolute={false} 
+        isScrolled={true}
+        showDivider={false}
+      />
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 120 }]}>
         
@@ -245,44 +239,9 @@ export default function PaymentMethodsScreen() {
   );
 }
 
-// PRO CSS COMPLIANCE: Every property strictly on its own line
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  header: {
-    backgroundColor: Colors.primary,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
-    zIndex: 10,
-  },
-  sideIcon: {
-    zIndex: 2,
-    minWidth: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  centerWrapper: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 1,
-  },
-  iconButton: {
-    padding: 5,
-    marginLeft: -5,
-    alignItems: 'flex-start',
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#FFF',
   },
   scrollContent: {
     paddingTop: 20,

@@ -1,4 +1,3 @@
-// Note: This file requires an Expo/React Native environment to compile correctly.
 import React, { useState } from 'react';
 import { 
   View, 
@@ -6,7 +5,6 @@ import {
   StyleSheet, 
   TouchableOpacity, 
   ScrollView, 
-  Platform,
   LayoutAnimation,
   DimensionValue
 } from 'react-native';
@@ -16,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
 import { Colors } from '../constants/Colors';
 import { StatusBar } from 'expo-status-bar';
+import TopNav from '../components/TopNav';
 
 // Pro Mock Data with every status represented
 const MOCK_ORDERS = [
@@ -118,9 +117,6 @@ export default function MyOrdersScreen() {
   const [activeTab, setActiveTab] = useState<'active' | 'past'>('active');
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  const paddingTop = Platform.OS === 'web' ? 50 : insets.top + 10;
-  const paddingBottom = 15;
-
   const filteredOrders = MOCK_ORDERS.filter(order => 
     activeTab === 'active' ? order.active : !order.active
   );
@@ -191,18 +187,24 @@ export default function MyOrdersScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar style="light" />
 
-      {/* HEADER */}
-      <View style={[styles.header, { paddingTop, paddingBottom }]}>
-        <TouchableOpacity onPress={() => router.back()} style={[styles.iconButton, styles.sideIcon]}>
-          <Ionicons name="arrow-back" size={26} color="#FFF" />
-        </TouchableOpacity>
-        <View style={[styles.centerWrapper, { top: paddingTop, bottom: paddingBottom }]} pointerEvents="none">
-          <Text style={styles.headerTitle}>My Orders</Text>
-        </View>
-        <TouchableOpacity style={styles.sideIcon}>
-          <Ionicons name="help-buoy-outline" size={24} color="#FFF" />
-        </TouchableOpacity> 
-      </View>
+      {/* UNIVERSAL TOPNAV WITH SHADOW AND CHAT ICON */}
+      <TopNav 
+        title="My Orders"
+        leftIcon="arrow-back"
+        onLeftPress={() => router.back()}
+        isAbsolute={false} 
+        isScrolled={true}
+        showDivider={false}
+        rightComponent={
+          <TouchableOpacity 
+            style={styles.iconButton} 
+            onPress={() => router.push('/help')}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="chatbubbles-outline" size={24} color="#FFF" />
+          </TouchableOpacity> 
+        }
+      />
 
       {/* TABS */}
       <View style={styles.tabContainer}>
@@ -310,7 +312,7 @@ export default function MyOrdersScreen() {
 
                     {/* Action Buttons */}
                     <View style={styles.actionFooterRow}>
-                      <TouchableOpacity style={[styles.helpBtn, { borderColor: colors.border }]}>
+                      <TouchableOpacity style={[styles.helpBtn, { borderColor: colors.border }]} onPress={() => router.push('/help')}>
                         <Ionicons name="chatbubble-ellipses-outline" size={16} color={colors.text} />
                         <Text style={[styles.helpBtnText, { color: colors.text }]}>Get Help</Text>
                       </TouchableOpacity>
@@ -346,40 +348,12 @@ export default function MyOrdersScreen() {
 
 const styles = StyleSheet.create({
   container: { 
-    flex: 1 
-  },
-  header: { 
-    backgroundColor: Colors.primary, 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    justifyContent: 'space-between', 
-    paddingHorizontal: 20, 
-    borderBottomLeftRadius: 30, 
-    borderBottomRightRadius: 30, 
-    zIndex: 10 
-  },
-  sideIcon: { 
-    zIndex: 2, 
-    minWidth: 40,
-    alignItems: 'center'
-  },
-  centerWrapper: { 
-    position: 'absolute', 
-    left: 0, 
-    right: 0, 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    zIndex: 1 
+    flex: 1,
   },
   iconButton: { 
     padding: 5, 
-    marginLeft: -5,
-    alignItems: 'flex-start'
-  },
-  headerTitle: { 
-    fontSize: 20, 
-    fontWeight: 'bold', 
-    color: '#FFF' 
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   tabContainer: {
     flexDirection: 'row',
@@ -395,6 +369,7 @@ const styles = StyleSheet.create({
     borderBottomColor: 'transparent',
   },
   activeTab: {
+    borderBottomWidth: 2,
   },
   tabText: {
     fontSize: 15,
@@ -412,10 +387,13 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { 
+      width: 0, 
+      height: 2 
+    },
     shadowOpacity: 0.05,
     shadowRadius: 5,
-    overflow: 'hidden'
+    overflow: 'hidden',
   },
   cardHeader: {
     flexDirection: 'row',
@@ -435,6 +413,7 @@ const styles = StyleSheet.create({
     marginRight: 15,
   },
   orderIdBox: {
+    justifyContent: 'center',
   },
   orderIdText: {
     fontSize: 16,
@@ -466,11 +445,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     flex: 1,
     paddingRight: 10,
-    fontWeight: '500'
+    fontWeight: '500',
   },
   expandRow: {
     flexDirection: 'row',
-    alignItems: 'center'
+    alignItems: 'center',
   },
   totalText: {
     fontSize: 16,
@@ -482,7 +461,7 @@ const styles = StyleSheet.create({
   progressContainer: {
     marginBottom: 25,
     paddingTop: 10,
-    position: 'relative'
+    position: 'relative',
   },
   progressLineBg: {
     position: 'absolute',
@@ -491,7 +470,7 @@ const styles = StyleSheet.create({
     right: '12.5%', 
     height: 4,
     borderRadius: 2,
-    zIndex: 1
+    zIndex: 1,
   },
   progressLineFill: {
     height: '100%',
@@ -500,11 +479,11 @@ const styles = StyleSheet.create({
   progressNodesContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    zIndex: 2
+    zIndex: 2,
   },
   nodeWrapper: {
     width: '25%',
-    alignItems: 'center'
+    alignItems: 'center',
   },
   nodeCircle: {
     width: 26,
@@ -517,11 +496,10 @@ const styles = StyleSheet.create({
   },
   stepText: {
     fontSize: 11,
-    fontWeight: '600'
+    fontWeight: '600',
   },
   stepTextActive: {
-    color: Colors.primary,
-    fontWeight: 'bold'
+    fontWeight: 'bold',
   },
   receiptBox: {
     padding: 15,
@@ -537,21 +515,21 @@ const styles = StyleSheet.create({
   receiptItemRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8
+    marginBottom: 8,
   },
   receiptItemQty: {
     width: 25,
     fontSize: 13,
-    fontWeight: 'bold'
+    fontWeight: 'bold',
   },
   receiptItemName: {
     flex: 1,
     fontSize: 13,
-    paddingRight: 10
+    paddingRight: 10,
   },
   receiptItemPrice: {
     fontSize: 13,
-    fontWeight: 'bold'
+    fontWeight: 'bold',
   },
   dashedDivider: {
     borderTopWidth: 1,
@@ -562,27 +540,26 @@ const styles = StyleSheet.create({
     fontSize: 13,
     flex: 1,
     textAlign: 'right',
-    paddingRight: 10
+    paddingRight: 10,
   },
   ratingSection: {
     alignItems: 'center',
     marginBottom: 20,
     paddingVertical: 10,
-    backgroundColor: 'rgba(255, 193, 7, 0.1)',
-    borderRadius: 15
+    borderRadius: 15,
   },
   ratingLabel: {
     fontSize: 14,
     fontWeight: 'bold',
-    marginBottom: 8
+    marginBottom: 8,
   },
   starsRow: {
-    flexDirection: 'row'
+    flexDirection: 'row',
   },
   actionFooterRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: 15
+    gap: 15,
   },
   helpBtn: {
     flex: 1,
@@ -596,7 +573,7 @@ const styles = StyleSheet.create({
   helpBtnText: {
     fontWeight: 'bold',
     fontSize: 14,
-    marginLeft: 6
+    marginLeft: 6,
   },
   primaryActionBtn: {
     flex: 1,
@@ -608,7 +585,7 @@ const styles = StyleSheet.create({
   primaryActionText: {
     color: '#FFF',
     fontWeight: 'bold',
-    fontSize: 14
+    fontSize: 14,
   },
   emptyContainer: {
     alignItems: 'center',

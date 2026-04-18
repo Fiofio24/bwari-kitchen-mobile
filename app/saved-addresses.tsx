@@ -66,7 +66,8 @@ export default function SavedAddressesScreen() {
         title="Saved Addresses"
         leftIcon="arrow-back"
         onLeftPress={() => router.back()}
-        isAbsolute={false} 
+        isAbsolute={false}
+        isScrolled={true} 
         showDivider={false} 
       />
 

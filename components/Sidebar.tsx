@@ -1,5 +1,3 @@
-// Note: This file requires an Expo/React Native environment to compile correctly.
-// Triggering another fresh build to resolve module resolution errors (cache bust - help page linked v2).
 import React, { useEffect, useRef, useState } from 'react';
 import { 
   View, 
@@ -81,9 +79,9 @@ export default function Sidebar({ visible, onClose }: SidebarProps) {
 
   const menuItems = [
     { name: 'Account & Settings', icon: 'person-outline', route: '/profile' },
-    { name: 'My Orders', icon: 'bag-handle-outline', route: '/my-orders' },
-    { name: 'Saved Addresses', icon: 'location-outline', route: null },
-    { name: 'Payment Methods', icon: 'card-outline', route: null },
+    { name: 'My Orders', icon: 'bag-handle-outline', route: '/my-orders', badge: '4' },
+    { name: 'Saved Addresses', icon: 'location-outline', route: '/saved-addresses' },
+    { name: 'Payment Methods', icon: 'card-outline', route: '/payment-methods' },
     { name: 'Offers & Promo', icon: 'pricetag-outline', route: '/promo', badge: 'NEW' },
     { name: 'Help & Support', icon: 'chatbubbles-outline', route: '/help' },
   ];
@@ -123,32 +121,48 @@ export default function Sidebar({ visible, onClose }: SidebarProps) {
             }
           ]}
         >
+          {/* BRANDED HEADER WITH PERFECT FLEXBOX ALIGNMENT */}
           <LinearGradient
-            colors={[colors.primary, '#B71C1C']}
+            colors={[colors.primary, colors.primary]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            style={[styles.header, { paddingTop: safeTop }]}
+            style={[styles.header, { paddingTop: safeTop + 10 }]}
           >
-            <View style={styles.profileInfo}>
-              <View style={styles.profileCircle}>
-                {userData.avatarUri ? (
-                   <Image source={{ uri: userData.avatarUri }} style={styles.avatarImage} />
-                ) : (
-                   <Ionicons name="person" size={30} color={colors.primary} />
-                )}
-              </View>
-              
-              <View>
-                <Text style={styles.userName}>{userData.name}</Text>
-                <Text style={styles.userEmail} numberOfLines={1}>{userData.email}</Text>
+            <View style={styles.brandContainer}>
+              <Image 
+                source={require('../assets/images/Icon&logo/BK_logo1-w.png')} 
+                style={styles.brandLogo} 
+                resizeMode="contain" 
+              />
+              <View style={styles.brandTextContainer}>
+                <Text style={styles.brandTextMain}>BWARI</Text>
+                <Text style={styles.brandTextSub}>KITCHEN®</Text>
               </View>
             </View>
-            <TouchableOpacity onPress={onClose} style={[styles.closeBtn, { top: safeTop - 10 }]}>
-              <Ionicons name="close" size={24} color="#FFF" />
+            
+            <TouchableOpacity onPress={onClose} style={styles.closeBtn} activeOpacity={0.7}>
+              <Ionicons name="close" size={26} color="#FFF" />
             </TouchableOpacity>
           </LinearGradient>
           
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+            
+            {/* RELOCATED PROFILE SECTION */}
+            <View style={[styles.bodyProfileSection, { borderBottomColor: colors.border }]}>
+              <View style={[styles.profileCircle, { backgroundColor: isDark ? colors.surface : '#EAEAEC' }]}>
+                {userData.avatarUri ? (
+                   <Image source={{ uri: userData.avatarUri }} style={styles.avatarImage} />
+                ) : (
+                   <Ionicons name="person" size={36} color={colors.primary} />
+                )}
+              </View>
+              
+              <View style={styles.bodyProfileText}>
+                <Text style={[styles.bodyUserName, { color: colors.text }]}>{userData.name}</Text>
+                <Text style={[styles.bodyUserEmail, { color: colors.textMuted }]} numberOfLines={1}>{userData.email}</Text>
+              </View>
+            </View>
+
             <View style={styles.themeSection}>
               <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>APPEARANCE</Text>
               <View style={styles.themeRow}>
@@ -268,22 +282,58 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
   },
   header: { 
-    paddingBottom: 35, 
+    paddingBottom: 25, 
     paddingHorizontal: 20,
     borderBottomRightRadius: 40,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  profileInfo: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    marginBottom: 20,
+  brandContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  profileCircle: { 
-    width: 60, 
-    height: 60, 
-    borderRadius: 30, 
-    backgroundColor: '#FFF', 
-    justifyContent: 'center', 
-    alignItems: 'center', 
+  brandLogo: {
+    width: 85,
+    height: 56,
+    marginRight: 10,
+  },
+  brandTextContainer: {
+    justifyContent: 'center',
+  },
+  brandTextMain: {
+    color: '#FFF',
+    fontSize: 28,
+    fontWeight: '900',
+    letterSpacing: 1,
+    marginBottom: -4,
+  },
+  brandTextSub: {
+    color: '#FFF',
+    fontSize: 13,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
+  },
+  closeBtn: { 
+    padding: 5, 
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 20,
+  },
+  bodyProfileSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 25,
+    borderBottomWidth: 1,
+  },
+  profileCircle: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    justifyContent: 'center',
+    alignItems: 'center',
     marginRight: 15,
     overflow: 'hidden',
   },
@@ -292,30 +342,20 @@ const styles = StyleSheet.create({
     height: '100%',
     resizeMode: 'cover',
   },
-  userName: { 
-    color: '#FFF', 
-    fontSize: 20, 
+  bodyProfileText: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  bodyUserName: {
+    fontSize: 20,
     fontWeight: 'bold',
+    marginBottom: 4,
   },
-  userEmail: { 
-    color: '#FFCCCC', 
-    fontSize: 14, 
-    marginTop: 2,
-    maxWidth: 150,
-  },
-  closeBtn: { 
-    position: 'absolute', 
-    right: 20, 
-    backgroundColor: 'rgba(255,255,255,0.2)', 
-    padding: 5, 
-    borderRadius: 15,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingBottom: 20,
+  bodyUserEmail: {
+    fontSize: 14,
   },
   themeSection: { 
-    paddingTop: 30, 
+    paddingTop: 25, 
     paddingHorizontal: 20,
   },
   sectionTitle: { 

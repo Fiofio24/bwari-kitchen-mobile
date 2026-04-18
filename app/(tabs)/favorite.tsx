@@ -1,5 +1,3 @@
-// Note: This file requires an Expo/React Native environment to compile correctly.
-// Triggering a fresh build to resolve module resolution errors.
 import React, { useState, useRef, useCallback } from 'react';
 import { 
   View, 
@@ -9,7 +7,6 @@ import {
   ScrollView, 
   Animated, 
   useWindowDimensions, 
-  Platform,
   RefreshControl 
 } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -24,6 +21,7 @@ import GridDishCard from '../../components/GridDishCard';
 import Sidebar from '../../components/Sidebar';
 import CartBadgeIcon from '../../components/CartBadgeIcon';
 import { MENU_ITEMS } from '../../constants/menuData'; 
+import TopNav from '../../components/TopNav';
 
 export default function FavoriteScreen() {
   const router = useRouter();
@@ -34,7 +32,7 @@ export default function FavoriteScreen() {
   const { favorites, toggleFavorite, isFavorite } = useFavorites();
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [refreshing, setRefreshing] = useState(false); // <-- Added Refresh State
+  const [refreshing, setRefreshing] = useState(false); 
   const toastAnim = useRef(new Animated.Value(-100)).current;
 
   const { width } = useWindowDimensions();
@@ -47,10 +45,7 @@ export default function FavoriteScreen() {
   const CARD_WIDTH = Math.floor((AVAILABLE_WIDTH - (GRID_GAP * (NUM_COLUMNS - 1))) / NUM_COLUMNS);
 
   const bottomNavHeight = 70 + Math.max(insets.bottom, 15);
-  const paddingTop = Platform.OS === 'web' ? 50 : insets.top + 10;
-  const paddingBottom = 15;
 
-  // PRO UX FIX: Global Refresh Simulation for Favorites
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     console.log("🔄 Global App Refresh Triggered from FAVORITES: Verifying availability...");
@@ -96,25 +91,25 @@ export default function FavoriteScreen() {
     return dbItem ? dbItem.isAvailable !== false : true;
   };
 
+  const headerRightComponent = (
+    <View style={styles.headerRight}>
+      <CartBadgeIcon onPress={() => router.push('/cart')} />
+    </View>
+  );
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar style="light" />
 
-      <View style={[styles.header, { paddingTop, paddingBottom }]}>
-        <TouchableOpacity onPress={() => setIsSidebarOpen(true)} style={[styles.iconButton, styles.sideIcon]}>
-          <Ionicons name="menu-outline" size={28} color="#FFF" />
-        </TouchableOpacity>
-        
-        <View style={[styles.centerWrapper, { top: paddingTop, bottom: paddingBottom }]} pointerEvents="none">
-          <Text style={styles.headerTitle}>Favorites</Text>
-        </View>
+      <TopNav 
+        title="Favorites"
+        leftIcon="menu-outline"
+        onLeftPress={() => setIsSidebarOpen(true)}
+        rightComponent={headerRightComponent}
+        isAbsolute={false} 
+        isScrolled={true}
+      />
 
-        <View style={[styles.headerRight, styles.sideIcon]}>
-          <CartBadgeIcon onPress={() => router.push('/cart')} />
-        </View>
-      </View>
-
-      {/* PRO UX FIX: The entire content (even when empty) is now in a ScrollView to allow pull-to-refresh! */}
       <ScrollView 
         showsVerticalScrollIndicator={false} 
         contentContainerStyle={[
@@ -168,7 +163,7 @@ export default function FavoriteScreen() {
             </View>
             <Text style={[styles.emptyTitle, { color: colors.text }]}>No Favorites Yet</Text>
             <Text style={[styles.emptySubtitle, { color: colors.textMuted }]}>
-              You haven&apos;t added any meals to your favorites. Tap the heart icon on any meal to save it for later!
+              You haven&aps;t added any meals to your favorites. Tap the heart icon on any meal to save it for later!
             </Text>
             <TouchableOpacity style={styles.browseBtn} onPress={() => router.push('/menu')} activeOpacity={0.8}>
               <Text style={styles.browseBtnText}>Browse Menu</Text>
@@ -190,37 +185,6 @@ export default function FavoriteScreen() {
 const styles = StyleSheet.create({
   container: { 
     flex: 1, 
-  },
-  header: { 
-    backgroundColor: Colors.primary, 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    justifyContent: 'space-between', 
-    paddingHorizontal: 20, 
-    borderBottomLeftRadius: 30, 
-    borderBottomRightRadius: 30, 
-    zIndex: 10, 
-  },
-  sideIcon: {
-    zIndex: 2,
-    minWidth: 40,
-  },
-  centerWrapper: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 1,
-  },
-  iconButton: { 
-    padding: 5,
-    marginLeft: -5,
-  },
-  headerTitle: { 
-    fontSize: 20, 
-    fontWeight: 'bold', 
-    color: '#FFF',
   },
   headerRight: { 
     flexDirection: 'row', 
