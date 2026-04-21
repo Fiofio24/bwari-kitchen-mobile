@@ -20,6 +20,7 @@ import { StatusBar } from 'expo-status-bar';
 import Sidebar from '../../components/Sidebar';
 import { useRouter } from 'expo-router'; 
 import TopNav from '../../components/TopNav';
+import CartBadgeIcon from '../../components/CartBadgeIcon';
 
 export default function ProfileScreen() {
   const { colors, isDark, setThemeMode } = useTheme();
@@ -97,9 +98,9 @@ export default function ProfileScreen() {
         leftIcon="menu-outline"
         onLeftPress={() => setIsSidebarOpen(true)}
         rightComponent={
-          <TouchableOpacity style={styles.iconButton} onPress={() => {}}>
-            <Ionicons name="settings-outline" size={24} color="#FFF" />
-          </TouchableOpacity>
+          <View style={styles.headerRight}>
+            <CartBadgeIcon onPress={() => router.push('/cart')} />
+          </View>
         }
         isAbsolute={false} 
         isScrolled={true}
@@ -202,6 +203,7 @@ export default function ProfileScreen() {
           <ProfileMenuItem 
             icon="notifications-outline" 
             label="Notification Preferences" 
+            onPress={() => router.push('/notification-preferences')}
           />
         </View>
 
@@ -249,6 +251,11 @@ const styles = StyleSheet.create({
   },
   iconButton: { 
     padding: 5,
+  },
+  headerRight: { 
+    flexDirection: 'row', 
+    alignItems: 'center',
+    justifyContent: 'flex-end',
   },
   scrollContent: { 
     paddingTop: 20,

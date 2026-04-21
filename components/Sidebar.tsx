@@ -129,6 +129,10 @@ export default function Sidebar({ visible, onClose }: SidebarProps) {
             style={[styles.header, { paddingTop: safeTop + 10 }]}
           >
             <View style={styles.brandContainer}>
+            {/* <TouchableOpacity 
+              style={styles.brandContainer}
+              // onPress={() => router.push('/index ')}
+            > */}
               <Image 
                 source={require('../assets/images/Icon&logo/BK_logo1-w.png')} 
                 style={styles.brandLogo} 
@@ -138,6 +142,7 @@ export default function Sidebar({ visible, onClose }: SidebarProps) {
                 <Text style={styles.brandTextMain}>BWARI</Text>
                 <Text style={styles.brandTextSub}>KITCHEN®</Text>
               </View>
+            {/* </TouchableOpacity> */}
             </View>
             
             <TouchableOpacity onPress={onClose} style={styles.closeBtn} activeOpacity={0.7}>
@@ -148,20 +153,24 @@ export default function Sidebar({ visible, onClose }: SidebarProps) {
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
             
             {/* RELOCATED PROFILE SECTION */}
-            <View style={[styles.bodyProfileSection, { borderBottomColor: colors.border }]}>
-              <View style={[styles.profileCircle, { backgroundColor: isDark ? colors.surface : '#EAEAEC' }]}>
-                {userData.avatarUri ? (
-                   <Image source={{ uri: userData.avatarUri }} style={styles.avatarImage} />
-                ) : (
-                   <Ionicons name="person" size={36} color={colors.primary} />
-                )}
+            <TouchableOpacity
+              onPress={() => {onClose(); router.replace('/profile');}}
+            >
+              <View style={[styles.bodyProfileSection, { borderBottomColor: colors.border }]}>
+                <View style={[styles.profileCircle, { backgroundColor: isDark ? colors.surface : '#EAEAEC' }]}>
+                  {userData.avatarUri ? (
+                    <Image source={{ uri: userData.avatarUri }} style={styles.avatarImage} />
+                  ) : (
+                    <Ionicons name="person" size={36} color={colors.primary} />
+                  )}
+                </View>
+                
+                <View style={styles.bodyProfileText}>
+                  <Text style={[styles.bodyUserName, { color: colors.text }]}>{userData.name}</Text>
+                  <Text style={[styles.bodyUserEmail, { color: colors.textMuted }]} numberOfLines={1}>{userData.email}</Text>
+                </View>
               </View>
-              
-              <View style={styles.bodyProfileText}>
-                <Text style={[styles.bodyUserName, { color: colors.text }]}>{userData.name}</Text>
-                <Text style={[styles.bodyUserEmail, { color: colors.textMuted }]} numberOfLines={1}>{userData.email}</Text>
-              </View>
-            </View>
+            </TouchableOpacity>
 
             <View style={styles.themeSection}>
               <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>APPEARANCE</Text>
@@ -253,9 +262,15 @@ export default function Sidebar({ visible, onClose }: SidebarProps) {
           </ScrollView>
           
           <View style={[styles.logoutWrapper, { borderTopColor: colors.border }]}>
-            <TouchableOpacity style={styles.logoutBtn} activeOpacity={0.8}>
+            <TouchableOpacity 
+              style={styles.logoutBtn} 
+              activeOpacity={0.8}
+              onPress={() => {onClose(); router.replace('/login');}} 
+            >
               <Ionicons name="log-out-outline" size={22} color="#D32F2F" />
-              <Text style={styles.logoutText}>Sign Out</Text>
+              <Text style={styles.logoutText}>
+                Sign Out
+              </Text>
             </TouchableOpacity>
           </View>
         </Animated.View>

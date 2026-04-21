@@ -1,5 +1,5 @@
 // Note: This file requires an Expo/React Native environment to compile correctly.
-// BUG FIX: Moved TopNav below ScrollView so it correctly layers on top, and inlined the slots!
+// Triggering a fresh build to resolve module resolution errors (Index fix).
 import React, { useState, useRef, useCallback } from 'react';
 import { 
   View, 
@@ -319,7 +319,7 @@ const styles = StyleSheet.create({
   // Custom Home Header Styles passed to TopNav slots
   locationContainer: {
     alignItems: 'center',
-    width: '100%', 
+    width: '70%', 
   },
   deliverToText: {
     color: '#FFCCCC',

@@ -283,11 +283,11 @@ export default function MyOrdersScreen() {
                       <View style={[styles.dashedDivider, { borderColor: colors.border }]} />
                       <View style={styles.receiptItemRow}>
                         <Text style={[styles.receiptSubText, { color: colors.textMuted }]}>Subtotal</Text>
-                        <Text style={[styles.receiptSubText, { color: colors.textMuted }]}>₦{order.subtotal.toLocaleString()}</Text>
+                        <Text style={[styles.receiptSubText, { color: colors.textMuted, textAlign: 'right', }]}>₦{order.subtotal.toLocaleString()}</Text>
                       </View>
                       <View style={styles.receiptItemRow}>
                         <Text style={[styles.receiptSubText, { color: colors.textMuted }]}>Delivery Fee</Text>
-                        <Text style={[styles.receiptSubText, { color: colors.textMuted }]}>₦{order.deliveryFee.toLocaleString()}</Text>
+                        <Text style={[styles.receiptSubText, { color: colors.textMuted, textAlign: 'right', }]}>₦{order.deliveryFee.toLocaleString()}</Text>
                       </View>
                     </View>
 
@@ -539,7 +539,6 @@ const styles = StyleSheet.create({
   receiptSubText: {
     fontSize: 13,
     flex: 1,
-    textAlign: 'right',
     paddingRight: 10,
   },
   ratingSection: {

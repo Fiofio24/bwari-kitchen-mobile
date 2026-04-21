@@ -123,7 +123,7 @@ export default function DetailsScreen() {
                <View style={styles.soldOutBadge}>
                  <Ionicons name="alert" size={20} color="#FFF" style={styles.alertIcon} />
                  <Text style={styles.soldOutHeroText}>
-                   ! One or more items sold out. Please edit package and add to cart.
+                   One or more items sold out. Please edit package and add to cart.
                  </Text>
                </View>
              </View>
@@ -227,7 +227,7 @@ export default function DetailsScreen() {
       <View style={[
         styles.bottomBar, 
         { 
-          paddingBottom: insets.bottom + 25, 
+          paddingBottom: insets.bottom + 20, 
           backgroundColor: isDark ? colors.surface : '#FFF',
           borderTopColor: colors.border 
         }
@@ -334,7 +334,7 @@ const styles = StyleSheet.create({
   },
   soldOutBadge: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     backgroundColor: '#D32F2F',
     paddingHorizontal: 20,
     paddingVertical: 15,
@@ -342,7 +342,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 30,
   },
   alertIcon: {
-    marginRight: 8,
+    marginRight: 10,
     marginTop: 2,
   },
   soldOutHeroText: {

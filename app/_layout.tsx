@@ -51,7 +51,7 @@ function RootContent() {
         <Stack.Screen 
           name="search" 
           options={{ 
-            animation: 'slide_from_bottom', 
+            animation: 'fade', 
             presentation: 'transparentModal' 
           }} 
         />

@@ -1,0 +1,346 @@
+import React, { useState } from 'react';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  TextInput, 
+  TouchableOpacity, 
+  KeyboardAvoidingView, 
+  Platform, 
+  ScrollView,
+  Image,
+  ActivityIndicator
+} from 'react-native';
+import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTheme } from '../context/ThemeContext';
+import { Colors } from '../constants/Colors';
+import { StatusBar } from 'expo-status-bar';
+import { useUser } from '../context/UserContext';
+
+export default function SignupScreen() {
+  const router = useRouter();
+  const { colors, isDark } = useTheme();
+  const insets = useSafeAreaInsets();
+  const { updateUserData } = useUser();
+
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [agreed, setAgreed] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const isValid = name.trim() && email.trim() && phone.trim() && password.length >= 6 && agreed;
+
+  const handleSignup = () => {
+    if (!isValid) return;
+    
+    setIsLoading(true);
+    // Simulate Backend API Call
+    setTimeout(() => {
+      setIsLoading(false);
+      updateUserData({ name, email });
+      router.replace('/(tabs)');
+    }, 2000);
+  };
+
+  return (
+    <KeyboardAvoidingView 
+      style={styles.keyboardAvoid} 
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <StatusBar style={isDark ? "light" : "dark"} />
+        
+        <ScrollView 
+          showsVerticalScrollIndicator={false} 
+          contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 40 }]}
+        >
+          {/* HEADER LOGO */}
+          <View style={styles.headerSection}>
+            <Image 
+              source={require('../assets/splash-r.png')} 
+              style={styles.logoImage} 
+              resizeMode="contain" 
+            />
+          </View>
+
+          {/* FORM FIELDS */}
+          <View style={styles.inputGroup}>
+            <Text style={[styles.inputLabel, { color: colors.text }]}>
+              Full Name
+            </Text>
+            <View style={[styles.inputWrapper, { backgroundColor: isDark ? colors.surface : '#FFF', borderColor: colors.border }]}>
+              <TextInput
+                style={[styles.textInput, { color: colors.text }]}
+                placeholder="Enter your full name"
+                placeholderTextColor={colors.textMuted}
+                value={name}
+                onChangeText={setName}
+                autoCapitalize="words"
+              />
+            </View>
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={[styles.inputLabel, { color: colors.text }]}>
+              Email Address
+            </Text>
+            <View style={[styles.inputWrapper, { backgroundColor: isDark ? colors.surface : '#FFF', borderColor: colors.border }]}>
+              <TextInput
+                style={[styles.textInput, { color: colors.text }]}
+                placeholder="Enter your email address"
+                placeholderTextColor={colors.textMuted}
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+            </View>
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={[styles.inputLabel, { color: colors.text }]}>
+              Phone Number
+            </Text>
+            <View style={[styles.inputWrapper, { backgroundColor: isDark ? colors.surface : '#FFF', borderColor: colors.border }]}>
+              <TextInput
+                style={[styles.textInput, { color: colors.text }]}
+                placeholder="Enter your phone number"
+                placeholderTextColor={colors.textMuted}
+                value={phone}
+                onChangeText={setPhone}
+                keyboardType="phone-pad"
+              />
+            </View>
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={[styles.inputLabel, { color: colors.text }]}>
+              Password
+            </Text>
+            <View style={[styles.inputWrapper, { backgroundColor: isDark ? colors.surface : '#FFF', borderColor: colors.border }]}>
+              <TextInput
+                style={[styles.textInput, { color: colors.text }]}
+                placeholder="Create a password"
+                placeholderTextColor={colors.textMuted}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+              />
+              <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
+                <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={20} color={colors.textMuted} />
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* AGREEMENT CHECKBOX */}
+          <View style={styles.agreementRow}>
+            {/* Only the checkbox is clickable now */}
+            <TouchableOpacity 
+              style={[
+                styles.checkbox, 
+                { 
+                  borderColor: agreed ? Colors.primary : colors.border,
+                  backgroundColor: agreed ? Colors.primary : 'transparent' 
+                }
+              ]}
+              activeOpacity={0.8}
+              onPress={() => setAgreed(!agreed)}
+            >
+              {agreed && <Ionicons name="checkmark" size={14} color="#FFF" />}
+            </TouchableOpacity>
+
+            <Text style={[styles.agreementText, { color: colors.textMuted }]}>
+              I&apos;ve read and agreed to <Text style={{ color: Colors.primary, fontWeight: 'bold' }}>User Agreement</Text> and <Text style={{ color: Colors.primary, fontWeight: 'bold' }}>Privacy Policy</Text>
+            </Text>
+          </View>
+
+          {/* SIGN UP BUTTON */}
+          <TouchableOpacity 
+            style={[
+              styles.primaryBtn, 
+              { backgroundColor: !isValid ? colors.border : Colors.primary }
+            ]} 
+            disabled={!isValid || isLoading}
+            activeOpacity={0.8}
+            onPress={handleSignup}
+          >
+            {isLoading ? (
+              <ActivityIndicator color="#FFF" />
+            ) : (
+              <Text style={[
+                styles.primaryBtnText, 
+                { color: !isValid ? colors.textMuted : '#FFF' }
+              ]}>
+                Sign Up
+              </Text>
+            )}
+          </TouchableOpacity>
+
+          {/* SOCIAL SIGN UP */}
+          <View style={styles.socialSection}>
+            <Text style={[styles.socialDividerText, { color: colors.textMuted }]}>
+              other ways to sign up
+            </Text>
+            <View style={styles.socialButtonsRow}>
+              <TouchableOpacity style={[styles.socialBtn, { backgroundColor: isDark ? colors.surface : '#FFF' }]} activeOpacity={0.8}>
+                <Ionicons name="logo-google" size={24} color="#DB4437" />
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.socialBtn, { backgroundColor: isDark ? colors.surface : '#FFF' }]} activeOpacity={0.8}>
+                <Ionicons name="logo-facebook" size={24} color="#4267B2" />
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* FOOTER LINK */}
+          <View style={styles.footerContainer}>
+            <Text style={[styles.footerText, { color: colors.textMuted }]}>
+              Already have an account?
+            </Text>
+            <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}>
+              <Text style={[styles.footerLink, { color: Colors.primary }]}>
+                Sign In
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+        </ScrollView>
+      </View>
+    </KeyboardAvoidingView>
+  );
+}
+
+// PRO CSS COMPLIANCE
+const styles = StyleSheet.create({
+  keyboardAvoid: {
+    flex: 1,
+  },
+  container: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: 25,
+    flexGrow: 1,
+  },
+  headerSection: {
+    alignItems: 'center',
+    marginBottom: 30,
+  },
+  logoImage: {
+    width: 200,
+    height: 100,
+  },
+  inputGroup: {
+    marginBottom: 20,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    marginLeft: 5,
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: 30,
+    paddingHorizontal: 20,
+    height: 56,
+  },
+  textInput: {
+    flex: 1,
+    fontSize: 15,
+    height: '100%',
+  },
+  eyeIcon: {
+    padding: 5,
+  },
+  agreementRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 30,
+    paddingHorizontal: 5,
+    marginTop: 10,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 6,
+    borderWidth: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+    marginTop: 2,
+  },
+  agreementText: {
+    flex: 1,
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  primaryBtn: {
+    height: 56,
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    marginBottom: 30,
+  },
+  primaryBtnText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  socialSection: {
+    alignItems: 'center',
+    marginBottom: 30,
+  },
+  socialDividerText: {
+    fontSize: 12,
+    marginBottom: 20,
+  },
+  socialButtonsRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 20,
+  },
+  socialBtn: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  footerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 'auto',
+    paddingTop: 10,
+  },
+  footerText: {
+    fontSize: 14,
+  },
+  footerLink: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginLeft: 5,
+  },
+});

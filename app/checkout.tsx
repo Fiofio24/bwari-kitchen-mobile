@@ -221,13 +221,13 @@ export default function CheckoutScreen() {
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomNavHeight + 60 }]}>
         
-        <View style={[styles.etaBanner, { backgroundColor: isDark ? colors.surface : '#E8F5E9', borderColor: '#81C784' }]}>
+        {/* <View style={[styles.etaBanner, { backgroundColor: isDark ? colors.surface : '#E8F5E9', borderColor: '#81C784' }]}>
           <Ionicons name="time" size={24} color="#388E3C" />
           <View style={styles.etaTextContainer}>
             <Text style={[styles.etaTitle, { color: colors.text }]}>Estimated {deliveryMethod === 'delivery' ? 'Delivery' : 'Pickup'} Time</Text>
             <Text style={[styles.etaValue, { color: '#388E3C' }]}>{deliveryMethod === 'delivery' ? '30 - 45' : '15 - 20'} Minutes</Text>
           </View>
-        </View>
+        </View> */}
 
         <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>ORDER FULFILLMENT</Text>
         
