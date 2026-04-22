@@ -299,7 +299,7 @@ const styles = StyleSheet.create({
   header: { 
     paddingBottom: 25, 
     paddingHorizontal: 20,
-    borderBottomRightRadius: 40,
+    borderBottomRightRadius: 0,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -425,7 +425,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 10,
-    marginRight: 10,
+    marginLeft: 10,
   },
   badgeText: {
     color: '#FFF',
