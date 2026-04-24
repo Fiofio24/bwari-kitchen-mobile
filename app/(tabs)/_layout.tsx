@@ -1,3 +1,4 @@
+// Note: This file requires an Expo/React Native environment to compile correctly.
 import { Tabs } from 'expo-router';
 import { View } from 'react-native';
 import BottomNav from '../../components/BottomNav';
@@ -23,8 +24,8 @@ export default function TabLayout() {
         <Tabs.Screen name="profile" />
       </Tabs>
 
-      {/* Placing this here means it floats above ALL tab screens and NEVER reloads! */}
-      <DraggableOrderButton onPress={() => console.log('Order Button Tapped!')} />
+      {/* FIXED: Removed the outdated onPress prop. The button now handles its own routing! */}
+      <DraggableOrderButton />
     </View>
   );
 }

@@ -2,6 +2,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/Colors';
 import { useRouter } from 'expo-router'; // 1. Added the router!
+import { useUser } from '../context/UserContext'; 
 
 interface GreetingProps {
   userName: string;
@@ -9,6 +10,7 @@ interface GreetingProps {
 
 export default function GreetingSection({ userName }: GreetingProps) {
   const router = useRouter(); // 2. Initialized the router
+  const { userData } = useUser(); 
 
   const getMealTime = () => {
     const currentHour = new Date().getHours();
@@ -33,7 +35,7 @@ export default function GreetingSection({ userName }: GreetingProps) {
           resizeMode="contain"
         />
         <View style={styles.greetingTextContainer}>
-          <Text style={styles.helloText}>Hello, {userName}!</Text>
+          <Text style={styles.helloText}>Hello, {userData.name.split(' ')[0]}!</Text>
           <Text style={styles.subGreetingText}>What would you like for {currentMeal}?</Text>
         </View>
         
@@ -58,7 +60,7 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 30,
   },
   greetingRow: {
-    marginTop: 120, 
+    marginTop: 70, 
     flexDirection: 'row',
     alignItems: 'center', 
   },

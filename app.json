@@ -1,53 +1,43 @@
 {
   "expo": {
-    "name": "bwari-kitchen-app",
-    "slug": "bwari-kitchen-app",
-    "version": "1.0.0",
+    "name": "Bwari Kitchen",
+    "slug": "bwari-kitchen",
+    "version": "2.4.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
-    "splash": {
-      "image": "./assets/images/Icon&logo/BK_logo.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#D30000"
-    },
-    "scheme": "bwarikitchenapp",
+    "icon": "./assets/BK_logo12-r.png",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#d30000"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.fiotecz.bwarikitchen"
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "foregroundImage": "./assets/BK_logo1-w.png",
+        "backgroundColor": "#d30000"
       },
-      "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "package": "com.fiotecz.bwarikitchen"
     },
     "web": {
-      "output": "static",
-      "favicon": "./assets/BK_logo12.png"
+      "favicon": "./assets/BK_logo12-r.png"
     },
     "plugins": [
       "expo-router",
-      [
-        "expo-splash-screen",
-        {
-          "image": "./assets/images/Icon&logo/BK_logo.png",
-          "imageWidth": 150,
-          "resizeMode": "contain",
-          "backgroundColor": "#D30000",
-          "dark": {
-            "backgroundColor": "#D30000"
-          }
-        }
-      ]
+      "expo-font"
     ],
-    "experiments": {
-      "typedRoutes": true,
-      "reactCompiler": true
+    "scheme": "bwarikitchen",
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "b43549ec-ac0e-47ad-b457-19de98b6237f"
+      }
     }
   }
 }

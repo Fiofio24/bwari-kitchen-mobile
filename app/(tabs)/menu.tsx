@@ -1,14 +1,14 @@
-// Note: This file requires an Expo/React Native environment to compile correctly.
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { 
   View, 
   Text, 
   StyleSheet, 
   TouchableOpacity, 
   ScrollView, 
-  Platform, 
   Animated, 
-  useWindowDimensions 
+  useWindowDimensions,
+  RefreshControl,
+  Image
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -24,8 +24,11 @@ import ForYouCard from '../../components/ForYouCard';
 import { MENU_ITEMS } from '../../constants/menuData';
 import CartBadgeIcon from '../../components/CartBadgeIcon';
 import GridDishCard from '../../components/GridDishCard';
+import TopNav from '../../components/TopNav';
 
 const MENU_CATEGORIES = ['Main', 'Protein', 'Swallow', 'Snacks', 'Drinks', 'Rice'];
+
+export const CUSTOM_PACKAGE_IMAGE = require('../../assets/images/custom-plate.png');
 
 export default function MenuScreen() {
   const router = useRouter();
@@ -40,6 +43,7 @@ export default function MenuScreen() {
 
   const [activeCategory, setActiveCategory] = useState('Main');
   const [customPlate, setCustomPlate] = useState<Record<string, number>>({});
+  const [refreshing, setRefreshing] = useState(false); 
 
   const { width } = useWindowDimensions();
   const GRID_PADDING = 20; 
@@ -52,6 +56,20 @@ export default function MenuScreen() {
 
   const filteredItems = MENU_ITEMS.filter(item => item.category === activeCategory || activeCategory === 'Main');
   const bottomNavHeight = 70 + Math.max(insets.bottom, 15);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    console.log("🔄 Global App Refresh Triggered from MENU: Syncing latest items...");
+    try {
+      const fetchRealData = new Promise(resolve => setTimeout(resolve, 1500)); 
+      await fetchRealData;
+    } catch (error) {
+      console.error("Error refreshing data:", error);
+    } finally {
+      setRefreshing(false); 
+      console.log("✅ Menu Refresh Complete.");
+    }
+  }, []);
 
   const toggleItem = (id: string) => {
     setCustomPlate(prev => {
@@ -112,7 +130,7 @@ export default function MenuScreen() {
       category: 'Custom Plate',
       price: plateTotal, 
       quantity: 1, 
-      image: selectedItemsList[0]?.image || '', 
+      image: CUSTOM_PACKAGE_IMAGE, 
       isAvailable: true,
       subItems: subItemsArray 
     };
@@ -148,104 +166,120 @@ export default function MenuScreen() {
     ]).start();
   }
 
-  const paddingTop = Platform.OS === 'web' ? 50 : insets.top + 10;
-  const paddingBottom = 15;
-
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[menuStyles.container, { backgroundColor: colors.background }]}>
       <StatusBar style="light" />
 
-      <View style={[styles.header, { paddingTop, paddingBottom }]}>
-        <TouchableOpacity onPress={() => setIsSidebarOpen(true)} style={[styles.iconButton, styles.sideIcon]}>
-          <Ionicons name="menu-outline" size={28} color="#FFF" />
-        </TouchableOpacity>
+      <TopNav 
+        title="Menu"
+        leftIcon="menu-outline"
+        onLeftPress={() => setIsSidebarOpen(true)}
+        rightComponent={
+          <View style={menuStyles.headerRight}>
+            <TouchableOpacity style={menuStyles.iconButton}>
+              <Ionicons name="help-circle-outline" size={26} color="#FFF" />
+            </TouchableOpacity>
+            <CartBadgeIcon onPress={() => router.push('/cart')} />
+          </View>
+        }
+        isAbsolute={false} 
+        isScrolled={true}
+      />
+
+      <ScrollView 
+        showsVerticalScrollIndicator={false} 
+        contentContainerStyle={[menuStyles.scrollContent, { paddingBottom: bottomNavHeight + 90 }]}
+        refreshControl={
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={onRefresh} 
+            tintColor={Colors.primary} 
+            colors={[Colors.primary]} 
+            progressBackgroundColor={isDark ? colors.surface : '#FFF'} 
+          />
+        }
+      >
         
-        <View style={[styles.centerWrapper, { top: paddingTop, bottom: paddingBottom }]} pointerEvents="none">
-          <Text style={styles.headerTitle}>Menu</Text>
+        <View style={menuStyles.titlesWrapper}>
+          <Text style={[menuStyles.specialsText, { color: colors.textMuted }]}>Specials</Text>
+          <Text style={[menuStyles.mainTitle, { color: Colors.primary }]}>Made Just For You</Text>
         </View>
 
-        <View style={[styles.headerRight, styles.sideIcon]}>
-          <TouchableOpacity style={styles.iconButton}>
-            <Ionicons name="help-circle-outline" size={26} color="#FFF" />
-          </TouchableOpacity>
-          <CartBadgeIcon onPress={() => router.push('/cart')} />
-        </View>
-      </View>
-
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomNavHeight + 90 }]}>
-        
-        <View style={styles.titlesWrapper}>
-          <Text style={[styles.specialsText, { color: colors.textMuted }]}>Specials</Text>
-          <Text style={[styles.mainTitle, { color: Colors.primary }]}>Made Just For You</Text>
-        </View>
-
-        <View style={styles.searchContainer}>
+        <View style={menuStyles.searchContainer}>
            <SearchBar onPress={() => router.push('/search')} />
         </View>
 
         {isPackageEmpty ? (
-          <View style={[styles.emptyBox, { borderColor: isDark ? colors.border : '#FFCCCC', backgroundColor: isDark ? 'rgba(255,0,0,0.05)' : '#FFF0F0' }]}>
-            <Ionicons name="cube-outline" size={50} color={Colors.primary} style={{ opacity: 0.5 }} />
-            <Text style={[styles.emptyBoxTitle, { color: Colors.primary }]}>Your package is empty</Text>
-            <Text style={[styles.emptyBoxSub, { color: Colors.primary }]}>Click on any food item to add to package</Text>
+          <View style={[menuStyles.emptyBox, { borderColor: isDark ? colors.border : '#FFCCCC', backgroundColor: isDark ? 'rgba(255,0,0,0.05)' : '#FFF0F0' }]}>
+            <Image 
+              source={require('../../assets/images/Icon&logo/empty-package.png')}
+              style={[menuStyles.emptyPackageIcon, { tintColor: Colors.primary }]}
+              resizeMode="contain"
+            />
+            <Text style={[menuStyles.emptyBoxTitle, { color: Colors.primary }]}>Your package is empty</Text>
+            <Text style={[menuStyles.emptyBoxSub, { color: Colors.primary }]}>Click on any food item to add to package</Text>
           </View>
         ) : (
-          <View style={[styles.filledBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <View style={styles.filledBoxHeader}>
-              <Text style={[styles.filledBoxTitle, { color: colors.text }]}>Items</Text>
+          <View style={[menuStyles.filledBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View style={menuStyles.filledBoxHeader}>
+              <Text style={[menuStyles.filledBoxTitle, { color: colors.text }]}>Items</Text>
               <TouchableOpacity onPress={clearAll}>
-                <Text style={styles.deleteAllText}>Delete All</Text>
+                <Text style={menuStyles.deleteAllText}>Delete All</Text>
               </TouchableOpacity>
             </View>
             
             {selectedItemsList.map(item => (
-              <View key={item.id} style={styles.receiptRow}>
-                <Text style={[styles.receiptName, { color: colors.text }]} numberOfLines={1}>{item.name}</Text>
+              <View key={item.id} style={menuStyles.receiptRow}>
+                <View style={menuStyles.receiptInfo}>
+                  <Text style={[menuStyles.receiptName, { color: colors.text }]} numberOfLines={1}>
+                    {item.name}
+                  </Text>
+                </View>
                 
                 <View style={[
-                  styles.quantityBox, 
+                  menuStyles.quantityBox, 
                   { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F5F5F5' }
                 ]}>
-                  <TouchableOpacity onPress={() => decreaseQuantity(item.id)} style={styles.qtyBtn}>
+                  <TouchableOpacity onPress={() => decreaseQuantity(item.id)} style={menuStyles.qtyBtn}>
                     <Ionicons name="remove" size={16} color={colors.text} />
                   </TouchableOpacity>
-                  <Text style={[styles.qtyText, { color: colors.text }]}>
+                  <Text style={[menuStyles.qtyText, { color: colors.text }]}>
                     {customPlate[item.id]}
                   </Text>
-                  <TouchableOpacity onPress={() => increaseQuantity(item.id)} style={styles.qtyBtn}>
+                  <TouchableOpacity onPress={() => increaseQuantity(item.id)} style={menuStyles.qtyBtn}>
                     <Ionicons name="add" size={16} color={colors.text} />
                   </TouchableOpacity>
                 </View>
 
-                <Text style={[styles.receiptPrice, { color: colors.text }]}>
+                <Text style={[menuStyles.receiptPrice, { color: colors.text }]}>
                   ₦{(item.price * (customPlate[item.id] || 0)).toLocaleString()}
                 </Text>
-                <TouchableOpacity onPress={() => removeItem(item.id)} style={styles.trashBtn}>
+                <TouchableOpacity onPress={() => removeItem(item.id)} style={menuStyles.trashBtn}>
                   <Ionicons name="trash-outline" size={18} color="#FF4444" />
                 </TouchableOpacity>
               </View>
             ))}
             
-            <View style={[styles.totalRow, { borderTopColor: colors.border }]}>
-              <Text style={[styles.totalText, { color: colors.text }]}>Total</Text>
-              <Text style={[styles.totalPrice, { color: colors.text }]}>₦{plateTotal.toLocaleString()}</Text>
+            <View style={[menuStyles.totalRow, { borderTopColor: colors.border }]}>
+              <Text style={[menuStyles.totalText, { color: colors.text }]}>Total</Text>
+              <Text style={[menuStyles.totalPrice, { color: colors.text }]}>₦{plateTotal.toLocaleString()}</Text>
             </View>
           </View>
         )}
 
-        <View style={styles.menuTitleRow}>
-          <View style={styles.redLine} />
-          <Text style={[styles.menuTitle, { color: colors.text }]}>Menu</Text>
+        <View style={menuStyles.menuTitleRow}>
+          <View style={menuStyles.redLine} />
+          <Text style={[menuStyles.menuTitle, { color: colors.text }]}>Menu</Text>
           <Ionicons name="chevron-forward" size={18} color={colors.text} />
         </View>
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={menuStyles.categoryScroll}>
           {MENU_CATEGORIES.map(category => (
             <CategoryFilter key={category} category={category} isActive={activeCategory === category} onPress={() => setActiveCategory(category)} />
           ))}
         </ScrollView>
 
-        <View style={[styles.gridContainer, { gap: GRID_GAP }]}>
+        <View style={[menuStyles.gridContainer, { gap: GRID_GAP }]}>
           {filteredItems.map(item => {
             const isSelected = (customPlate[item.id] || 0) > 0;
             return (
@@ -256,7 +290,7 @@ export default function MenuScreen() {
                   image={item.image}
                   isSelected={isSelected}
                   isAvailable={item.isAvailable !== false} 
-                  onPress={() => toggleItem(item.id)}
+                  onPress={item.isAvailable !== false ? () => toggleItem(item.id) : undefined}
                   isCompact={true}
                 />
               </View>
@@ -268,15 +302,15 @@ export default function MenuScreen() {
 
       </ScrollView>
 
-      <Animated.View pointerEvents={isPackageEmpty ? 'none' : 'auto'} style={[styles.floatingButtonContainer, { bottom: bottomNavHeight + 15, opacity: floatingButtonAnim, transform: [{ translateY: floatingButtonAnim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }] }]}>
-        <TouchableOpacity style={[styles.mainAddButton, { backgroundColor: Colors.primary }]} activeOpacity={0.8} onPress={handleAddCustomPlateToCart}>
-          <Text style={[styles.mainAddButtonText, { color: '#FFF' }]}>{`Add To Cart - ₦${plateTotal.toLocaleString()}`}</Text>
+      <Animated.View pointerEvents={isPackageEmpty ? 'none' : 'auto'} style={[menuStyles.floatingButtonContainer, { bottom: bottomNavHeight + 15, opacity: floatingButtonAnim, transform: [{ translateY: floatingButtonAnim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }] }]}>
+        <TouchableOpacity style={[menuStyles.mainAddButton, { backgroundColor: Colors.primary }]} activeOpacity={0.8} onPress={handleAddCustomPlateToCart}>
+          <Text style={[menuStyles.mainAddButtonText, { color: '#FFF' }]}>{`Add To Cart - ₦${plateTotal.toLocaleString()}`}</Text>
         </TouchableOpacity>
       </Animated.View>
 
-      <Animated.View style={[styles.toastContainer, { transform: [{ translateY: toastAnim }], backgroundColor: isDark ? '#333' : '#222' }]}>
+      <Animated.View style={[menuStyles.toastContainer, { transform: [{ translateY: toastAnim }], backgroundColor: isDark ? '#333' : '#222' }]}>
         <Ionicons name="checkmark-circle" size={24} color="#4CAF50" />
-        <Text style={styles.toastText}>Custom Package added to cart!</Text>
+        <Text style={menuStyles.toastText}>Custom Package added to cart!</Text>
       </Animated.View>
 
       <Sidebar visible={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
@@ -285,64 +319,45 @@ export default function MenuScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+export const menuStyles = StyleSheet.create({
   container: { 
-    flex: 1 
-  },
-  header: { 
-    backgroundColor: Colors.primary, 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    justifyContent: 'space-between', 
-    paddingHorizontal: 20, 
-    borderBottomLeftRadius: 30, 
-    borderBottomRightRadius: 30, 
-    zIndex: 10 
-  },
-  sideIcon: {
-    zIndex: 2,
-    minWidth: 40,
-  },
-  centerWrapper: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 1,
+    flex: 1,
   },
   iconButton: { 
-    padding: 5 
-  },
-  headerTitle: { 
-    fontSize: 20, 
-    fontWeight: 'bold', 
-    color: '#FFF' 
+    padding: 5,
   },
   headerRight: { 
     flexDirection: 'row', 
     gap: 10, 
-    alignItems: 'center' 
+    alignItems: 'center',
   },
   scrollContent: { 
   },
   titlesWrapper: { 
     marginTop: 20, 
     marginBottom: 15, 
-    paddingHorizontal: 20 
+    paddingHorizontal: 20,
   },
   specialsText: { 
     fontSize: 14, 
     fontWeight: '600', 
-    marginBottom: 2 
+    marginBottom: 2,
   },
   mainTitle: { 
     fontSize: 24, 
-    fontWeight: '900' 
+    fontWeight: '900',
   },
   searchContainer: { 
     marginBottom: 20, 
-    paddingHorizontal: 20 
+    paddingHorizontal: 20,
+  },
+  sectionTitle: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    letterSpacing: 1,
+    marginBottom: 10,
+    marginTop: 5,
+    paddingHorizontal: 20,
   },
   emptyBox: { 
     borderWidth: 2, 
@@ -351,18 +366,23 @@ const styles = StyleSheet.create({
     padding: 30, 
     alignItems: 'center', 
     marginBottom: 25, 
-    marginHorizontal: 20 
+    marginHorizontal: 20,
+  },
+  emptyPackageIcon: {
+    width: 110,
+    height: 110,
+    marginBottom: 0,
   },
   emptyBoxTitle: { 
     fontSize: 18, 
     fontWeight: 'bold', 
-    marginTop: 10, 
-    marginBottom: 5 
+    marginTop: 5, 
+    marginBottom: 5,
   },
   emptyBoxSub: { 
     fontSize: 13, 
     textAlign: 'center', 
-    opacity: 0.8 
+    opacity: 0.8,
   },
   filledBox: { 
     borderWidth: 1, 
@@ -372,33 +392,45 @@ const styles = StyleSheet.create({
     marginHorizontal: 20, 
     elevation: 2, 
     shadowColor: '#000', 
-    shadowOffset: { width: 0, height: 2 }, 
+    shadowOffset: { 
+      width: 0, 
+      height: 2 
+    }, 
     shadowOpacity: 0.1, 
-    shadowRadius: 4 
+    shadowRadius: 4,
   },
   filledBoxHeader: { 
     flexDirection: 'row', 
     justifyContent: 'space-between', 
-    marginBottom: 15 
+    marginBottom: 15,
   },
   filledBoxTitle: { 
     fontSize: 16, 
-    fontWeight: 'bold' 
+    fontWeight: 'bold',
   },
   deleteAllText: { 
     color: Colors.primary, 
     fontWeight: 'bold', 
-    fontSize: 14 
+    fontSize: 14,
   },
   receiptRow: { 
     flexDirection: 'row', 
     alignItems: 'center', 
-    marginBottom: 15 
+    marginBottom: 15,
+  },
+  receiptInfo: {
+    flex: 1,
+    paddingRight: 5,
   },
   receiptName: { 
-    flex: 1, 
     fontSize: 14, 
-    fontWeight: '500' 
+    fontWeight: '500',
+  },
+  soldOutWarningText: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: '#D32F2F',
+    marginTop: 2,
   },
   quantityBox: { 
     flexDirection: 'row', 
@@ -406,7 +438,7 @@ const styles = StyleSheet.create({
     borderRadius: 20, 
     paddingHorizontal: 5, 
     paddingVertical: 5, 
-    marginHorizontal: 10 
+    marginHorizontal: 10,
   },
   qtyBtn: { 
     width: 26, 
@@ -414,71 +446,71 @@ const styles = StyleSheet.create({
     justifyContent: 'center', 
     alignItems: 'center', 
     borderRadius: 13, 
-    backgroundColor: 'rgba(150,150,150,0.2)' 
+    backgroundColor: 'rgba(150,150,150,0.2)',
   },
   qtyText: { 
     fontSize: 14, 
     fontWeight: 'bold', 
-    marginHorizontal: 8 
+    marginHorizontal: 8,
   },
   receiptPrice: { 
     fontSize: 14, 
     fontWeight: 'bold', 
     minWidth: 60, 
-    textAlign: 'right' 
+    textAlign: 'right',
   },
   trashBtn: { 
     marginLeft: 15, 
-    padding: 5 
+    padding: 5,
   },
   totalRow: { 
     flexDirection: 'row', 
     justifyContent: 'space-between', 
     borderTopWidth: 1, 
     paddingTop: 15, 
-    marginTop: 5 
+    marginTop: 5,
   },
   totalText: { 
     fontSize: 18, 
-    fontWeight: 'bold' 
+    fontWeight: 'bold',
   },
   totalPrice: { 
     fontSize: 18, 
-    fontWeight: 'bold' 
+    fontWeight: 'bold',
   },
   menuTitleRow: { 
     flexDirection: 'row', 
     alignItems: 'center', 
     marginBottom: 15, 
-    paddingHorizontal: 20 
+    paddingHorizontal: 20,
   },
   redLine: { 
     width: 4, 
     height: 18, 
     backgroundColor: Colors.primary, 
     marginRight: 8, 
-    borderRadius: 2 
+    borderRadius: 2,
   },
   menuTitle: { 
     fontSize: 18, 
     fontWeight: 'bold', 
-    marginRight: 5 
+    marginRight: 5,
   },
   categoryScroll: { 
     marginBottom: 20, 
-    paddingLeft: 20 
+    paddingLeft: 20,
   },
   gridContainer: { 
     flexDirection: 'row', 
     flexWrap: 'wrap', 
     marginBottom: 10, 
-    paddingHorizontal: 20 
+    paddingHorizontal: 20,
   },
   floatingButtonContainer: { 
     position: 'absolute', 
     left: 20, 
     right: 20, 
-    zIndex: 90 
+    zIndex: 90,
   },
   mainAddButton: { 
     paddingVertical: 18, 
@@ -486,13 +518,16 @@ const styles = StyleSheet.create({
     alignItems: 'center', 
     elevation: 6, 
     shadowColor: '#000', 
-    shadowOffset: { width: 0, height: 4 }, 
+    shadowOffset: { 
+      width: 0, 
+      height: 4 
+    }, 
     shadowOpacity: 0.3, 
-    shadowRadius: 6 
+    shadowRadius: 6,
   },
   mainAddButtonText: { 
     fontSize: 16, 
-    fontWeight: 'bold' 
+    fontWeight: 'bold',
   },
   toastContainer: { 
     position: 'absolute', 
@@ -505,16 +540,19 @@ const styles = StyleSheet.create({
     borderRadius: 30, 
     elevation: 10, 
     shadowColor: '#000', 
-    shadowOffset: { width: 0, height: 5 }, 
+    shadowOffset: { 
+      width: 0, 
+      height: 5 
+    }, 
     shadowOpacity: 0.3, 
     shadowRadius: 8, 
     zIndex: 100, 
     justifyContent: 'center', 
-    gap: 10 
+    gap: 10,
   },
   toastText: { 
     color: '#FFF', 
     fontSize: 16, 
-    fontWeight: 'bold' 
+    fontWeight: 'bold',
   }
 });

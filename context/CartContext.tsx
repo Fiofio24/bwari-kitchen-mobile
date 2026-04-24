@@ -1,3 +1,5 @@
+// Note: This file requires an Expo/React Native environment to compile correctly.
+// Triggering a cache bust to resolve module resolution errors for CartContext.
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -50,6 +52,7 @@ interface CartContextType {
   cartItems: CartItem[];
   addToCart: (item: CartItem) => void;
   removeFromCart: (id: string) => void;
+  removeMultipleFromCart: (ids: string[]) => void; // <-- PRO UX FIX: Added this!
   increaseQuantity: (id: string) => void;
   decreaseQuantity: (id: string) => void;
   clearCart: () => void;
@@ -96,6 +99,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setCartItems(prev => prev.filter(item => item.id !== id));
   };
 
+  // PRO UX FIX: New function to safely remove only checked-out items!
+  const removeMultipleFromCart = (ids: string[]) => {
+    setCartItems(prev => prev.filter(item => !ids.includes(item.id)));
+  };
+
   const increaseQuantity = (id: string) => {
     setCartItems(prev => prev.map(item => 
       item.id === id ? { ...item, quantity: item.quantity + 1 } : item
@@ -115,7 +123,16 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const cartCount = cartItems.length;
 
   return (
-    <CartContext.Provider value={{ cartItems, addToCart, removeFromCart, increaseQuantity, decreaseQuantity, clearCart, cartCount }}>
+    <CartContext.Provider value={{ 
+      cartItems, 
+      addToCart, 
+      removeFromCart, 
+      removeMultipleFromCart, 
+      increaseQuantity, 
+      decreaseQuantity, 
+      clearCart, 
+      cartCount 
+    }}>
       {children}
     </CartContext.Provider>
   );
