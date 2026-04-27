@@ -1,5 +1,5 @@
 // This is our Single Source of Truth. 
-export const CATEGORIES = ['All', 'Main', 'Protein', 'Swallow', 'Snacks', 'Drinks', 'Rice'];
+// export const CATEGORIES = ['All', 'Main', 'Protein', 'Swallow', 'Snacks', 'Drinks', 'Rice'];
 
 // 1. SINGLE ITEMS (Used in the Menu Page Builder)
 // Notice how we added `isAvailable: false` to Beef so you can test the new cart logic!
@@ -22,11 +22,11 @@ export const MENU_ITEMS = [
   { id: 'm6', name: 'Coca Cola', price: 1500, category: 'Drinks', image: 'https://i.pinimg.com/736x/e3/8f/af/e38faf15d4545d6da4073b0cfde5c2ea.jpg' },
   { id: 'm10', name: 'Zobo', price: 800, category: 'Drinks', image: 'https://i.pinimg.com/1200x/f8/ef/c9/f8efc94596458cb09b68a93f73c3287d.jpg' },
   // Swallow Category
-  { id: 'm7', name: 'Semo', price: 1000, category: 'Swallow', image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=800&auto=format&fit=crop', isAvailable: false },
-  { id: 'm8', name: 'Amala', price: 1500, category: 'Swallow', image: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=800&auto=format&fit=crop' },
+  { id: 'm7', name: 'Semo', price: 1000, category: 'Swallow', image: 'https://i.pinimg.com/1200x/2d/18/b6/2d18b666f22020248327ecdffafb52cf.jpg', isAvailable: false },
+  { id: 'm8', name: 'Amala', price: 1500, category: 'Swallow', image: 'https://i.pinimg.com/1200x/8a/60/42/8a6042f0638ef2767ae75feed2fa6718.jpg' },
   // Soup Category (for future expansion)
-  { id: 'm13', name: 'Egusi Soup', price: 1200, category: 'Soup', image: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=800&auto=format&fit=crop' },
-  { id: 'm14', name: 'Ewedu Soup', price: 1000, category: 'Soup', image: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=800&auto=format&fit=crop' },
+  { id: 'm13', name: 'Egusi Soup', price: 1200, category: 'Soup', image: 'https://i.pinimg.com/736x/65/cb/e9/65cbe9589fff79e6a22d8744fc65fd79.jpg' },
+  { id: 'm14', name: 'Ewedu Soup', price: 1000, category: 'Soup', image: 'https://i.pinimg.com/1200x/ee/51/ba/ee51ba1e59fd8dcbeb9287c8033e88c4.jpg' },
 ];
 
 // 2. COMBO PACKAGES (Used in the Home Page and "For You" Section)
@@ -40,8 +40,8 @@ export const COMBO_PACKAGES = [
     subItems: [{ id: 'm7', name: 'Semo & Egusi', qty: 1, price: 1000 }, { id: 'm5', name: 'Beef', qty: 1, price: 2000 }] // <-- Contains Beef!
   },
   {
-    id: 'pkg_3', category: 'Rice', name: 'White Rice | Stew | Turkey | Plantain', price: 5500, rating: '4.9', image: 'https://i.pinimg.com/736x/bb/11/ac/bb11ac0c894c4ff646200254b665b54a.jpg',
-    subItems: [{ id: 'm3', name: 'White Rice', qty: 1, price: 1500 }, { id: 'm9', name: 'Grilled Turkey', qty: 1, price: 4000 }]
+    id: 'pkg_3', category: 'Rice', name: 'White Rice & Stew | Turkey | Plantain', price: 5500, rating: '4.9', image: 'https://i.pinimg.com/736x/bb/11/ac/bb11ac0c894c4ff646200254b665b54a.jpg',
+    subItems: [{ id: 'm3', name: 'White Rice & Stew', qty: 1, price: 1500 }, { id: 'm9', name: 'Grilled Turkey', qty: 1, price: 4000 }, { id: 'm12', name: 'Plantain', qty: 3, price: 1500 }]
   },
   {
     id: 'pkg_4', category: 'Snacks', name: 'Meatpie | Zobo', price: 1500, rating: '4.5', image: 'https://i.pinimg.com/1200x/8d/9d/e0/8d9de09b8acd3c17ef7ab8b14b9c97c0.jpg',
@@ -54,6 +54,10 @@ export const COMBO_PACKAGES = [
   {
     id: 'pkg_6', category: 'Rice', name: 'Fried Rice | Beef | Coke', price: 5500, rating: '5.0', image: 'https://i.pinimg.com/1200x/4c/c7/9f/4cc79f76b53e00505c9facf01811f952.jpg',
     subItems: [{ id: 'm2', name: 'Fried Rice', qty: 1, price: 2000 }, { id: 'm5', name: 'Beef', qty: 1, price: 2000 }, { id: 'm6', name: 'Coca Cola', qty: 1, price: 1500 }] // <-- Contains Beef!
+  },
+  {
+    id: 'pkg_7', category: 'Drinks', name: 'Zobo | Coke', price: 8000, rating: '3.5', image: 'https://i.pinimg.com/1200x/f8/ef/c9/f8efc94596458cb09b68a93f73c3287d.jpg',
+    subItems: [{ id: 'm10', name: 'Zobo', qty: 5, price: 5000 }, { id: 'm6', name: 'Coca Cola', qty: 5, price: 3000 }] // <-- Contains Beef!
   },
 ];
 

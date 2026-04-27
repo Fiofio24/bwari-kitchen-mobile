@@ -474,6 +474,7 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 15,
     paddingTop: 10,
+    paddingBottom: 10,
     minHeight: 120,
   },
   topRow: {
@@ -499,7 +500,7 @@ const styles = StyleSheet.create({
   },
   itemContents: {
     fontSize: 13,
-    marginBottom: 4,
+    marginBottom: 10,
   },
   expandedMissingBox: {
     marginTop: 6,
@@ -519,7 +520,7 @@ const styles = StyleSheet.create({
   priceAndActionRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-end',
+    alignItems: 'center',
     marginTop: 'auto',
   },
   itemPrice: {

@@ -26,7 +26,7 @@ import CartBadgeIcon from '../../components/CartBadgeIcon';
 import GridDishCard from '../../components/GridDishCard';
 import TopNav from '../../components/TopNav';
 
-const MENU_CATEGORIES = ['All', 'Protein', 'Swallow', 'Snacks', 'Drinks', 'Rice', 'Pasta'];
+const MENU_CATEGORIES = ['All', 'Protein', 'Swallow', 'Soup', 'Snacks', 'Drinks', 'Rice', 'Pasta'];
 
 export const CUSTOM_PACKAGE_IMAGE = require('../../assets/images/custom-plate.png');
 

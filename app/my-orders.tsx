@@ -539,7 +539,6 @@ const styles = StyleSheet.create({
   receiptSubText: {
     fontSize: 13,
     flex: 1,
-    paddingRight: 10,
   },
   ratingSection: {
     alignItems: 'center',
