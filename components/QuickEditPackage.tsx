@@ -315,7 +315,7 @@ export default function QuickEditPackage({
                       ₦{(item.price * (customPlate[item.id] || 0)).toLocaleString()}
                     </Text>
                     <TouchableOpacity onPress={() => removeItem(item.id)} style={menuStyles.trashBtn}>
-                      <Ionicons name="trash-outline" size={18} color="#FF4444" />
+                      <Ionicons name="trash-outline" size={18} color="#D30000" />
                     </TouchableOpacity>
                   </View>
                 ))}

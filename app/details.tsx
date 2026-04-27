@@ -21,7 +21,9 @@ import { MENU_ITEMS, COMBO_PACKAGES } from '../constants/menuData';
 import { LinearGradient } from 'expo-linear-gradient';
 import QuickEditPackage from '../components/QuickEditPackage';
 import CartBadgeIcon from '../components/CartBadgeIcon'; 
+import HomeIcon from '@/components/HomeIcon';
 import TopNav from '../components/TopNav';
+import ForYouCard from '../components/ForYouCard';
 
 export default function DetailsScreen() {
   const { id } = useLocalSearchParams();
@@ -106,7 +108,12 @@ export default function DetailsScreen() {
         title="Package Details"
         leftIcon="arrow-back"
         onLeftPress={() => router.back()}
-        rightComponent={<CartBadgeIcon onPress={() => router.push('/cart')} />}
+        rightComponent={
+          <View style={styles.headerRight}>
+            <CartBadgeIcon onPress={() => router.push('/cart')} />
+            <HomeIcon onPress={() => router.push('/')} />
+          </View>
+        }
         isAbsolute={true} 
         isScrolled={true} 
         showDivider={false}
@@ -121,7 +128,7 @@ export default function DetailsScreen() {
           {!isAvail && (
              <View style={styles.soldOutHeroOverlay}>
                <View style={styles.soldOutBadge}>
-                 <Ionicons name="alert" size={20} color="#FFF" style={styles.alertIcon} />
+                 <Ionicons name="alert-circle-outline" size={35} color="#FFF" style={styles.alertIcon} />
                  <Text style={styles.soldOutHeroText}>
                    One or more items sold out. Please edit package and add to cart.
                  </Text>
@@ -222,6 +229,8 @@ export default function DetailsScreen() {
           )}
 
         </View>
+
+        <ForYouCard onAddToCart={handleAddToCart} />
       </ScrollView>
 
       <View style={[
@@ -290,6 +299,11 @@ export default function DetailsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  headerRight: { 
+    flexDirection: 'row', 
+    gap: 10, 
+    alignItems: 'center',
   },
   errorContainer: {
     flex: 1,

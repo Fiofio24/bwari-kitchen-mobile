@@ -26,7 +26,7 @@ import CartBadgeIcon from '../../components/CartBadgeIcon';
 import GridDishCard from '../../components/GridDishCard';
 import TopNav from '../../components/TopNav';
 
-const MENU_CATEGORIES = ['Main', 'Protein', 'Swallow', 'Snacks', 'Drinks', 'Rice'];
+const MENU_CATEGORIES = ['All', 'Protein', 'Swallow', 'Snacks', 'Drinks', 'Rice', 'Pasta'];
 
 export const CUSTOM_PACKAGE_IMAGE = require('../../assets/images/custom-plate.png');
 
@@ -41,7 +41,7 @@ export default function MenuScreen() {
 
   const floatingButtonAnim = useRef(new Animated.Value(0)).current;
 
-  const [activeCategory, setActiveCategory] = useState('Main');
+  const [activeCategory, setActiveCategory] = useState('All');
   const [customPlate, setCustomPlate] = useState<Record<string, number>>({});
   const [refreshing, setRefreshing] = useState(false); 
 
@@ -54,7 +54,7 @@ export default function MenuScreen() {
   const NUM_COLUMNS = Math.max(3, Math.floor((AVAILABLE_WIDTH + GRID_GAP) / (MIN_CARD_WIDTH + GRID_GAP)));
   const CARD_WIDTH = Math.floor((AVAILABLE_WIDTH - (GRID_GAP * (NUM_COLUMNS - 1))) / NUM_COLUMNS);
 
-  const filteredItems = MENU_ITEMS.filter(item => item.category === activeCategory || activeCategory === 'Main');
+  const filteredItems = MENU_ITEMS.filter(item => item.category === activeCategory || activeCategory === 'All');
   const bottomNavHeight = 70 + Math.max(insets.bottom, 15);
 
   const onRefresh = useCallback(async () => {
@@ -255,7 +255,7 @@ export default function MenuScreen() {
                   ₦{(item.price * (customPlate[item.id] || 0)).toLocaleString()}
                 </Text>
                 <TouchableOpacity onPress={() => removeItem(item.id)} style={menuStyles.trashBtn}>
-                  <Ionicons name="trash-outline" size={18} color="#FF4444" />
+                  <Ionicons name="trash-outline" size={18} color="#D30000" />
                 </TouchableOpacity>
               </View>
             ))}

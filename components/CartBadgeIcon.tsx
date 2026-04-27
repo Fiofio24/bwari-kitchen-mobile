@@ -1,4 +1,3 @@
-// Note: This file requires an Expo/React Native environment to compile correctly.
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';

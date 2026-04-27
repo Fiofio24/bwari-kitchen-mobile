@@ -8,7 +8,7 @@ const { width } = Dimensions.get('window');
 const PROMO_DATA = [
   { id: '1', title: 'Special Rice', description: 'Get 10% off on your first full package order', price: '₦5,400', originalPrice: '₦6,000', discount: '10% OFF', image: { uri: 'https://images.unsplash.com/photo-1512058564366-18510be2db19?q=80&w=800&auto=format&fit=crop' } },
   { id: '2', title: 'Spicy Pasta', description: 'Free delivery on orders above ₦10,000', price: '₦4,500', originalPrice: '₦5,000', discount: 'FREE DEL', image: { uri: 'https://images.unsplash.com/photo-1551183053-bf91a1d81141?q=80&w=800&auto=format&fit=crop' } },
-  { id: '3', title: 'Weekend Combo', description: 'Perfect for you and your friends', price: '₦12,000', originalPrice: '₦15,000', discount: '20% OFF', image: { uri: 'https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=800&auto=format&fit=crop' } },
+  { id: '3', title: 'Weekend Combo', description: 'Perfect for you and your friends', price: '₦12,000', originalPrice: '₦15,000', discount: '20% OFF', image: { uri: 'https://i.pinimg.com/736x/b6/34/81/b6348151e6180cfedf53bc08b5b21cc1.jpg' } },
 ];
 
 export default function PromoSlider() {
