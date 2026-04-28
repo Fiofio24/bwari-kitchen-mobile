@@ -21,12 +21,13 @@ import Sidebar from '../../components/Sidebar';
 import SearchBar from '../../components/SearchBar';
 import CategoryFilter from '../../components/CategoryFilter';
 import ForYouCard from '../../components/ForYouCard';
-import { MENU_ITEMS } from '../../constants/menuData';
+import { MENU_ITEMS, parseCompositeKey } from '../../constants/menuData';
 import CartBadgeIcon from '../../components/CartBadgeIcon';
 import GridDishCard from '../../components/GridDishCard';
 import TopNav from '../../components/TopNav';
+import ItemVariantModal from '../../components/ItemVariantModal';
 
-const MENU_CATEGORIES = ['All', 'Protein', 'Swallow', 'Soup', 'Snacks', 'Drinks', 'Rice', 'Pasta'];
+const MENU_CATEGORIES = ['All', 'Drinks', 'Snacks','Swallow', 'Soup', 'Protein', 'Sides', 'Yam & Beans', 'Pasta', 'Rice'];
 
 export const CUSTOM_PACKAGE_IMAGE = require('../../assets/images/custom-plate.png');
 
@@ -42,8 +43,12 @@ export default function MenuScreen() {
   const floatingButtonAnim = useRef(new Animated.Value(0)).current;
 
   const [activeCategory, setActiveCategory] = useState('All');
+  
+  // customPlate now stores composite keys! e.g., 'r3::1 Scoop / Half::0.5' -> quantity
   const [customPlate, setCustomPlate] = useState<Record<string, number>>({});
   const [refreshing, setRefreshing] = useState(false); 
+  
+  const [variantModalItem, setVariantModalItem] = useState<any>(null);
 
   const { width } = useWindowDimensions();
   const GRID_PADDING = 20; 
@@ -59,7 +64,6 @@ export default function MenuScreen() {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    console.log("🔄 Global App Refresh Triggered from MENU: Syncing latest items...");
     try {
       const fetchRealData = new Promise(resolve => setTimeout(resolve, 1500)); 
       await fetchRealData;
@@ -67,40 +71,85 @@ export default function MenuScreen() {
       console.error("Error refreshing data:", error);
     } finally {
       setRefreshing(false); 
-      console.log("✅ Menu Refresh Complete.");
     }
   }, []);
 
-  const toggleItem = (id: string) => {
-    setCustomPlate(prev => {
-      if (prev[id]) { 
-        const newState = { ...prev }; 
-        delete newState[id]; 
-        return newState; 
-      }
-      return { ...prev, [id]: 1 };
-    });
+  const handleCardPress = (item: any) => {
+    if (item.variants && item.variants.length > 0) {
+      setVariantModalItem(item);
+    } else {
+      // If it doesn't have variants, just add it directly using a standard base key
+      const compositeKey = `${item.id}::Base::1`;
+      setCustomPlate(prev => ({ ...prev, [compositeKey]: (prev[compositeKey] || 0) + 1 }));
+    }
   };
 
-  const increaseQuantity = (id: string) => setCustomPlate(prev => ({ ...prev, [id]: (prev[id] || 0) + 1 }));
-  const decreaseQuantity = (id: string) => {
+  const handleAddVariant = (compositeKey: string) => {
+    setCustomPlate(prev => ({ ...prev, [compositeKey]: (prev[compositeKey] || 0) + 1 }));
+    setVariantModalItem(null);
+  };
+
+  const increaseQuantity = (compositeKey: string) => setCustomPlate(prev => ({ ...prev, [compositeKey]: (prev[compositeKey] || 0) + 1 }));
+  const decreaseQuantity = (compositeKey: string) => {
     setCustomPlate(prev => {
-      const current = prev[id] || 0;
+      const current = prev[compositeKey] || 0;
       if (current <= 1) return prev; 
-      return { ...prev, [id]: current - 1 };
+      return { ...prev, [compositeKey]: current - 1 };
     });
   };
-  const removeItem = (id: string) => {
+  const removeItem = (compositeKey: string) => {
     setCustomPlate(prev => { 
       const newState = { ...prev }; 
-      delete newState[id]; 
+      delete newState[compositeKey]; 
       return newState; 
     });
   };
   const clearAll = () => setCustomPlate({});
 
-  const selectedItemsList = MENU_ITEMS.filter(item => (customPlate[item.id] || 0) > 0);
-  const plateTotal = selectedItemsList.reduce((sum, item) => sum + (item.price * (customPlate[item.id] || 0)), 0);
+  // 🪄 THE MAGIC REVEAL: Parsing the composite keys back into rich objects!
+  const selectedItemsList = Object.keys(customPlate).map(compositeKey => {
+    const { id, variantLabel, multiplier } = parseCompositeKey(compositeKey);
+    const dbItem = MENU_ITEMS.find(m => m.id === id);
+    const basePrice = dbItem?.price || 0;
+    
+    // Helper function (add this outside or inside the component)
+    // const roundUpToNearest50 = (price: number) => {
+    //   if (price % 50 === 0) return price; 
+    //   return Math.ceil(price / 50) * 50;
+    // };
+
+    // ... inside selectedItemsList map ...
+    // let finalPrice = Math.round(basePrice * multiplier);
+    // finalPrice = roundUpToNearest50(finalPrice);
+
+    // Round Up Prices To Nearest 100
+    const roundUpToNearest100 = (price: number) => {
+      if (price % 100 === 0) return price; 
+      return Math.ceil(price / 100) * 100;
+    };
+
+    // ... inside selectedItemsList map ...
+    let finalPrice = Math.round(basePrice * multiplier);
+    finalPrice = roundUpToNearest100(finalPrice);
+
+    // If you don't update those files locally, the Modal will correctly show ₦650, but the receipt will charge ₦633! Do you want me to generate the diffs for those files to make it easier for you to copy and paste?
+    
+    // If it's a variant, append the label to the name so the Kitchen knows!
+    const finalName = variantLabel && variantLabel !== 'Base' 
+      ? `${dbItem?.name} (${variantLabel})` 
+      : (dbItem?.name || 'Unknown Item');
+
+    return {
+      compositeKey,
+      id,
+      name: finalName,
+      price: finalPrice,
+      qty: customPlate[compositeKey],
+      isAvailable: dbItem?.isAvailable !== false,
+    };
+  });
+
+  const plateTotal = selectedItemsList.reduce((sum, item) => sum + (item.price * item.qty), 0);
   const isPackageEmpty = selectedItemsList.length === 0;
 
   useEffect(() => {
@@ -116,13 +165,14 @@ export default function MenuScreen() {
     if (isPackageEmpty) return;
 
     const subItemsArray = selectedItemsList.map(item => ({
+      compositeKey: item.compositeKey,
       id: item.id,
       name: item.name,
-      qty: customPlate[item.id] || 1, 
+      qty: item.qty, 
       price: item.price
     }));
 
-    const uniquePackageId = 'custom_' + selectedItemsList.map(i => `${i.id}_${customPlate[i.id]}`).sort().join('-');
+    const uniquePackageId = 'custom_' + selectedItemsList.map(i => `${i.compositeKey}_${i.qty}`).sort().join('-');
 
     const newItem: any = { 
       id: uniquePackageId, 
@@ -229,7 +279,7 @@ export default function MenuScreen() {
             </View>
             
             {selectedItemsList.map(item => (
-              <View key={item.id} style={menuStyles.receiptRow}>
+              <View key={item.compositeKey} style={menuStyles.receiptRow}>
                 <View style={menuStyles.receiptInfo}>
                   <Text style={[menuStyles.receiptName, { color: colors.text }]} numberOfLines={1}>
                     {item.name}
@@ -240,21 +290,21 @@ export default function MenuScreen() {
                   menuStyles.quantityBox, 
                   { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F5F5F5' }
                 ]}>
-                  <TouchableOpacity onPress={() => decreaseQuantity(item.id)} style={menuStyles.qtyBtn}>
+                  <TouchableOpacity onPress={() => decreaseQuantity(item.compositeKey)} style={menuStyles.qtyBtn}>
                     <Ionicons name="remove" size={16} color={colors.text} />
                   </TouchableOpacity>
                   <Text style={[menuStyles.qtyText, { color: colors.text }]}>
-                    {customPlate[item.id]}
+                    {item.qty}
                   </Text>
-                  <TouchableOpacity onPress={() => increaseQuantity(item.id)} style={menuStyles.qtyBtn}>
+                  <TouchableOpacity onPress={() => increaseQuantity(item.compositeKey)} style={menuStyles.qtyBtn}>
                     <Ionicons name="add" size={16} color={colors.text} />
                   </TouchableOpacity>
                 </View>
 
                 <Text style={[menuStyles.receiptPrice, { color: colors.text }]}>
-                  ₦{(item.price * (customPlate[item.id] || 0)).toLocaleString()}
+                  ₦{(item.price * item.qty).toLocaleString()}
                 </Text>
-                <TouchableOpacity onPress={() => removeItem(item.id)} style={menuStyles.trashBtn}>
+                <TouchableOpacity onPress={() => removeItem(item.compositeKey)} style={menuStyles.trashBtn}>
                   <Ionicons name="trash-outline" size={18} color="#D30000" />
                 </TouchableOpacity>
               </View>
@@ -281,7 +331,8 @@ export default function MenuScreen() {
 
         <View style={[menuStyles.gridContainer, { gap: GRID_GAP }]}>
           {filteredItems.map(item => {
-            const isSelected = (customPlate[item.id] || 0) > 0;
+            // Check if any variant of this base item is in the cart
+            const isSelected = Object.keys(customPlate).some(key => key.startsWith(item.id + '::'));
             return (
               <View key={item.id} style={{ width: CARD_WIDTH }}>
                 <GridDishCard 
@@ -290,7 +341,7 @@ export default function MenuScreen() {
                   image={item.image}
                   isSelected={isSelected}
                   isAvailable={item.isAvailable !== false} 
-                  onPress={item.isAvailable !== false ? () => toggleItem(item.id) : undefined}
+                  onPress={item.isAvailable !== false ? () => handleCardPress(item) : undefined}
                   isCompact={true}
                 />
               </View>
@@ -314,6 +365,14 @@ export default function MenuScreen() {
       </Animated.View>
 
       <Sidebar visible={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+      
+      {/* OUR NEW VARIANT MODAL */}
+      <ItemVariantModal 
+        item={variantModalItem} 
+        visible={!!variantModalItem} 
+        onClose={() => setVariantModalItem(null)} 
+        onAddVariant={handleAddVariant} 
+      />
 
     </View>
   );

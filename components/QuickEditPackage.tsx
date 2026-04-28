@@ -1,5 +1,4 @@
 // Note: This file requires an Expo/React Native environment to compile correctly.
-// Triggering a fresh build to resolve module resolution errors (Quick Edit Package image fix).
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   View, 
@@ -14,22 +13,21 @@ import {
   Image
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
 import { useTheme } from '../context/ThemeContext';
 import { Colors } from '../constants/Colors';
-import { MENU_ITEMS } from '../constants/menuData';
+import { MENU_ITEMS, parseCompositeKey } from '../constants/menuData';
 import { useCart } from '../context/CartContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router'; 
 import SearchBar from './SearchBar';
 import CategoryFilter from './CategoryFilter';
 import GridDishCard from './GridDishCard';
+import ItemVariantModal from './ItemVariantModal';
 
-// We dynamically import the exact styles and the uniform Custom Image from the Menu page!
-import { menuStyles, CUSTOM_PACKAGE_IMAGE } from '../app/(tabs)/menu';
+// Localizing the fallback image so we don't have circular dependencies with the menu file
+const CUSTOM_PACKAGE_IMAGE = { uri: 'https://cdn-icons-png.flaticon.com/512/684/684045.png' };
 
 const { height, width } = Dimensions.get('window');
-const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 
 const MENU_CATEGORIES = ['Main', 'Protein', 'Swallow', 'Snacks', 'Drinks', 'Rice'];
 
@@ -37,14 +35,14 @@ interface QuickEditPackageProps {
   visible: boolean;
   onClose: () => void;
   initialItem: any;
-  routeOnSave?: boolean; // <-- PRO UX FIX: Explicit command to prevent double-routing
+  routeOnSave?: boolean; 
 }
 
 export default function QuickEditPackage({ 
   visible, 
   onClose, 
   initialItem, 
-  routeOnSave = true // Defaults to true for Menu and Details pages
+  routeOnSave = true 
 }: QuickEditPackageProps) {
   const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
@@ -58,6 +56,8 @@ export default function QuickEditPackage({
   const [activeCategory, setActiveCategory] = useState('Main');
   const [searchQuery, setSearchQuery] = useState('');
   const [customPlate, setCustomPlate] = useState<Record<string, number>>({});
+  
+  const [variantModalItem, setVariantModalItem] = useState<any>(null);
 
   const GRID_PADDING = 20; 
   const GRID_GAP = 10; 
@@ -75,10 +75,11 @@ export default function QuickEditPackage({
       const initialPlate: Record<string, number> = {};
       if (initialItem.subItems && initialItem.subItems.length > 0) {
         initialItem.subItems.forEach((sub: any) => {
-          initialPlate[sub.id] = sub.qty;
+          const key = sub.compositeKey || `${sub.id}::Base::1`;
+          initialPlate[key] = sub.qty;
         });
       } else {
-        initialPlate[initialItem.id] = 1;
+        initialPlate[`${initialItem.id}::Base::1`] = 1;
       }
       setCustomPlate(initialPlate);
 
@@ -113,46 +114,78 @@ export default function QuickEditPackage({
 
   if (!isRendering || !initialItem) return null;
 
-  const toggleItem = (id: string) => {
-    setCustomPlate(prev => {
-      if (prev[id]) { 
-        const newState = { ...prev }; 
-        delete newState[id]; 
-        return newState; 
-      }
-      return { ...prev, [id]: 1 };
-    });
+  const handleCardPress = (item: any) => {
+    if (item.variants && item.variants.length > 0) {
+      setVariantModalItem(item);
+    } else {
+      const compositeKey = `${item.id}::Base::1`;
+      setCustomPlate(prev => ({ ...prev, [compositeKey]: (prev[compositeKey] || 0) + 1 }));
+    }
   };
 
-  const increaseQuantity = (id: string) => {
-    setCustomPlate(prev => ({ ...prev, [id]: (prev[id] || 0) + 1 }));
+  const handleAddVariant = (compositeKey: string) => {
+    setCustomPlate(prev => ({ ...prev, [compositeKey]: (prev[compositeKey] || 0) + 1 }));
+    setVariantModalItem(null);
   };
 
-  const decreaseQuantity = (id: string) => {
+  const increaseQuantity = (compositeKey: string) => {
+    setCustomPlate(prev => ({ ...prev, [compositeKey]: (prev[compositeKey] || 0) + 1 }));
+  };
+
+  const decreaseQuantity = (compositeKey: string) => {
     setCustomPlate(prev => {
-      const current = prev[id] || 0;
+      const current = prev[compositeKey] || 0;
       if (current <= 1) return prev; 
-      return { ...prev, [id]: current - 1 };
+      return { ...prev, [compositeKey]: current - 1 };
     });
   };
 
-  const removeItem = (id: string) => {
+  const removeItem = (compositeKey: string) => {
     setCustomPlate(prev => { 
       const newState = { ...prev }; 
-      delete newState[id]; 
+      delete newState[compositeKey]; 
       return newState; 
     });
   };
 
   const clearAll = () => setCustomPlate({});
 
-  const selectedItemsList = Object.keys(customPlate).map(id => {
+  const selectedItemsList = Object.keys(customPlate).map(compositeKey => {
+    const { id, variantLabel, multiplier } = parseCompositeKey(compositeKey);
     const dbItem = MENU_ITEMS.find(m => m.id === id);
+    const basePrice = dbItem?.price || 0;
+    // Round Up Prices To Nearest 50
+    // const roundUpToNearest50 = (price: number) => {
+    //   if (price % 50 === 0) return price; 
+    //   return Math.ceil(price / 50) * 50;
+    // };
+
+    // ... inside selectedItemsList map ...
+    // let finalPrice = Math.round(basePrice * multiplier);
+    // finalPrice = roundUpToNearest50(finalPrice);
+
+    // Round Up Prices To Nearest 100
+    const roundUpToNearest100 = (price: number) => {
+      if (price % 100 === 0) return price; 
+      return Math.ceil(price / 100) * 100;
+    };
+
+    // ... inside selectedItemsList map ...
+    let finalPrice = Math.round(basePrice * multiplier);
+    finalPrice = roundUpToNearest100(finalPrice);
+
+    // If you don't update those files locally, the Modal will correctly show ₦650, but the receipt will charge ₦633! Do you want me to generate the diffs for those files to make it easier for you to copy and paste?
+    
+    const finalName = variantLabel && variantLabel !== 'Base' 
+      ? `${dbItem?.name} (${variantLabel})` 
+      : (dbItem?.name || 'Unknown Item');
+
     return {
+      compositeKey,
       id,
-      name: dbItem?.name || 'Unknown Item',
-      price: dbItem?.price || 0,
-      qty: customPlate[id],
+      name: finalName,
+      price: finalPrice,
+      qty: customPlate[compositeKey],
       isAvailable: dbItem?.isAvailable !== false,
       image: dbItem?.image || '' 
     };
@@ -175,7 +208,7 @@ export default function QuickEditPackage({
       removeFromCart(initialItem.id);
     }
 
-    const uniquePackageId = 'custom_edit_' + Date.now() + '_' + selectedItemsList.map(i => `${i.id}_${i.qty}`).join('-');
+    const uniquePackageId = 'custom_edit_' + Date.now() + '_' + selectedItemsList.map(i => `${i.compositeKey}_${i.qty}`).join('-');
 
     const newItem: any = { 
       id: uniquePackageId, 
@@ -191,7 +224,6 @@ export default function QuickEditPackage({
     addToCart(newItem);
     onClose();
     
-    // PRO UX FIX: Only route to the cart page if explicitly allowed!
     if (routeOnSave) {
       setTimeout(() => {
         router.push('/cart');
@@ -200,193 +232,198 @@ export default function QuickEditPackage({
   };
 
   return (
-    <Modal visible={isRendering} transparent={true} animationType="none" onRequestClose={onClose} statusBarTranslucent={true}>
-      <View style={[StyleSheet.absoluteFill, styles.overlay]}>
-        <TouchableWithoutFeedback onPress={onClose}>
-          <AnimatedBlurView 
-            intensity={20} 
-            tint="dark" 
-            experimentalBlurMethod="dimezisBlurView" 
-            style={[
-              StyleSheet.absoluteFill, 
-              { 
-                opacity: fadeAnim, 
-                backgroundColor: 'rgba(0,0,0,0.4)' 
-              }
-            ]} 
-          />
-        </TouchableWithoutFeedback>
-
-        <Animated.View 
-          style={[
-            styles.bottomSheet, 
-            { 
-              backgroundColor: colors.background,
-              paddingBottom: Math.max(insets.bottom, 20),
-              transform: [{ translateY: slideAnim }] 
-            }
-          ]}
-        >
-          <View style={styles.handlebarWrapper}>
-            <View style={[styles.handlebar, { backgroundColor: colors.border }]} />
-          </View>
-          <View style={styles.header}>
-            <Text style={[styles.headerTitle, { color: colors.text }]}>Quick Edit Package</Text>
-            <TouchableOpacity 
-              onPress={onClose} 
+    <>
+      <Modal visible={isRendering} transparent={true} animationType="none" onRequestClose={onClose} statusBarTranslucent={true}>
+        <View style={[StyleSheet.absoluteFill, styles.overlay]}>
+          <TouchableWithoutFeedback onPress={onClose}>
+            <Animated.View 
               style={[
-                styles.closeBtn, 
-                { backgroundColor: isDark ? colors.surface : '#F5F5F5' }
-              ]}
-            >
-              <Ionicons name="close" size={24} color={colors.text} />
-            </TouchableOpacity>
-          </View>
+                StyleSheet.absoluteFill, 
+                { 
+                  opacity: fadeAnim, 
+                  backgroundColor: 'rgba(0,0,0,0.6)' 
+                }
+              ]} 
+            />
+          </TouchableWithoutFeedback>
 
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-            
-            <View style={menuStyles.searchContainer}>
-              <SearchBar onSubmit={(text) => setSearchQuery(text)} />
+          <Animated.View 
+            style={[
+              styles.bottomSheet, 
+              { 
+                backgroundColor: colors.background,
+                paddingBottom: Math.max(insets.bottom, 20),
+                transform: [{ translateY: slideAnim }] 
+              }
+            ]}
+          >
+            <View style={styles.handlebarWrapper}>
+              <View style={[styles.handlebar, { backgroundColor: colors.border }]} />
             </View>
-            
-            <Text style={[menuStyles.sectionTitle, { color: colors.textMuted }]}>CURRENT ITEMS</Text>
-            
-            {isPackageEmpty ? (
-              <View 
+            <View style={styles.header}>
+              <Text style={[styles.headerTitle, { color: colors.text }]}>Quick Edit Package</Text>
+              <TouchableOpacity 
+                onPress={onClose} 
                 style={[
-                  menuStyles.emptyBox, 
-                  { 
-                    borderColor: '#FFCCCC', 
-                    backgroundColor: isDark ? 'rgba(255,0,0,0.05)' : '#FFF0F0' 
-                  }
+                  styles.closeBtn, 
+                  { backgroundColor: isDark ? colors.surface : '#F5F5F5' }
                 ]}
               >
-                <Image 
-                  source={require('../assets/images/Icon&logo/empty-package.png')}
-                  style={[menuStyles.emptyPackageIcon, { tintColor: Colors.primary }]}
-                  resizeMode="contain"
-                />
-                <Text style={[menuStyles.emptyBoxTitle, { color: Colors.primary }]}>Your package is empty</Text>
-                <Text style={[menuStyles.emptyBoxSub, { color: Colors.primary }]}>Click on any food item to add to package</Text>
-              </View>
-            ) : (
-              <View style={[menuStyles.filledBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                <View style={menuStyles.filledBoxHeader}>
-                  <Text style={[menuStyles.filledBoxTitle, { color: colors.text }]}>Items</Text>
-                  <TouchableOpacity onPress={clearAll}>
-                    <Text style={menuStyles.deleteAllText}>Delete All</Text>
-                  </TouchableOpacity>
-                </View>
-                
-                {selectedItemsList.map(item => (
-                  <View key={item.id} style={menuStyles.receiptRow}>
-                    <View style={menuStyles.receiptInfo}>
-                      <Text 
-                        style={[
-                          menuStyles.receiptName, 
-                          { color: !item.isAvailable ? '#D32F2F' : colors.text },
-                          !item.isAvailable && { textDecorationLine: 'line-through' }
-                        ]} 
-                        numberOfLines={1}
-                      >
-                        {item.name}
-                      </Text>
-                      {!item.isAvailable && (
-                        <Text style={menuStyles.soldOutWarningText}>Sold Out - Remove</Text>
-                      )}
-                    </View>
-                    
-                    <View style={[
-                      menuStyles.quantityBox, 
-                      { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F5F5F5' }
-                    ]}>
-                      <TouchableOpacity onPress={() => decreaseQuantity(item.id)} style={menuStyles.qtyBtn}>
-                        <Ionicons name="remove" size={16} color={colors.text} />
-                      </TouchableOpacity>
-                      <Text style={[menuStyles.qtyText, { color: colors.text }]}>
-                        {customPlate[item.id]}
-                      </Text>
-                      <TouchableOpacity onPress={() => increaseQuantity(item.id)} style={menuStyles.qtyBtn}>
-                        <Ionicons name="add" size={16} color={colors.text} />
-                      </TouchableOpacity>
-                    </View>
-
-                    <Text style={[menuStyles.receiptPrice, { color: colors.text }]}>
-                      ₦{(item.price * (customPlate[item.id] || 0)).toLocaleString()}
-                    </Text>
-                    <TouchableOpacity onPress={() => removeItem(item.id)} style={menuStyles.trashBtn}>
-                      <Ionicons name="trash-outline" size={18} color="#D30000" />
-                    </TouchableOpacity>
-                  </View>
-                ))}
-                
-                <View style={[menuStyles.totalRow, { borderTopColor: colors.border }]}>
-                  <Text style={[menuStyles.totalText, { color: colors.text }]}>Total</Text>
-                  <Text style={[menuStyles.totalPrice, { color: colors.text }]}>₦{plateTotal.toLocaleString()}</Text>
-                </View>
-              </View>
-            )}
-
-            <Text style={[menuStyles.sectionTitle, { color: colors.textMuted, marginTop: 15 }]}>ADD FROM MENU</Text>
-            
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={menuStyles.categoryScroll}>
-              {MENU_CATEGORIES.map(category => (
-                <CategoryFilter 
-                  key={category} 
-                  category={category} 
-                  isActive={activeCategory === category} 
-                  onPress={() => setActiveCategory(category)} 
-                />
-              ))}
-            </ScrollView>
-
-            <View style={[menuStyles.gridContainer, { gap: GRID_GAP }]}>
-              {filteredItems.map(item => {
-                const isSelected = (customPlate[item.id] || 0) > 0;
-                return (
-                  <View key={item.id} style={{ width: CARD_WIDTH }}>
-                    <GridDishCard 
-                      name={item.name} 
-                      price={`₦${item.price.toLocaleString()}`}
-                      image={item.image}
-                      isSelected={isSelected}
-                      isAvailable={item.isAvailable !== false} 
-                      onPress={item.isAvailable !== false ? () => toggleItem(item.id) : undefined}
-                      isCompact={true}
-                    />
-                  </View>
-                );
-              })}
+                <Ionicons name="close" size={24} color={colors.text} />
+              </TouchableOpacity>
             </View>
 
-          </ScrollView>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+              
+              <View style={styles.searchContainer}>
+                <SearchBar onSubmit={(text) => setSearchQuery(text)} />
+              </View>
+              
+              <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>CURRENT ITEMS</Text>
+              
+              {isPackageEmpty ? (
+                <View 
+                  style={[
+                    styles.emptyBox, 
+                    { 
+                      borderColor: '#FFCCCC', 
+                      backgroundColor: isDark ? 'rgba(255,0,0,0.05)' : '#FFF0F0' 
+                    }
+                  ]}
+                >
+                  <Image 
+                    source={CUSTOM_PACKAGE_IMAGE}
+                    style={[styles.emptyPackageIcon, { tintColor: Colors.primary }]}
+                    resizeMode="contain"
+                  />
+                  <Text style={[styles.emptyBoxTitle, { color: Colors.primary }]}>Your package is empty</Text>
+                  <Text style={[styles.emptyBoxSub, { color: Colors.primary }]}>Click on any food item to add to package</Text>
+                </View>
+              ) : (
+                <View style={[styles.filledBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                  <View style={styles.filledBoxHeader}>
+                    <Text style={[styles.filledBoxTitle, { color: colors.text }]}>Items</Text>
+                    <TouchableOpacity onPress={clearAll}>
+                      <Text style={styles.deleteAllText}>Delete All</Text>
+                    </TouchableOpacity>
+                  </View>
+                  
+                  {selectedItemsList.map(item => (
+                    <View key={item.compositeKey} style={styles.receiptRow}>
+                      <View style={styles.receiptInfo}>
+                        <Text 
+                          style={[
+                            styles.receiptName, 
+                            { color: !item.isAvailable ? '#D32F2F' : colors.text },
+                            !item.isAvailable && { textDecorationLine: 'line-through' }
+                          ]} 
+                          numberOfLines={1}
+                        >
+                          {item.name}
+                        </Text>
+                        {!item.isAvailable && (
+                          <Text style={styles.soldOutWarningText}>Sold Out - Remove</Text>
+                        )}
+                      </View>
+                      
+                      <View style={[
+                        styles.quantityBox, 
+                        { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F5F5F5' }
+                      ]}>
+                        <TouchableOpacity onPress={() => decreaseQuantity(item.compositeKey)} style={styles.qtyBtn}>
+                          <Ionicons name="remove" size={16} color={colors.text} />
+                        </TouchableOpacity>
+                        <Text style={[styles.qtyText, { color: colors.text }]}>
+                          {item.qty}
+                        </Text>
+                        <TouchableOpacity onPress={() => increaseQuantity(item.compositeKey)} style={styles.qtyBtn}>
+                          <Ionicons name="add" size={16} color={colors.text} />
+                        </TouchableOpacity>
+                      </View>
 
-          <View style={[styles.footer, { borderTopColor: colors.border, backgroundColor: colors.background }]}>
-            <TouchableOpacity 
-              style={[
-                styles.saveBtn, 
-                { backgroundColor: (isPackageEmpty || hasSoldOutSelected) ? colors.border : Colors.primary }
-              ]} 
-              disabled={isPackageEmpty || hasSoldOutSelected}
-              activeOpacity={0.8}
-              onPress={handleUpdateAndAdd}
-            >
-              <Text style={[
-                styles.saveBtnText, 
-                { color: (isPackageEmpty || hasSoldOutSelected) ? colors.textMuted : '#FFF' }
-              ]}>
-                {hasSoldOutSelected ? "Remove Sold Out Items" : "Save Custom Package"}
-              </Text>
-            </TouchableOpacity>
-          </View>
+                      <Text style={[styles.receiptPrice, { color: colors.text }]}>
+                        ₦{(item.price * item.qty).toLocaleString()}
+                      </Text>
+                      <TouchableOpacity onPress={() => removeItem(item.compositeKey)} style={styles.trashBtn}>
+                        <Ionicons name="trash-outline" size={18} color="#FF4444" />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                  
+                  <View style={[styles.totalRow, { borderTopColor: colors.border }]}>
+                    <Text style={[styles.totalText, { color: colors.text }]}>Total</Text>
+                    <Text style={[styles.totalPrice, { color: colors.text }]}>₦{plateTotal.toLocaleString()}</Text>
+                  </View>
+                </View>
+              )}
 
-        </Animated.View>
-      </View>
-    </Modal>
+              <Text style={[styles.sectionTitle, { color: colors.textMuted, marginTop: 15 }]}>ADD FROM MENU</Text>
+              
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
+                {MENU_CATEGORIES.map(category => (
+                  <CategoryFilter 
+                    key={category} 
+                    category={category} 
+                    isActive={activeCategory === category} 
+                    onPress={() => setActiveCategory(category)} 
+                  />
+                ))}
+              </ScrollView>
+
+              <View style={[styles.gridContainer, { gap: GRID_GAP }]}>
+                {filteredItems.map(item => {
+                  const isSelected = Object.keys(customPlate).some(key => key.startsWith(item.id + '::'));
+                  return (
+                    <View key={item.id} style={{ width: CARD_WIDTH }}>
+                      <GridDishCard 
+                        name={item.name} 
+                        price={`₦${item.price.toLocaleString()}`}
+                        image={item.image}
+                        isSelected={isSelected}
+                        isAvailable={item.isAvailable !== false} 
+                        onPress={item.isAvailable !== false ? () => handleCardPress(item) : undefined}
+                        isCompact={true}
+                      />
+                    </View>
+                  );
+                })}
+              </View>
+
+            </ScrollView>
+
+            <View style={[styles.footer, { borderTopColor: colors.border, backgroundColor: colors.background }]}>
+              <TouchableOpacity 
+                style={[
+                  styles.saveBtn, 
+                  { backgroundColor: (isPackageEmpty || hasSoldOutSelected) ? colors.border : Colors.primary }
+                ]} 
+                disabled={isPackageEmpty || hasSoldOutSelected}
+                activeOpacity={0.8}
+                onPress={handleUpdateAndAdd}
+              >
+                <Text style={[
+                  styles.saveBtnText, 
+                  { color: (isPackageEmpty || hasSoldOutSelected) ? colors.textMuted : '#FFF' }
+                ]}>
+                  {hasSoldOutSelected ? "Remove Sold Out Items" : "Save Custom Package"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+          </Animated.View>
+        </View>
+      </Modal>
+
+      <ItemVariantModal 
+        item={variantModalItem} 
+        visible={!!variantModalItem} 
+        onClose={() => setVariantModalItem(null)} 
+        onAddVariant={handleAddVariant} 
+      />
+    </>
   );
 }
 
-// PRO CSS COMPLIANCE: Every property is strictly on its own line!
 const styles = StyleSheet.create({
   overlay: {
     zIndex: 1000,
@@ -453,5 +490,143 @@ const styles = StyleSheet.create({
   saveBtnText: {
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  searchContainer: { 
+    marginBottom: 20, 
+    paddingHorizontal: 20 
+  },
+  sectionTitle: { 
+    fontSize: 12, 
+    fontWeight: 'bold', 
+    letterSpacing: 1, 
+    marginBottom: 10, 
+    marginTop: 5, 
+    paddingHorizontal: 20 
+  },
+  emptyBox: { 
+    borderWidth: 2, 
+    borderStyle: 'dashed', 
+    borderRadius: 20, 
+    padding: 30, 
+    alignItems: 'center', 
+    marginBottom: 25, 
+    marginHorizontal: 20 
+  },
+  emptyPackageIcon: { 
+    width: 110, 
+    height: 110, 
+    marginBottom: 0 
+  },
+  emptyBoxTitle: { 
+    fontSize: 18, 
+    fontWeight: 'bold', 
+    marginTop: 5, 
+    marginBottom: 5 
+  },
+  emptyBoxSub: { 
+    fontSize: 13, 
+    textAlign: 'center', 
+    opacity: 0.8 
+  },
+  filledBox: { 
+    borderWidth: 1, 
+    borderRadius: 20, 
+    padding: 20, 
+    marginBottom: 25, 
+    marginHorizontal: 20, 
+    elevation: 2, 
+    shadowColor: '#000', 
+    shadowOffset: { width: 0, height: 2 }, 
+    shadowOpacity: 0.1, 
+    shadowRadius: 4 
+  },
+  filledBoxHeader: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    marginBottom: 15 
+  },
+  filledBoxTitle: { 
+    fontSize: 16, 
+    fontWeight: 'bold' 
+  },
+  deleteAllText: { 
+    color: Colors.primary, 
+    fontWeight: 'bold', 
+    fontSize: 14 
+  },
+  receiptRow: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    marginBottom: 15 
+  },
+  receiptInfo: { 
+    flex: 1, 
+    paddingRight: 5 
+  },
+  receiptName: { 
+    fontSize: 14, 
+    fontWeight: '500' 
+  },
+  soldOutWarningText: { 
+    fontSize: 11, 
+    fontWeight: 'bold', 
+    color: '#D32F2F', 
+    marginTop: 2 
+  },
+  quantityBox: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    borderRadius: 20, 
+    paddingHorizontal: 5, 
+    paddingVertical: 5, 
+    marginHorizontal: 10 
+  },
+  qtyBtn: { 
+    width: 26, 
+    height: 26, 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    borderRadius: 13, 
+    backgroundColor: 'rgba(150,150,150,0.2)' 
+  },
+  qtyText: { 
+    fontSize: 14, 
+    fontWeight: 'bold', 
+    marginHorizontal: 8 
+  },
+  receiptPrice: { 
+    fontSize: 14, 
+    fontWeight: 'bold', 
+    minWidth: 60, 
+    textAlign: 'right' 
+  },
+  trashBtn: { 
+    marginLeft: 15, 
+    padding: 5 
+  },
+  totalRow: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    borderTopWidth: 1, 
+    paddingTop: 15, 
+    marginTop: 5 
+  },
+  totalText: { 
+    fontSize: 18, 
+    fontWeight: 'bold' 
+  },
+  totalPrice: { 
+    fontSize: 18, 
+    fontWeight: 'bold' 
+  },
+  categoryScroll: { 
+    marginBottom: 20, 
+    paddingLeft: 20 
+  },
+  gridContainer: { 
+    flexDirection: 'row', 
+    flexWrap: 'wrap', 
+    marginBottom: 10, 
+    paddingHorizontal: 20 
   },
 });
