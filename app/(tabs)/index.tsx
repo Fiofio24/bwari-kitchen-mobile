@@ -37,7 +37,7 @@ import { useAddresses } from '../../context/AddressContext';
 
 const USER_PROFILE = { name: "User" };
 
-const CATEGORIES = ['All', 'Rice', 'Swallow', 'Snacks', 'Drinks', 'Pasta'];
+const CATEGORIES = ['All', 'Rice', 'Pasta', 'Yam & Beans', 'Sides', 'Soup', 'Protein', 'Swallow', 'Snacks', 'Drinks'];
 
 export default function HomeScreen() {
   const router = useRouter(); 

@@ -180,7 +180,7 @@ export default function QuickEditPackage({
     const newItem: any = { 
       id: uniquePackageId, 
       name: `Customized Package`, 
-      category: 'Custom Plate',
+      category: 'Custom Package',
       price: plateTotal, 
       quantity: initialItem.quantity || 1, 
       image: CUSTOM_PACKAGE_IMAGE,
