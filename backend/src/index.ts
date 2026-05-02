@@ -3,6 +3,8 @@ import cors from 'cors'
 import helmet from 'helmet'
 import dotenv from 'dotenv'
 import authRoutes from './routes/auth'
+import adminAuthRoutes from './routes/admin.auth'
+import menuRoutes from './routes/menu'
 
 dotenv.config()
 
@@ -23,7 +25,12 @@ app.get('/health', (req, res) => {
   })
 })
 
+// Customer app routes
 app.use('/api/auth', authRoutes)
+// Menu routes
+app.use('/api/menu', menuRoutes)
+// Admin dashboard routes
+app.use('/api/admin/auth', adminAuthRoutes)
 
 // Global error handler — catches anything thrown in async controllers
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {

@@ -41,20 +41,17 @@ export const authenticate = (
   }
 }
 
-// Restricts route to specific roles
-// Usage: authorize('admin') or authorize('admin', 'rider')
-export const authorize = (...roles: UserRole[]) => {
+// The authorize function works with customer app roles
+export const authorize = (...roles: ('customer' | 'rider')[]) => {
   return (req: Request, res: Response, next: NextFunction): void => {
     if (!req.user) {
       res.status(401).json({ message: 'Not authenticated' })
       return
     }
-
-    if (!roles.includes(req.user.role)) {
+    if (!roles.includes(req.user.role as any)) {
       res.status(403).json({ message: 'Access denied' })
       return
     }
-
     next()
   }
 }
