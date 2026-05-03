@@ -5,6 +5,7 @@ import dotenv from 'dotenv'
 import authRoutes from './routes/auth'
 import adminAuthRoutes from './routes/admin.auth'
 import menuRoutes from './routes/menu'
+import adminMenuRoutes from './routes/admin.menu'
 
 dotenv.config()
 
@@ -31,6 +32,7 @@ app.use('/api/auth', authRoutes)
 app.use('/api/menu', menuRoutes)
 // Admin dashboard routes
 app.use('/api/admin/auth', adminAuthRoutes)
+app.use('/api/admin/menu', adminMenuRoutes)
 
 // Global error handler — catches anything thrown in async controllers
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
