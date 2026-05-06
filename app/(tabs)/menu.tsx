@@ -106,35 +106,13 @@ export default function MenuScreen() {
   };
   const clearAll = () => setCustomPlate({});
 
-  // 🪄 THE MAGIC REVEAL: Parsing the composite keys back into rich objects!
   const selectedItemsList = Object.keys(customPlate).map(compositeKey => {
-    const { id, variantLabel, multiplier } = parseCompositeKey(compositeKey);
+    const { id, variantLabel, variantPrice } = parseCompositeKey(compositeKey);
     const dbItem = MENU_ITEMS.find(m => m.id === id);
-    const basePrice = dbItem?.price || 0;
     
-    // Helper function (add this outside or inside the component)
-    // const roundUpToNearest50 = (price: number) => {
-    //   if (price % 50 === 0) return price; 
-    //   return Math.ceil(price / 50) * 50;
-    // };
-
-    // ... inside selectedItemsList map ...
-    // let finalPrice = Math.round(basePrice * multiplier);
-    // finalPrice = roundUpToNearest50(finalPrice);
-
-    // Round Up Prices To Nearest 100
-    const roundUpToNearest100 = (price: number) => {
-      if (price % 100 === 0) return price; 
-      return Math.ceil(price / 100) * 100;
-    };
-
-    // ... inside selectedItemsList map ...
-    let finalPrice = Math.round(basePrice * multiplier);
-    finalPrice = roundUpToNearest100(finalPrice);
-
-    // If you don't update those files locally, the Modal will correctly show ₦650, but the receipt will charge ₦633! Do you want me to generate the diffs for those files to make it easier for you to copy and paste?
+    // NEW CODE: It just takes the exact manual price from the key, or falls back to the base price
+    const finalPrice = variantPrice !== null ? variantPrice : (dbItem?.price || 0);
     
-    // If it's a variant, append the label to the name so the Kitchen knows!
     const finalName = variantLabel && variantLabel !== 'Base' 
       ? `${dbItem?.name} (${variantLabel})` 
       : (dbItem?.name || 'Unknown Item');
@@ -358,7 +336,7 @@ export default function MenuScreen() {
           <Text style={[menuStyles.mainAddButtonText, { color: '#FFF' }]}>{`Add To Cart - ₦${plateTotal.toLocaleString()}`}</Text>
         </TouchableOpacity>
       </Animated.View>
-
+    
       <Animated.View style={[menuStyles.toastContainer, { transform: [{ translateY: toastAnim }], backgroundColor: isDark ? '#333' : '#222' }]}>
         <Ionicons name="checkmark-circle" size={24} color="#4CAF50" />
         <Text style={menuStyles.toastText}>Custom Package added to cart!</Text>

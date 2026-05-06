@@ -151,30 +151,11 @@ export default function QuickEditPackage({
   const clearAll = () => setCustomPlate({});
 
   const selectedItemsList = Object.keys(customPlate).map(compositeKey => {
-    const { id, variantLabel, multiplier } = parseCompositeKey(compositeKey);
+    const { id, variantLabel, variantPrice } = parseCompositeKey(compositeKey);
     const dbItem = MENU_ITEMS.find(m => m.id === id);
-    const basePrice = dbItem?.price || 0;
-    // Round Up Prices To Nearest 50
-    // const roundUpToNearest50 = (price: number) => {
-    //   if (price % 50 === 0) return price; 
-    //   return Math.ceil(price / 50) * 50;
-    // };
-
-    // ... inside selectedItemsList map ...
-    // let finalPrice = Math.round(basePrice * multiplier);
-    // finalPrice = roundUpToNearest50(finalPrice);
-
-    // Round Up Prices To Nearest 100
-    const roundUpToNearest100 = (price: number) => {
-      if (price % 100 === 0) return price; 
-      return Math.ceil(price / 100) * 100;
-    };
-
-    // ... inside selectedItemsList map ...
-    let finalPrice = Math.round(basePrice * multiplier);
-    finalPrice = roundUpToNearest100(finalPrice);
-
-    // If you don't update those files locally, the Modal will correctly show ₦650, but the receipt will charge ₦633! Do you want me to generate the diffs for those files to make it easier for you to copy and paste?
+    
+    // NEW CODE: It just takes the exact manual price from the key, or falls back to the base price
+    const finalPrice = variantPrice !== null ? variantPrice : (dbItem?.price || 0);
     
     const finalName = variantLabel && variantLabel !== 'Base' 
       ? `${dbItem?.name} (${variantLabel})` 
@@ -187,7 +168,6 @@ export default function QuickEditPackage({
       price: finalPrice,
       qty: customPlate[compositeKey],
       isAvailable: dbItem?.isAvailable !== false,
-      image: dbItem?.image || '' 
     };
   });
 

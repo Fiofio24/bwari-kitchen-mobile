@@ -70,52 +70,55 @@ const imgKununAya = 'https://i.pinimg.com/1200x/8b/4d/e0/8b4de03207ddd0e9c5a6898
 const imgOrganicJuice = 'https://i.pinimg.com/736x/6e/5d/dc/6e5ddca2a3618c89d9ed2a8c9d4fd606.jpg';
 const imgFura = 'https://i.pinimg.com/736x/f6/27/3b/f6273b95a2db9897640c9a8ac7a74632.jpg';
 
-// PRO UX FIX: Using multipliers makes pricing perfectly dynamic!
-const PORTION_VARIANTS = [
-  { label: 'Full', multiplier: 1 },
-  { label: 'Half', multiplier: 0.5 },
-  { label: '1 Scoop', multiplier: 0.333333333 },
-  { label: '2 Scoops', multiplier: 0.666666667 },
+const DISH_PRICE_2000_VARIANTS = [
+  { label: 'Full Portion', price: 2000 },
+  { label: '2 Scoops', price: 1400 },
+  { label: '1 Scoop', price: 700 }
+];
+
+const SOUP_3500_VARIANTS = [
+  { label: 'Full Plate', price: 3500 },
+  { label: 'Half Plate', price: 1800 } // Admin chose 1800 manually instead of 1750!
 ];
 
 export const MENU_ITEMS = [
   // --- RICE CATEGORY ---
-  { id: 'r1', name: 'Rice/Stew', price: 2000, category: 'Rice', image: imgRiceStew, variants: PORTION_VARIANTS },
-  { id: 'r2', name: 'Rice/Fish Stew', price: 3000, category: 'Rice', image: imgRiceFishStew, variants: PORTION_VARIANTS },
-  { id: 'r3', name: 'Party Jollof', price: 2000, category: 'Rice', image: imgPartyJollof, variants: PORTION_VARIANTS },
-  { id: 'r4', name: 'Palm Oil Rice', price: 2500, category: 'Rice', image: imgPalmOilRice, variants: PORTION_VARIANTS },
-  { id: 'r5', name: 'Special Rice', price: 3000, category: 'Rice', image: imgSpecialRice, variants: PORTION_VARIANTS },
-  { id: 'r9', name: 'Basmatic', price: 3000, category: 'Rice', image: imgBasmatic, variants: PORTION_VARIANTS },
-  { id: 'r10', name: 'Fried Rice', price: 2000, category: 'Rice', image: imgFriedRice, variants: PORTION_VARIANTS },
+  { id: 'r1', name: 'Rice/Stew', price: 2000, category: 'Rice', image: imgRiceStew, variants: DISH_PRICE_2000_VARIANTS },
+  { id: 'r2', name: 'Rice/Fish Stew', price: 3000, category: 'Rice', image: imgRiceFishStew, variants: DISH_PRICE_2000_VARIANTS },
+  { id: 'r3', name: 'Party Jollof', price: 2000, category: 'Rice', image: imgPartyJollof, variants: DISH_PRICE_2000_VARIANTS },
+  { id: 'r4', name: 'Palm Oil Rice', price: 2500, category: 'Rice', image: imgPalmOilRice, variants: DISH_PRICE_2000_VARIANTS },
+  { id: 'r5', name: 'Special Rice', price: 3000, category: 'Rice', image: imgSpecialRice, variants: DISH_PRICE_2000_VARIANTS },
+  { id: 'r9', name: 'Basmatic', price: 3000, category: 'Rice', image: imgBasmatic, variants: DISH_PRICE_2000_VARIANTS },
+  { id: 'r10', name: 'Fried Rice', price: 2000, category: 'Rice', image: imgFriedRice, variants: DISH_PRICE_2000_VARIANTS },
 
   // --- PASTA CATEGORY ---
-  { id: 'pa1', name: 'Spaghetti', price: 2000, category: 'Pasta', image: imgSpaghetti, variants: PORTION_VARIANTS },
+  { id: 'pa1', name: 'Spaghetti', price: 2000, category: 'Pasta', image: imgSpaghetti, variants: DISH_PRICE_2000_VARIANTS },
 
   // --- YAM & BEANS CATEGORY ---
-  { id: 'yb1', name: 'Porridge Beans', price: 2000, category: 'Yam & Beans', image: imgBeans, variants: PORTION_VARIANTS },
+  { id: 'yb1', name: 'Porridge Beans', price: 2000, category: 'Yam & Beans', image: imgBeans, variants: DISH_PRICE_2000_VARIANTS },
   { id: 'yb2', name: 'Yam/Egg Sauce', price: 2800, category: 'Yam & Beans', image: imgYam },
 
   // --- SIDES & EXTRAS CATEGORY ---
   { id: 'sd1', name: 'Plantain', price: 500, category: 'Sides', image: imgPlantain },
-  { id: 'sd2', name: 'Gizdodo', price: 3000, category: 'Sides', image: imgGizdodo, variants: PORTION_VARIANTS },
+  { id: 'sd2', name: 'Gizdodo', price: 3000, category: 'Sides', image: imgGizdodo, variants: DISH_PRICE_2000_VARIANTS },
   { id: 'sd4', name: 'Salad', price: 500, category: 'Sides', image: imgSalad },
   { id: 'sd5', name: 'Moi Moi', price: 1000, category: 'Sides', image: imgMoiMoi },
   { id: 'sd6', name: 'Only Egg Sauce', price: 1300, category: 'Sides', image: imgEggSauce },
 
   // --- SOUP CATEGORY ---
-  { id: 'sp1', name: 'White Soup', price: 3500, category: 'Soup', image: imgWhiteSoup, variants: PORTION_VARIANTS },
-  { id: 'sp2', name: 'Ogbono', price: 2000, category: 'Soup', image: imgOgbono, variants: PORTION_VARIANTS },
-  { id: 'sp4', name: 'Ewedu', price: 2000, category: 'Soup', image: imgEwedu, variants: PORTION_VARIANTS },
-  { id: 'sp5', name: 'Stew', price: 2000, category: 'Soup', image: imgStew, variants: PORTION_VARIANTS },
-  { id: 'sp6', name: 'Afang', price: 3000, category: 'Soup', image: imgAfang, variants: PORTION_VARIANTS },
-  { id: 'sp7', name: 'Bitter Leaf Soup', price: 3000, category: 'Soup', image: imgBitterLeafSoup, variants: PORTION_VARIANTS },
-  { id: 'sp8', name: 'Groundnut Soup', price: 1500, category: 'Soup', image: imgGroundnutSoup, variants: PORTION_VARIANTS },
-  { id: 'sp9', name: 'Black Soup', price: 2000, category: 'Soup', image: imgBlackSoup, variants: PORTION_VARIANTS },
-  { id: 'sp10', name: 'Catfish Pepper Soup', price: 3000, category: 'Soup', image: imgCatfishPepperSoup, variants: PORTION_VARIANTS },
-  { id: 'sp11', name: 'Yam Pepper Soup', price: 3000, category: 'Soup', image: imgYamPepperSoup, variants: PORTION_VARIANTS },
-  { id: 'sp12', name: 'Beans Soup', price: 700, category: 'Soup', image: imgBeansSoup, variants: PORTION_VARIANTS },
-  { id: 'sp13', name: 'Egusi', price: 2000, category: 'Soup', image: imgEgusi, variants: PORTION_VARIANTS },
-  { id: 'sp14', name: 'Banga', price: 3000, category: 'Soup', image: imgBanga, variants: PORTION_VARIANTS },
+  { id: 'sp1', name: 'White Soup', price: 3500, category: 'Soup', image: imgWhiteSoup, variants: SOUP_3500_VARIANTS },
+  { id: 'sp2', name: 'Ogbono', price: 2000, category: 'Soup', image: imgOgbono, variants: SOUP_3500_VARIANTS },
+  { id: 'sp4', name: 'Ewedu', price: 2000, category: 'Soup', image: imgEwedu, variants: SOUP_3500_VARIANTS },
+  { id: 'sp5', name: 'Stew', price: 2000, category: 'Soup', image: imgStew, variants: SOUP_3500_VARIANTS },
+  { id: 'sp6', name: 'Afang', price: 3000, category: 'Soup', image: imgAfang, variants: SOUP_3500_VARIANTS },
+  { id: 'sp7', name: 'Bitter Leaf Soup', price: 3000, category: 'Soup', image: imgBitterLeafSoup, variants: SOUP_3500_VARIANTS },
+  { id: 'sp8', name: 'Groundnut Soup', price: 1500, category: 'Soup', image: imgGroundnutSoup, variants: SOUP_3500_VARIANTS },
+  { id: 'sp9', name: 'Black Soup', price: 2000, category: 'Soup', image: imgBlackSoup, variants: SOUP_3500_VARIANTS },
+  { id: 'sp10', name: 'Catfish Pepper Soup', price: 3000, category: 'Soup', image: imgCatfishPepperSoup, variants: SOUP_3500_VARIANTS },
+  { id: 'sp11', name: 'Yam Pepper Soup', price: 3000, category: 'Soup', image: imgYamPepperSoup, variants: SOUP_3500_VARIANTS },
+  { id: 'sp12', name: 'Beans Soup', price: 700, category: 'Soup', image: imgBeansSoup, variants: SOUP_3500_VARIANTS },
+  { id: 'sp13', name: 'Egusi', price: 2000, category: 'Soup', image: imgEgusi, variants: SOUP_3500_VARIANTS },
+  { id: 'sp14', name: 'Banga', price: 3000, category: 'Soup', image: imgBanga, variants: SOUP_3500_VARIANTS },
 
   // --- PROTEIN CATEGORY ---
   { id: 'pr1', name: 'Beef', price: 1000, category: 'Protein', image: imgBeef, isAvailable: false },
@@ -225,7 +228,10 @@ export const getDinnerDishes = () => COMBO_PACKAGES.filter(item => ['Rice', 'Swa
 export const parseCompositeKey = (key: string) => {
   const parts = key.split('::');
   if (parts.length === 3) {
-    return { id: parts[0], variantLabel: parts[1], multiplier: parseFloat(parts[2]) };
+    // Now it extracts the EXACT manual price set by the admin!
+    return { id: parts[0], variantLabel: parts[1], variantPrice: parseFloat(parts[2]) };
   }
-  return { id: key, variantLabel: 'Base', multiplier: 1 };
+  return { id: key, variantLabel: 'Base', variantPrice: null };
 };
+
+
