@@ -70,8 +70,11 @@ const imgKununAya = 'https://i.pinimg.com/1200x/8b/4d/e0/8b4de03207ddd0e9c5a6898
 const imgOrganicJuice = 'https://i.pinimg.com/736x/6e/5d/dc/6e5ddca2a3618c89d9ed2a8c9d4fd606.jpg';
 const imgFura = 'https://i.pinimg.com/736x/f6/27/3b/f6273b95a2db9897640c9a8ac7a74632.jpg';
 
+
+// Instead of automatic calculation for specific portion of food Admin can manually input prices for each portion! 
 const DISH_PRICE_2000_VARIANTS = [
   { label: 'Full Portion', price: 2000 },
+  { label: 'Haif Portion', price: 1000 },
   { label: '2 Scoops', price: 1400 },
   { label: '1 Scoop', price: 700 }
 ];

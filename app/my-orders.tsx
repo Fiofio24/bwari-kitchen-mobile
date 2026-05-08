@@ -19,7 +19,7 @@ import TopNav from '../components/TopNav';
 // Pro Mock Data with every status represented
 const MOCK_ORDERS = [
   { 
-    id: 'ORD-8400', 
+    id: 'ORD0805260001', 
     date: 'Today, 8:00 PM', 
     summary: 'Suya & Coke', 
     subtotal: 2500,
@@ -34,7 +34,7 @@ const MOCK_ORDERS = [
     ]
   },
   { 
-    id: 'ORD-8398', 
+    id: 'ORD0805260020', 
     date: 'Today, 7:30 PM', 
     summary: 'Fried Rice Combo', 
     subtotal: 5000,
@@ -48,7 +48,7 @@ const MOCK_ORDERS = [
     ]
   },
   { 
-    id: 'ORD-8392', 
+    id: 'ORD0805260021', 
     date: 'Today, 2:30 PM', 
     summary: 'Party Jollof & Chicken + 2 more', 
     subtotal: 7000,
@@ -64,7 +64,7 @@ const MOCK_ORDERS = [
     ]
   },
   { 
-    id: 'ORD-8390', 
+    id: 'ORD0805260030', 
     date: 'Today, 1:15 PM', 
     summary: 'Amala & Ewedu', 
     subtotal: 3000,
@@ -500,6 +500,7 @@ const styles = StyleSheet.create({
   },
   stepTextActive: {
     fontWeight: 'bold',
+    color: Colors.primary,
   },
   receiptBox: {
     padding: 15,
