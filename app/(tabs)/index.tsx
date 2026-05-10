@@ -1,5 +1,3 @@
-// Note: This file requires an Expo/React Native environment to compile correctly.
-// Triggering a fresh build to resolve module resolution errors (Index fix).
 import React, { useState, useRef, useCallback } from 'react';
 import { 
   View, 

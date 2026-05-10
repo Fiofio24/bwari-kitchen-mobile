@@ -235,7 +235,12 @@ export default function AdminDashboard() {
         <View style={styles.sectionHeaderRow}>
           <Text style={[styles.sectionTitle, { color: colors.textMuted, marginBottom: 0 }]}>QUICK INVENTORY</Text>
           <TouchableOpacity activeOpacity={0.7}>
-            <Text style={[styles.seeAllText, { color: Colors.primary }]}>Manage Menu</Text>
+            <Text 
+              style={[styles.seeAllText, { color: Colors.primary }]}
+              onPress={() => router.push('/manage-menu')}
+            >
+              Manage Menu
+            </Text>
           </TouchableOpacity>
         </View>
         
@@ -277,7 +282,12 @@ export default function AdminDashboard() {
         <View style={styles.sectionHeaderRow}>
           <Text style={[styles.sectionTitle, { color: colors.textMuted, marginBottom: 0 }]}>LIVE KITCHEN FEED</Text>
           <TouchableOpacity activeOpacity={0.7}>
-            <Text style={[styles.seeAllText, { color: Colors.primary }]}>View All</Text>
+            <Text 
+              style={[styles.seeAllText, { color: Colors.primary }]}
+              onPress={() => router.push('/all-orders')}
+            >
+              View All
+            </Text>
           </TouchableOpacity>
         </View>
 

@@ -1,4 +1,3 @@
-// Note: This file requires an Expo/React Native environment to compile correctly.
 import { Tabs } from 'expo-router';
 import { View } from 'react-native';
 import BottomNav from '../../components/BottomNav';
