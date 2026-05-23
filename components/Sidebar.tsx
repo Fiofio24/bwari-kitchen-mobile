@@ -1,7 +1,3 @@
-// Note: This file requires an Expo/React Native environment to compile correctly.
-// Preview Environment Bypass: Dependencies omitted for web preview.
-// Triggering a fresh build to resolve module resolution.
-// Cache bust timestamp: 1716060001
 import React, { useEffect, useRef, useState } from 'react';
 import { 
   View, 
@@ -40,7 +36,6 @@ interface SidebarProps {
   visible: boolean; 
   onClose: () => void; 
   menuItems?: SidebarMenuItem[]; 
-  // NEW: Profile Override isolates roles (Rider/Admin) from Customer local storage
   profileOverride?: {
     name: string;
     email: string;
@@ -54,13 +49,12 @@ export default function Sidebar({ visible, onClose, menuItems, profileOverride }
   const [isRendering, setIsRendering] = useState(visible);
   
   const { colors, mode, setThemeMode, isDark } = useTheme();
-  const { userData } = useUser(); 
+  const { userData, resetToDefault } = useUser(); 
   const insets = useSafeAreaInsets();
   const router = useRouter(); 
   
   const safeTop = Platform.OS === 'web' ? 50 : insets.top + 20;
 
-  // Determine which profile to show (Override for Rider/Admin, UserData for Customer)
   const profileToDisplay = profileOverride || userData;
 
   useEffect(() => {
@@ -176,7 +170,7 @@ export default function Sidebar({ visible, onClose, menuItems, profileOverride }
                   router.replace('/profile');
                 }
               }}
-              activeOpacity={profileOverride ? 1 : 0.7} // Disable clicking if it's the rider/admin
+              activeOpacity={profileOverride ? 1 : 0.7}
             >
               <View style={[styles.bodyProfileSection, { borderBottomColor: colors.border }]}>
                 <View style={[styles.profileCircle, { backgroundColor: isDark ? colors.surface : '#EAEAEC' }]}>
@@ -269,7 +263,11 @@ export default function Sidebar({ visible, onClose, menuItems, profileOverride }
             <TouchableOpacity 
               style={styles.logoutBtn} 
               activeOpacity={0.8}
-              onPress={() => {onClose(); router.replace('/login');}} 
+              onPress={() => {
+                onClose(); 
+                resetToDefault(); 
+                router.replace('/welcome');
+              }} 
             >
               <Ionicons name="log-out-outline" size={22} color="#D32F2F" />
               <Text style={styles.logoutText}>
