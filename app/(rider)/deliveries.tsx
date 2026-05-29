@@ -3,43 +3,69 @@ import {
   View, 
   Text, 
   StyleSheet, 
-  TouchableOpacity, 
   ScrollView, 
-  Platform,
+  TouchableOpacity, 
   Switch,
-  Linking,
-  Alert,
+  Platform,
   LayoutAnimation
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../context/ThemeContext';
 import { Colors } from '../../constants/Colors';
 import { StatusBar } from 'expo-status-bar';
-import { useRouter } from 'expo-router';
 
-// MOCK DATA: What the backend will send to the rider
+// Importing TopNav and Sidebar
+import TopNav from '../../components/TopNav';
+import Sidebar from '../../components/Sidebar';
+
+// MOCK DATA for Internal Rider (Logistics focus)
+const MOCK_METRICS = {
+  tripsToday: 12,
+  tripsMonth: 145,
+  avgRating: 4.8
+};
+
 const MOCK_DELIVERIES = [
   {
-    id: 'DEL-1024',
-    customerName: 'Emmanuel',
-    customerPhone: '+234 800 111 2222',
-    dropoffAddress: 'No 6 Kuje Street, FCT Abuja',
-    pickupAddress: 'Bwari Kitchen Main Branch',
+    id: 'ORD-001',
+    customerName: 'Aisha Bello',
+    customerPhone: '08122334455',
+    dropoffAddress: 'Block C, Bwari Student Hostel',
     distance: '2.5 km',
-    payout: 500,
-    status: 'available', // 'available', 'picking_up', 'delivering'
+    estimatedTime: '12 mins',
+    status: 'Pending', 
+    timePassed: '2m ago'
   },
   {
-    id: 'DEL-1022',
-    customerName: 'Obansa Seriff',
-    customerPhone: '+234 800 333 4444',
-    dropoffAddress: 'Central Business District, Zone 4',
-    pickupAddress: 'Bwari Kitchen Main Branch',
-    distance: '4.2 km',
-    payout: 800,
-    status: 'delivering',
+    id: 'ORD-002',
+    customerName: 'Chinedu Okeke',
+    customerPhone: '08055443322',
+    dropoffAddress: 'Phase 3, FHA Estate, Bwari',
+    distance: '4.1 km',
+    estimatedTime: '18 mins',
+    status: 'Pending',
+    timePassed: 'Just now'
+  },
+  {
+    id: 'ACT-099',
+    customerName: 'Mike Johnson',
+    customerPhone: '07011223344',
+    dropoffAddress: 'Law School Road, Bwari',
+    distance: '1.2 km',
+    estimatedTime: '8 mins',
+    status: 'Active', 
+    timePassed: 'Picked up 10m ago'
   }
+];
+
+// NEW: Custom Rider Menu Items mapped to their specific routes!
+const RIDER_MENU_ITEMS = [
+  { name: 'Dashboard', icon: 'home-outline', route: '/(rider)/deliveries' },
+  { name: 'Delivery History', icon: 'time-outline', route: '/(rider)/history' },
+  { name: 'Vehicle Settings', icon: 'bicycle-outline', route: '/(rider)/vehicle' },
+  { name: 'Rider Support', icon: 'chatbubbles-outline', route: '/help' },
 ];
 
 export default function RiderDeliveriesScreen() {
@@ -48,488 +74,496 @@ export default function RiderDeliveriesScreen() {
   const insets = useSafeAreaInsets();
   
   const [isOnline, setIsOnline] = useState(true);
-  const [activeTab, setActiveTab] = useState<'available' | 'active'>('available');
+  const [activeTab, setActiveTab] = useState<'Requests' | 'Active'>('Requests');
   const [deliveries, setDeliveries] = useState(MOCK_DELIVERIES);
+  
+  // State to control Sidebar visibility
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  const filteredDeliveries = deliveries.filter(del => 
-    activeTab === 'available' ? del.status === 'available' : del.status !== 'available'
+  const displayedDeliveries = deliveries.filter(d => 
+    activeTab === 'Requests' ? d.status === 'Pending' : d.status === 'Active'
   );
 
-  const handleAction = (id: string, currentStatus: string) => {
+  const handleTabSwitch = (tab: 'Requests' | 'Active') => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    
-    if (currentStatus === 'available') {
-      // Accept Delivery
-      setDeliveries(prev => prev.map(d => d.id === id ? { ...d, status: 'picking_up' } : d));
-      setActiveTab('active');
-    } else if (currentStatus === 'picking_up') {
-      // Picked up from Kitchen
-      setDeliveries(prev => prev.map(d => d.id === id ? { ...d, status: 'delivering' } : d));
-    } else if (currentStatus === 'delivering') {
-      // Confirm Delivered
-      Alert.alert(
-        'Confirm Delivery',
-        'Have you successfully handed over the order to the customer?',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { 
-            text: 'Confirm', 
-            style: 'default',
-            onPress: () => {
-              LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-              setDeliveries(prev => prev.filter(d => d.id !== id));
-            }
-          }
-        ]
-      );
-    }
+    setActiveTab(tab);
   };
 
-  const handleCall = (phone: string) => {
-    if (Platform.OS === 'web') {
-      window.alert(`Calling ${phone}...`);
-    } else {
-      Linking.openURL(`tel:${phone}`).catch(() => Alert.alert('Error', 'Unable to open dialer.'));
-    }
+  const acceptRequest = (id: string) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setDeliveries(prev => prev.map(d => d.id === id ? { ...d, status: 'Active' } : d));
   };
 
-  const handleMap = (address: string) => {
-    if (Platform.OS === 'web') {
-      window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`, '_blank');
-    } else {
-      Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`)
-        .catch(() => Alert.alert('Error', 'Unable to open maps.'));
-    }
+  const completeDelivery = (id: string) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setDeliveries(prev => prev.filter(d => d.id !== id));
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar style={isDark ? "light" : "dark"} />
       
-      {/* RIDER HEADER */}
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <View style={styles.headerTitleRow}>
-          <TouchableOpacity 
-            style={[styles.logoutBtn, { backgroundColor: isDark ? colors.surface : '#F5F5F5' }]} 
-            onPress={() => router.replace('/login')}
-          >
-            <Ionicons name="log-out-outline" size={20} color={Colors.primary} />
-          </TouchableOpacity>
-          <View style={styles.headerTextWrapper}>
-            <Text style={[styles.headerTitle, { color: colors.text }]}>
-              Rider Portal
-            </Text>
-            <Text style={[styles.headerSubtitle, { color: isOnline ? '#4CAF50' : colors.textMuted }]}>
-              {isOnline ? '● Online & Accepting Orders' : '○ Offline'}
-            </Text>
-          </View>
-        </View>
-        
-        <Switch 
-          value={isOnline} 
-          onValueChange={setIsOnline} 
-          trackColor={{ false: '#767577', true: '#81C784' }} 
-          thumbColor={isOnline ? '#4CAF50' : '#f4f3f4'} 
-        />
-      </View>
+      {/* UNIVERSAL TOPNAV FOR THE RIDER */}
+      <TopNav 
+        title="Rider Dashboard"
+        leftIcon="menu-outline"
+        onLeftPress={() => setIsSidebarOpen(true)}
+        isAbsolute={false} 
+        isScrolled={true}
+        showDivider={false}
+      />
 
-      {/* TABS */}
-      <View style={styles.tabContainer}>
-        <TouchableOpacity 
-          style={[styles.tabButton, activeTab === 'available' ? [styles.activeTab, { borderBottomColor: Colors.primary }] : null]} 
-          onPress={() => setActiveTab('available')}
-          activeOpacity={0.8}
-        >
-          <Text style={[styles.tabText, { color: activeTab === 'available' ? Colors.primary : colors.textMuted }]}>
-            New Requests
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={[styles.tabButton, activeTab === 'active' ? [styles.activeTab, { borderBottomColor: Colors.primary }] : null]} 
-          onPress={() => setActiveTab('active')}
-          activeOpacity={0.8}
-        >
-          <Text style={[styles.tabText, { color: activeTab === 'active' ? Colors.primary : colors.textMuted }]}>
-            Active Deliveries
-          </Text>
-        </TouchableOpacity>
-      </View>
+      <View style={styles.responsiveWrapper}>
+        <View style={styles.responsiveInner}>
 
-      {/* DELIVERIES LIST */}
-      {!isOnline && activeTab === 'available' ? (
-        <View style={styles.emptyState}>
-          <Ionicons name="bicycle-outline" size={60} color={colors.textMuted} style={{ opacity: 0.5 }} />
-          <Text style={[styles.emptyText, { color: colors.text }]}>
-            You are currently offline.
-          </Text>
-          <Text style={[styles.emptySub, { color: colors.textMuted }]}>
-            Toggle your status to online to start receiving delivery requests.
-          </Text>
-        </View>
-      ) : (
-        <ScrollView 
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
-        >
-          {filteredDeliveries.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Ionicons name="checkmark-done-circle-outline" size={60} color={colors.textMuted} />
-              <Text style={[styles.emptyText, { color: colors.textMuted }]}>
-                No {activeTab} deliveries at the moment.
-              </Text>
+          <View style={styles.header}>
+            <View style={styles.headerProfile}>
+              <View style={[styles.avatarBox, { backgroundColor: Colors.primary }]}>
+                <Text style={styles.avatarText}>E</Text>
+              </View>
+              <View>
+                <Text style={[styles.headerGreeting, { color: colors.textMuted }]}>Logistics Staff,</Text>
+                <Text style={[styles.headerName, { color: colors.text }]}>Emmanuel</Text>
+              </View>
             </View>
-          ) : (
-            filteredDeliveries.map((delivery) => (
-              <View 
-                key={delivery.id} 
-                style={[
-                  styles.deliveryCard, 
-                  { 
-                    backgroundColor: colors.surface, 
-                    borderColor: delivery.status === 'available' ? colors.border : Colors.primary,
-                    borderWidth: delivery.status === 'available' ? 1 : 2 
-                  }
-                ]}
-              >
-                {/* CARD HEADER */}
-                <View style={[styles.cardHeader, { borderBottomColor: colors.border }]}>
-                  <View style={styles.deliveryIdBadge}>
-                    <Text style={styles.deliveryIdText}>{delivery.id}</Text>
-                  </View>
-                  <View style={styles.payoutBadge}>
-                    <Text style={styles.payoutText}>Earn ₦{delivery.payout}</Text>
-                  </View>
+            <TouchableOpacity 
+              style={[styles.logoutBtn, { backgroundColor: isDark ? colors.surface : '#F5F5F5' }]}
+              onPress={() => router.replace('/login')}
+            >
+              <Ionicons name="log-out-outline" size={22} color="#D32F2F" />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 40 }]}>
+            
+            <View style={[styles.statusCard, { backgroundColor: isOnline ? 'rgba(76, 175, 80, 0.1)' : 'rgba(150, 150, 150, 0.1)', borderColor: isOnline ? '#4CAF50' : colors.border }]}>
+              <View style={styles.statusTextWrap}>
+                <View style={styles.statusRow}>
+                  <View style={[styles.statusDot, { backgroundColor: isOnline ? '#4CAF50' : '#9E9E9E' }]} />
+                  <Text style={[styles.statusTitle, { color: isOnline ? '#388E3C' : colors.text }]}>
+                    {isOnline ? "Active for Shift" : "On Break / Offline"}
+                  </Text>
                 </View>
+                <Text style={[styles.statusSub, { color: colors.textMuted }]}>
+                  {isOnline ? "Ready for dispatch..." : "You won't receive new orders."}
+                </Text>
+              </View>
+              <Switch 
+                value={isOnline} 
+                onValueChange={setIsOnline} 
+                trackColor={{ false: colors.border, true: '#81C784' }} 
+                thumbColor={isOnline ? '#4CAF50' : '#f4f3f4'} 
+              />
+            </View>
 
-                {/* ROUTE VISUALIZATION */}
-                <View style={styles.routeContainer}>
-                  <View style={styles.routeTimeline}>
-                    <View style={styles.routeDotStart} />
-                    <View style={[styles.routeLine, { borderColor: colors.border }]} />
-                    <View style={styles.routeDotEnd} />
-                  </View>
-                  
-                  <View style={styles.routeDetails}>
-                    <View style={styles.routeStop}>
-                      <Text style={[styles.routeLabel, { color: colors.textMuted }]}>PICKUP</Text>
-                      <Text style={[styles.routeAddress, { color: colors.text }]} numberOfLines={1}>
-                        {delivery.pickupAddress}
-                      </Text>
-                    </View>
-                    <View style={styles.routeStop}>
-                      <Text style={[styles.routeLabel, { color: colors.textMuted }]}>DROPOFF</Text>
-                      <Text style={[styles.routeAddress, { color: colors.text }]} numberOfLines={2}>
-                        {delivery.dropoffAddress}
-                      </Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.distanceBox}>
-                    <Ionicons name="navigate" size={16} color={Colors.primary} />
-                    <Text style={[styles.distanceText, { color: Colors.primary }]}>
-                      {delivery.distance}
-                    </Text>
-                  </View>
-                </View>
-
-                {/* CUSTOMER CONTACT (Only show if active) */}
-                {delivery.status !== 'available' && (
-                  <View style={[styles.contactRow, { borderTopColor: colors.border, borderBottomColor: colors.border }]}>
-                    <View style={styles.customerInfo}>
-                      <Text style={[styles.customerName, { color: colors.text }]}>
-                        {delivery.customerName}
-                      </Text>
-                      <Text style={[styles.customerPhone, { color: colors.textMuted }]}>
-                        {delivery.customerPhone}
-                      </Text>
-                    </View>
-                    <View style={styles.contactActions}>
-                      <TouchableOpacity 
-                        style={[styles.iconActionBtn, { backgroundColor: 'rgba(76, 175, 80, 0.1)' }]}
-                        onPress={() => handleCall(delivery.customerPhone)}
-                      >
-                        <Ionicons name="call" size={20} color="#4CAF50" />
-                      </TouchableOpacity>
-                      <TouchableOpacity 
-                        style={[styles.iconActionBtn, { backgroundColor: 'rgba(33, 150, 243, 0.1)' }]}
-                        onPress={() => handleMap(delivery.dropoffAddress)}
-                      >
-                        <Ionicons name="map" size={20} color="#2196F3" />
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                )}
-
-                {/* MAIN ACTION BUTTON */}
-                <View style={styles.actionContainer}>
-                  <TouchableOpacity 
-                    style={[
-                      styles.actionBtn, 
-                      { 
-                        backgroundColor: 
-                          delivery.status === 'available' ? '#4CAF50' : 
-                          delivery.status === 'picking_up' ? '#FF9800' : 
-                          Colors.primary 
-                      }
-                    ]} 
-                    activeOpacity={0.8}
-                    onPress={() => handleAction(delivery.id, delivery.status)}
-                  >
-                    <Ionicons 
-                      name={
-                        delivery.status === 'available' ? "bicycle" : 
-                        delivery.status === 'picking_up' ? "cube-outline" : 
-                        "checkmark-done-circle"
-                      } 
-                      size={20} 
-                      color="#FFF" 
-                      style={styles.btnIcon} 
-                    />
-                    <Text style={styles.actionBtnText}>
-                      {
-                        delivery.status === 'available' ? "Accept Delivery" :
-                        delivery.status === 'picking_up' ? "Confirm Picked Up" :
-                        "Confirm Delivered"
-                      }
-                    </Text>
-                  </TouchableOpacity>
+            <View style={styles.metricsRow}>
+              <View style={[styles.metricCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                <Text style={[styles.metricLabel, { color: colors.textMuted }]}>Today</Text>
+                <Text style={[styles.metricValue, { color: colors.text }]}>{MOCK_METRICS.tripsToday}</Text>
+              </View>
+              <View style={[styles.metricCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                <Text style={[styles.metricLabel, { color: colors.textMuted }]}>This Month</Text>
+                <Text style={[styles.metricValue, { color: colors.text }]}>{MOCK_METRICS.tripsMonth}</Text>
+              </View>
+              <View style={[styles.metricCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                <Text style={[styles.metricLabel, { color: colors.textMuted }]}>Performance</Text>
+                <View style={styles.ratingRow}>
+                  <Text style={[styles.metricValue, { color: colors.text }]}>{MOCK_METRICS.avgRating}</Text>
+                  <Ionicons name="star" size={14} color="#FF9800" style={{ marginLeft: 2 }} />
                 </View>
               </View>
-            ))
-          )}
-        </ScrollView>
-      )}
+            </View>
+
+            <View style={[styles.tabContainer, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F0F0F0' }]}>
+              <TouchableOpacity 
+                style={[styles.tabBtn, activeTab === 'Requests' && [styles.tabBtnActive, { backgroundColor: colors.surface }]]}
+                onPress={() => handleTabSwitch('Requests')}
+              >
+                <Text style={[styles.tabText, { color: activeTab === 'Requests' ? colors.text : colors.textMuted }]}>New Dispatches</Text>
+                {isOnline && deliveries.filter(d => d.status === 'Pending').length > 0 && (
+                  <View style={styles.badge}>
+                    <Text style={styles.badgeText}>{deliveries.filter(d => d.status === 'Pending').length}</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.tabBtn, activeTab === 'Active' && [styles.tabBtnActive, { backgroundColor: colors.surface }]]}
+                onPress={() => handleTabSwitch('Active')}
+              >
+                <Text style={[styles.tabText, { color: activeTab === 'Active' ? colors.text : colors.textMuted }]}>In Box</Text>
+              </TouchableOpacity>
+            </View>
+
+            {!isOnline && activeTab === 'Requests' ? (
+              <View style={styles.emptyContainer}>
+                <Ionicons name="moon-outline" size={60} color={colors.border} />
+                <Text style={[styles.emptyTitle, { color: colors.text }]}>You are offline</Text>
+                <Text style={[styles.emptySub, { color: colors.textMuted }]}>Toggle your status to online to start receiving delivery requests from Bwari Kitchen.</Text>
+              </View>
+            ) : displayedDeliveries.length > 0 ? (
+              displayedDeliveries.map((delivery) => (
+                <View key={delivery.id} style={[styles.deliveryCard, { backgroundColor: colors.surface, borderColor: activeTab === 'Active' ? Colors.primary : colors.border }]}>
+                  
+                  <View style={styles.cardHeader}>
+                    <View>
+                      <Text style={[styles.deliveryId, { color: colors.text }]}>{delivery.id}</Text>
+                      <Text style={[styles.deliveryDistance, { color: colors.textMuted }]}>{delivery.distance} • ~{delivery.estimatedTime}</Text>
+                    </View>
+                    <Text style={[styles.deliveryTime, { color: colors.textMuted }]}>{delivery.timePassed}</Text>
+                  </View>
+
+                  <View style={[styles.divider, { backgroundColor: colors.border }]} />
+
+                  <View style={styles.locationRow}>
+                    <Ionicons name="location" size={24} color="#D32F2F" />
+                    <View style={styles.locationTextWrap}>
+                      <Text style={[styles.locationLabel, { color: colors.textMuted }]}>DROP-OFF</Text>
+                      <Text style={[styles.locationAddress, { color: colors.text }]} numberOfLines={2}>{delivery.dropoffAddress}</Text>
+                    </View>
+                  </View>
+
+                  {activeTab === 'Active' && (
+                    <View style={[styles.customerBox, { backgroundColor: isDark ? colors.background : '#F9F9F9' }]}>
+                      <View style={styles.customerHeader}>
+                        <Ionicons name="person-circle-outline" size={32} color={colors.textMuted} />
+                        <View style={{ marginLeft: 10, flex: 1 }}>
+                          <Text style={[styles.customerName, { color: colors.text }]}>{delivery.customerName}</Text>
+                          <Text style={[styles.customerPhone, { color: colors.textMuted }]}>{delivery.customerPhone}</Text>
+                        </View>
+                        <TouchableOpacity style={[styles.callBtn, { backgroundColor: 'rgba(76, 175, 80, 0.1)' }]}>
+                          <Ionicons name="call" size={20} color="#4CAF50" />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  )}
+
+                  <View style={styles.actionRow}>
+                    {activeTab === 'Requests' ? (
+                      <>
+                        <TouchableOpacity style={[styles.btnSecondary, { borderColor: colors.border }]}>
+                          <Text style={[styles.btnSecondaryText, { color: colors.text }]}>Reject</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={[styles.btnPrimary, { backgroundColor: Colors.primary }]} onPress={() => acceptRequest(delivery.id)}>
+                          <Text style={styles.btnPrimaryText}>Start Pickup</Text>
+                        </TouchableOpacity>
+                      </>
+                    ) : (
+                      <>
+                        <TouchableOpacity 
+                          style={[styles.btnSecondary, { borderColor: Colors.primary }]}
+                          onPress={() => router.push({
+                              pathname: '/(rider)/map',
+                              params: { id: delivery.id, address: delivery.dropoffAddress }
+                          })}
+                        >
+                          <Ionicons name="navigate" size={18} color={Colors.primary} style={{ marginRight: 5 }} />
+                          <Text style={[styles.btnSecondaryText, { color: Colors.primary }]}>Navigate</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={[styles.btnPrimary, { backgroundColor: '#4CAF50' }]} onPress={() => completeDelivery(delivery.id)}>
+                          <Text style={styles.btnPrimaryText}>Delivered</Text>
+                        </TouchableOpacity>
+                      </>
+                    )}
+                  </View>
+
+                </View>
+              ))
+            ) : (
+              <View style={styles.emptyContainer}>
+                <Ionicons name="bicycle-outline" size={60} color={colors.border} />
+                <Text style={[styles.emptyTitle, { color: colors.text }]}>No {activeTab} Orders</Text>
+                <Text style={[styles.emptySub, { color: colors.textMuted }]}>
+                  {activeTab === 'Requests' 
+                    ? "Waiting for the kitchen to dispatch new orders..." 
+                    : "You don't have any active deliveries in your box."}
+                </Text>
+              </View>
+            )}
+
+          </ScrollView>
+        </View>
+      </View>
+      
+      {/* NEW: Pass the RIDER_MENU_ITEMS into the Sidebar explicitly */}
+      <Sidebar 
+        visible={isSidebarOpen} 
+        onClose={() => setIsSidebarOpen(false)} 
+        menuItems={RIDER_MENU_ITEMS}
+      />
     </View>
   );
 }
 
-// PRO CSS COMPLIANCE: Every property strictly on its own line
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  container: { 
+    flex: 1 
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    borderBottomWidth: 1,
+  responsiveWrapper: { 
+    flex: 1, 
+    alignItems: 'center', 
+    width: '100%' 
   },
-  headerTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  responsiveInner: { 
+    flex: 1, 
+    width: '100%', 
+    maxWidth: 600 
   },
-  logoutBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 15,
+  header: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    paddingHorizontal: 20, 
+    paddingBottom: 15,
+    paddingTop: 10
   },
-  headerTextWrapper: {
-    justifyContent: 'center',
+  headerProfile: { 
+    flexDirection: 'row', 
+    alignItems: 'center' 
   },
-  headerTitle: {
-    fontSize: 22,
-    fontWeight: '900',
+  avatarBox: { 
+    width: 46, 
+    height: 46, 
+    borderRadius: 23, 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    marginRight: 12 
   },
-  headerSubtitle: {
-    fontSize: 13,
-    fontWeight: 'bold',
-    marginTop: 2,
+  avatarText: { 
+    color: '#FFF', 
+    fontSize: 20, 
+    fontWeight: '900' 
   },
-  tabContainer: {
-    flexDirection: 'row',
-    paddingHorizontal: 20,
-    marginTop: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(150, 150, 150, 0.1)',
+  headerGreeting: { 
+    fontSize: 13, 
+    fontWeight: '600' 
   },
-  tabButton: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
+  headerName: { 
+    fontSize: 20, 
+    fontWeight: 'bold' 
   },
-  activeTab: {
-    borderBottomWidth: 2,
+  logoutBtn: { 
+    width: 44, 
+    height: 44, 
+    borderRadius: 22, 
+    justifyContent: 'center', 
+    alignItems: 'center' 
   },
-  tabText: {
-    fontSize: 15,
-    fontWeight: 'bold',
+  scrollContent: { 
+    paddingHorizontal: 20, 
+    paddingTop: 10 
   },
-  scrollContent: {
-    padding: 20,
-    paddingBottom: 60,
+  statusCard: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'space-between', 
+    padding: 20, 
+    borderRadius: 20, 
+    borderWidth: 1, 
+    marginBottom: 20 
   },
-  emptyState: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 40,
-    paddingTop: 80,
+  statusTextWrap: { 
+    flex: 1, 
+    paddingRight: 15 
   },
-  emptyText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginTop: 15,
-    marginBottom: 8,
-    textAlign: 'center',
+  statusRow: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    marginBottom: 4 
   },
-  emptySub: {
-    fontSize: 14,
-    textAlign: 'center',
-    lineHeight: 22,
+  statusDot: { 
+    width: 10, 
+    height: 10, 
+    borderRadius: 5, 
+    marginRight: 8 
   },
-  deliveryCard: {
-    borderRadius: 20,
-    marginBottom: 20,
-    overflow: 'hidden',
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+  statusTitle: { 
+    fontSize: 18, 
+    fontWeight: 'bold' 
   },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 15,
-    borderBottomWidth: 1,
+  statusSub: { 
+    fontSize: 13, 
+    lineHeight: 18 
   },
-  deliveryIdBadge: {
-    backgroundColor: '#000',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 8,
+  metricsRow: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    marginBottom: 25, 
+    gap: 10 
   },
-  deliveryIdText: {
-    color: '#FFF',
-    fontWeight: 'bold',
-    fontSize: 14,
+  metricCard: { 
+    flex: 1, 
+    padding: 15, 
+    borderRadius: 16, 
+    borderWidth: 1, 
+    alignItems: 'center' 
   },
-  payoutBadge: {
-    backgroundColor: 'rgba(76, 175, 80, 0.1)',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 8,
+  metricLabel: { 
+    fontSize: 11, 
+    fontWeight: 'bold', 
+    textTransform: 'uppercase', 
+    marginBottom: 5 
   },
-  payoutText: {
-    color: '#4CAF50',
-    fontWeight: 'bold',
-    fontSize: 14,
+  metricValue: { 
+    fontSize: 18, 
+    fontWeight: '900' 
   },
-  routeContainer: {
-    flexDirection: 'row',
-    padding: 20,
-    alignItems: 'center',
+  ratingRow: { 
+    flexDirection: 'row', 
+    alignItems: 'center' 
   },
-  routeTimeline: {
-    width: 20,
-    alignItems: 'center',
-    marginRight: 15,
+  tabContainer: { 
+    flexDirection: 'row', 
+    borderRadius: 15, 
+    padding: 5, 
+    marginBottom: 20 
   },
-  routeDotStart: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: Colors.primary,
-    marginBottom: 4,
+  tabBtn: { 
+    flex: 1, 
+    flexDirection: 'row', 
+    paddingVertical: 12, 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    borderRadius: 12 
   },
-  routeLine: {
-    height: 30,
-    borderLeftWidth: 2,
-    borderStyle: 'dashed',
-    marginBottom: 4,
+  tabBtnActive: { 
+    elevation: 2, 
+    shadowColor: '#000', 
+    shadowOffset: { width: 0, height: 2 }, 
+    shadowOpacity: 0.1, 
+    shadowRadius: 3 
   },
-  routeDotEnd: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: '#4CAF50',
+  tabText: { 
+    fontSize: 14, 
+    fontWeight: 'bold' 
   },
-  routeDetails: {
-    flex: 1,
+  badge: { 
+    backgroundColor: '#D32F2F', 
+    paddingHorizontal: 6, 
+    paddingVertical: 2, 
+    borderRadius: 10, 
+    marginLeft: 6 
   },
-  routeStop: {
-    marginBottom: 10,
+  badgeText: { 
+    color: '#FFF', 
+    fontSize: 10, 
+    fontWeight: 'bold' 
   },
-  routeLabel: {
-    fontSize: 10,
-    fontWeight: 'bold',
-    letterSpacing: 1,
-    marginBottom: 2,
+  deliveryCard: { 
+    borderRadius: 20, 
+    borderWidth: 1, 
+    padding: 20, 
+    marginBottom: 15 
   },
-  routeAddress: {
-    fontSize: 14,
-    fontWeight: '600',
+  cardHeader: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'flex-start' 
   },
-  distanceBox: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(211, 47, 47, 0.05)',
-    padding: 10,
-    borderRadius: 12,
-    marginLeft: 10,
+  deliveryId: { 
+    fontSize: 20, 
+    fontWeight: '900', 
+    marginBottom: 2 
   },
-  distanceText: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    marginTop: 4,
+  deliveryDistance: { 
+    fontSize: 13, 
+    fontWeight: '600' 
   },
-  contactRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 15,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
+  deliveryTime: { 
+    fontSize: 12, 
+    fontWeight: '500' 
   },
-  customerInfo: {
-    flex: 1,
+  divider: { 
+    height: 1, 
+    marginVertical: 15 
   },
-  customerName: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 2,
+  locationRow: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    marginBottom: 20 
   },
-  customerPhone: {
-    fontSize: 13,
+  locationTextWrap: { 
+    marginLeft: 12, 
+    flex: 1 
   },
-  contactActions: {
-    flexDirection: 'row',
-    gap: 10,
+  locationLabel: { 
+    fontSize: 11, 
+    fontWeight: 'bold', 
+    letterSpacing: 1, 
+    marginBottom: 2 
   },
-  iconActionBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
+  locationAddress: { 
+    fontSize: 15, 
+    fontWeight: 'bold', 
+    lineHeight: 22 
   },
-  actionContainer: {
-    padding: 15,
+  customerBox: { 
+    borderRadius: 12, 
+    padding: 12, 
+    marginBottom: 20 
   },
-  actionBtn: {
-    flexDirection: 'row',
-    height: 54,
-    borderRadius: 15,
-    justifyContent: 'center',
-    alignItems: 'center',
+  customerHeader: { 
+    flexDirection: 'row', 
+    alignItems: 'center' 
   },
-  btnIcon: {
-    marginRight: 10,
+  customerName: { 
+    fontSize: 15, 
+    fontWeight: 'bold', 
+    marginBottom: 2 
   },
-  actionBtnText: {
-    color: '#FFF',
-    fontSize: 16,
-    fontWeight: 'bold',
+  customerPhone: { 
+    fontSize: 13 
   },
+  callBtn: { 
+    width: 40, 
+    height: 40, 
+    borderRadius: 20, 
+    justifyContent: 'center', 
+    alignItems: 'center' 
+  },
+  actionRow: { 
+    flexDirection: 'row', 
+    gap: 12 
+  },
+  btnSecondary: { 
+    flex: 1, 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    paddingVertical: 16, 
+    borderRadius: 16, 
+    borderWidth: 1 
+  },
+  btnSecondaryText: { 
+    fontSize: 15, 
+    fontWeight: 'bold' 
+  },
+  btnPrimary: { 
+    flex: 1.5, 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    paddingVertical: 16, 
+    borderRadius: 16 
+  },
+  btnPrimaryText: { 
+    color: '#FFF', 
+    fontSize: 15, 
+    fontWeight: 'bold' 
+  },
+  emptyContainer: { 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    paddingVertical: 40 
+  },
+  emptyTitle: { 
+    fontSize: 18, 
+    fontWeight: 'bold', 
+    marginTop: 15, 
+    marginBottom: 8 
+  },
+  emptySub: { 
+    fontSize: 14, 
+    textAlign: 'center', 
+    paddingHorizontal: 30, 
+    lineHeight: 20 
+  }
 });

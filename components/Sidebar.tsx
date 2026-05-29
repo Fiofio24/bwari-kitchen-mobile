@@ -25,22 +25,37 @@ const SIDEBAR_WIDTH = width * 0.75;
 
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 
+export interface SidebarMenuItem {
+  name: string;
+  icon: string;
+  route?: string;
+  badge?: string;
+}
+
 interface SidebarProps { 
   visible: boolean; 
   onClose: () => void; 
+  menuItems?: SidebarMenuItem[]; 
+  profileOverride?: {
+    name: string;
+    email: string;
+    avatarUri?: string | null;
+  }; 
 }
 
-export default function Sidebar({ visible, onClose }: SidebarProps) {
+export default function Sidebar({ visible, onClose, menuItems, profileOverride }: SidebarProps) {
   const slideAnim = useRef(new Animated.Value(-SIDEBAR_WIDTH)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current; 
   const [isRendering, setIsRendering] = useState(visible);
   
   const { colors, mode, setThemeMode, isDark } = useTheme();
-  const { userData } = useUser(); 
+  const { userData, resetToDefault } = useUser(); 
   const insets = useSafeAreaInsets();
   const router = useRouter(); 
   
   const safeTop = Platform.OS === 'web' ? 50 : insets.top + 20;
+
+  const profileToDisplay = profileOverride || userData;
 
   useEffect(() => {
     if (visible) {
@@ -77,7 +92,7 @@ export default function Sidebar({ visible, onClose }: SidebarProps) {
     }
   }, [visible, slideAnim, fadeAnim]);
 
-  const menuItems = [
+  const defaultMenuItems: SidebarMenuItem[] = [
     { name: 'Account & Settings', icon: 'person-outline', route: '/profile' },
     { name: 'My Orders', icon: 'bag-handle-outline', route: '/my-orders', badge: '4' },
     { name: 'Saved Addresses', icon: 'location-outline', route: '/saved-addresses' },
@@ -85,6 +100,8 @@ export default function Sidebar({ visible, onClose }: SidebarProps) {
     { name: 'Offers & Promo', icon: 'pricetag-outline', route: '/promo', badge: 'NEW' },
     { name: 'Help & Support', icon: 'chatbubbles-outline', route: '/help' },
   ];
+
+  const itemsToRender = menuItems || defaultMenuItems;
 
   if (!isRendering) return null;
 
@@ -121,7 +138,6 @@ export default function Sidebar({ visible, onClose }: SidebarProps) {
             }
           ]}
         >
-          {/* BRANDED HEADER WITH PERFECT FLEXBOX ALIGNMENT */}
           <LinearGradient
             colors={[colors.primary, colors.primary]}
             start={{ x: 0, y: 0 }}
@@ -129,10 +145,6 @@ export default function Sidebar({ visible, onClose }: SidebarProps) {
             style={[styles.header, { paddingTop: safeTop + 10 }]}
           >
             <View style={styles.brandContainer}>
-            {/* <TouchableOpacity 
-              style={styles.brandContainer}
-              // onPress={() => router.push('/index ')}
-            > */}
               <Image 
                 source={require('../assets/images/Icon&logo/BK_logo1-w.png')} 
                 style={styles.brandLogo} 
@@ -142,7 +154,6 @@ export default function Sidebar({ visible, onClose }: SidebarProps) {
                 <Text style={styles.brandTextMain}>BWARI</Text>
                 <Text style={styles.brandTextSub}>KITCHEN®</Text>
               </View>
-            {/* </TouchableOpacity> */}
             </View>
             
             <TouchableOpacity onPress={onClose} style={styles.closeBtn} activeOpacity={0.7}>
@@ -152,22 +163,27 @@ export default function Sidebar({ visible, onClose }: SidebarProps) {
           
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
             
-            {/* RELOCATED PROFILE SECTION */}
             <TouchableOpacity
-              onPress={() => {onClose(); router.replace('/profile');}}
+              onPress={() => {
+                if (!profileOverride) {
+                  onClose(); 
+                  router.replace('/profile');
+                }
+              }}
+              activeOpacity={profileOverride ? 1 : 0.7}
             >
               <View style={[styles.bodyProfileSection, { borderBottomColor: colors.border }]}>
                 <View style={[styles.profileCircle, { backgroundColor: isDark ? colors.surface : '#EAEAEC' }]}>
-                  {userData.avatarUri ? (
-                    <Image source={{ uri: userData.avatarUri }} style={styles.avatarImage} />
+                  {profileToDisplay.avatarUri ? (
+                    <Image source={{ uri: profileToDisplay.avatarUri }} style={styles.avatarImage} />
                   ) : (
                     <Ionicons name="person" size={36} color={colors.primary} />
                   )}
                 </View>
                 
                 <View style={styles.bodyProfileText}>
-                  <Text style={[styles.bodyUserName, { color: colors.text }]}>{userData.name}</Text>
-                  <Text style={[styles.bodyUserEmail, { color: colors.textMuted }]} numberOfLines={1}>{userData.email}</Text>
+                  <Text style={[styles.bodyUserName, { color: colors.text }]}>{profileToDisplay.name}</Text>
+                  <Text style={[styles.bodyUserEmail, { color: colors.textMuted }]} numberOfLines={1}>{profileToDisplay.email}</Text>
                 </View>
               </View>
             </TouchableOpacity>
@@ -182,14 +198,8 @@ export default function Sidebar({ visible, onClose }: SidebarProps) {
                   ]} 
                   onPress={() => setThemeMode('system')}
                 >
-                  <Ionicons 
-                    name="phone-portrait-outline" 
-                    size={20} 
-                    color={mode === 'system' ? '#FFF' : colors.text} 
-                  />
-                  <Text style={[styles.themeBtnText, { color: mode === 'system' ? '#FFF' : colors.text }]}>
-                    System
-                  </Text>
+                  <Ionicons name="phone-portrait-outline" size={20} color={mode === 'system' ? '#FFF' : colors.text} />
+                  <Text style={[styles.themeBtnText, { color: mode === 'system' ? '#FFF' : colors.text }]}>System</Text>
                 </TouchableOpacity>
                 <TouchableOpacity 
                   style={[
@@ -198,14 +208,8 @@ export default function Sidebar({ visible, onClose }: SidebarProps) {
                   ]} 
                   onPress={() => setThemeMode('light')}
                 >
-                  <Ionicons 
-                    name="sunny-outline" 
-                    size={20} 
-                    color={mode === 'light' ? '#FFF' : colors.text} 
-                  />
-                  <Text style={[styles.themeBtnText, { color: mode === 'light' ? '#FFF' : colors.text }]}>
-                    Light
-                  </Text>
+                  <Ionicons name="sunny-outline" size={20} color={mode === 'light' ? '#FFF' : colors.text} />
+                  <Text style={[styles.themeBtnText, { color: mode === 'light' ? '#FFF' : colors.text }]}>Light</Text>
                 </TouchableOpacity>
                 <TouchableOpacity 
                   style={[
@@ -214,20 +218,14 @@ export default function Sidebar({ visible, onClose }: SidebarProps) {
                   ]} 
                   onPress={() => setThemeMode('dark')}
                 >
-                  <Ionicons 
-                    name="moon-outline" 
-                    size={20} 
-                    color={mode === 'dark' ? '#FFF' : colors.text} 
-                  />
-                  <Text style={[styles.themeBtnText, { color: mode === 'dark' ? '#FFF' : colors.text }]}>
-                    Dark
-                  </Text>
+                  <Ionicons name="moon-outline" size={20} color={mode === 'dark' ? '#FFF' : colors.text} />
+                  <Text style={[styles.themeBtnText, { color: mode === 'dark' ? '#FFF' : colors.text }]}>Dark</Text>
                 </TouchableOpacity>
               </View>
             </View>
             
             <View style={styles.menuItemsContainer}>
-              {menuItems.map((item, index) => (
+              {itemsToRender.map((item, index) => (
                 <TouchableOpacity 
                   key={index} 
                   style={[styles.menuItem, { borderBottomColor: colors.border }]} 
@@ -265,7 +263,11 @@ export default function Sidebar({ visible, onClose }: SidebarProps) {
             <TouchableOpacity 
               style={styles.logoutBtn} 
               activeOpacity={0.8}
-              onPress={() => {onClose(); router.replace('/login');}} 
+              onPress={() => {
+                onClose(); 
+                resetToDefault(); 
+                router.replace('/welcome');
+              }} 
             >
               <Ionicons name="log-out-outline" size={22} color="#D32F2F" />
               <Text style={styles.logoutText}>
@@ -279,7 +281,6 @@ export default function Sidebar({ visible, onClose }: SidebarProps) {
   );
 }
 
-// PRO CSS COMPLIANCE: Every property strictly on its own line
 const styles = StyleSheet.create({
   absoluteOverlay: { 
     zIndex: 1000, 
@@ -312,6 +313,7 @@ const styles = StyleSheet.create({
     width: 85,
     height: 56,
     marginRight: 10,
+    borderRadius: 8,
   },
   brandTextContainer: {
     justifyContent: 'center',

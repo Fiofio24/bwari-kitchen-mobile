@@ -207,8 +207,8 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   logoImage: {
-    width: 200,
-    height: 120,
+    width: 300,
+    height: 220,
   },
   formSection: {
     flex: 1,

@@ -64,7 +64,7 @@ export default function NotificationPreferencesScreen() {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         
         {/* SECTION: ORDERS & DELIVERY */}
-        <Text style={[styles.sectionHeader, { color: Colors.primary }]}>
+        <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>
           ORDERS & DELIVERY
         </Text>
         <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
@@ -73,7 +73,7 @@ export default function NotificationPreferencesScreen() {
         </View>
 
         {/* SECTION: DISCOVERY */}
-        <Text style={[styles.sectionHeader, { color: Colors.primary }]}>
+        <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>
           DISCOVERY
         </Text>
         <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
@@ -82,7 +82,7 @@ export default function NotificationPreferencesScreen() {
         </View>
 
         {/* SECTION: COMMUNICATION CHANNELS */}
-        <Text style={[styles.sectionHeader, { color: Colors.primary }]}>
+        <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>
           COMMUNICATION CHANNELS
         </Text>
         <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
@@ -90,7 +90,7 @@ export default function NotificationPreferencesScreen() {
         </View>
 
         {/* SECTION: SYSTEM */}
-        <Text style={[styles.sectionHeader, { color: Colors.primary }]}>
+        <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>
           SYSTEM
         </Text>
         <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
@@ -113,13 +113,13 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     paddingBottom: 40,
   },
-  sectionHeader: {
-    fontSize: 13,
+  sectionTitle: {
+    fontSize: 12,
     fontWeight: 'bold',
-    letterSpacing: 1.2,
+    marginBottom: 12,
     marginTop: 25,
-    marginBottom: 10,
     marginLeft: 5,
+    letterSpacing: 1.5,
   },
   card: {
     borderRadius: 20,

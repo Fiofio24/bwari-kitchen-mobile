@@ -1,5 +1,3 @@
-// Note: This file requires an Expo/React Native environment to compile correctly.
-// Triggering a fresh build to resolve module resolution errors (Index fix).
 import React, { useState, useRef, useCallback } from 'react';
 import { 
   View, 
@@ -27,7 +25,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../context/ThemeContext';
 import { useCart } from '../../context/CartContext';
 import { useFavorites } from '../../context/FavoriteContext'; 
-import { COMBO_PACKAGES, CATEGORIES, MENU_ITEMS } from '../../constants/menuData'; 
+import { COMBO_PACKAGES, MENU_ITEMS } from '../../constants/menuData'; 
 
 // Imported components for the TopNav slots
 import CartBadgeIcon from '../../components/CartBadgeIcon';
@@ -36,6 +34,8 @@ import { useNotifications } from '../../context/NotificationContext';
 import { useAddresses } from '../../context/AddressContext';
 
 const USER_PROFILE = { name: "User" };
+
+const CATEGORIES = ['All', 'Rice', 'Pasta', 'Yam & Beans', 'Sides', 'Soup', 'Protein', 'Swallow', 'Snacks', 'Drinks'];
 
 export default function HomeScreen() {
   const router = useRouter(); 

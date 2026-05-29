@@ -22,6 +22,7 @@ import { useCart } from '../context/CartContext';
 import { useAddresses } from '../context/AddressContext'; 
 import AddressSelectorModal from '../components/AddressSelectorModal'; 
 import TopNav from '../components/TopNav';
+import HomeIcon from '../components/HomeIcon';
 
 export default function CheckoutScreen() {
   const router = useRouter();
@@ -214,6 +215,11 @@ export default function CheckoutScreen() {
         title="Checkout"
         leftIcon="arrow-back"
         onLeftPress={() => router.back()}
+        rightComponent={
+          <View style={styles.headerRight}>
+            <HomeIcon onPress={() => router.push('/')} />
+          </View>
+        }
         isAbsolute={false} 
         showDivider={false} 
         isScrolled={true}
@@ -410,6 +416,11 @@ export default function CheckoutScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  headerRight: { 
+    flexDirection: 'row', 
+    gap: 10, 
+    alignItems: 'center',
   },
   scrollContent: {
     paddingTop: 20,

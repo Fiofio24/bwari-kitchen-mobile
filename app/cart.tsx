@@ -20,6 +20,7 @@ import { useCart } from '../context/CartContext';
 import { MENU_ITEMS } from '../constants/menuData';
 import QuickEditPackage from '../components/QuickEditPackage';
 import TopNav from '../components/TopNav';
+import HomeIcon from '../components/HomeIcon';
 
 const CartItemCard = ({ item, isSelected, onToggle, onIncrease, onDecrease, onRemove, onEdit, colors, isDark }: any) => {
   const scaleAnim = useRef(new Animated.Value(isSelected ? 1 : 0)).current;
@@ -154,7 +155,7 @@ const CartItemCard = ({ item, isSelected, onToggle, onIncrease, onDecrease, onRe
             {item.category || item.name}
           </Text>
           <TouchableOpacity onPress={() => onRemove(item.id)} style={styles.deleteBtn}>
-            <Ionicons name="close" size={20} color={isLocked ? colors.text : colors.textMuted} />
+            <Ionicons name="trash-outline" size={20} color={isLocked ? colors.text : colors.primary} />
           </TouchableOpacity>
         </View>
 
@@ -281,6 +282,11 @@ export default function CartScreen() {
         title="My Cart"
         leftIcon="arrow-back"
         onLeftPress={() => router.back()}
+        rightComponent={
+          <View style={styles.headerRight}>
+            <HomeIcon onPress={() => router.push('/')} />
+          </View>
+        }
         isAbsolute={false} 
         isScrolled={true} 
       />
@@ -388,6 +394,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  headerRight: { 
+    flexDirection: 'row', 
+    gap: 10, 
+    alignItems: 'center',
+  },
   scrollContent: {
     paddingHorizontal: 20,
     paddingBottom: 280,
@@ -462,12 +473,14 @@ const styles = StyleSheet.create({
   detailsWrapper: {
     flex: 1,
     padding: 15,
+    paddingTop: 10,
+    paddingBottom: 10,
     minHeight: 120,
   },
   topRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
   },
   selectedOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -487,7 +500,7 @@ const styles = StyleSheet.create({
   },
   itemContents: {
     fontSize: 13,
-    marginBottom: 4,
+    marginBottom: 10,
   },
   expandedMissingBox: {
     marginTop: 6,
@@ -507,7 +520,7 @@ const styles = StyleSheet.create({
   priceAndActionRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-end',
+    alignItems: 'center',
     marginTop: 'auto',
   },
   itemPrice: {
