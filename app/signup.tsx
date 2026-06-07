@@ -8,7 +8,6 @@ import {
   KeyboardAvoidingView, 
   Platform, 
   ScrollView,
-  Image,
   ActivityIndicator
 } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -18,6 +17,7 @@ import { useTheme } from '../context/ThemeContext';
 import { Colors } from '../constants/Colors';
 import { StatusBar } from 'expo-status-bar';
 import { useUser } from '../context/UserContext';
+import HeroHeader from '../components/HeroHeader';
 
 export default function SignupScreen() {
   const router = useRouter();
@@ -52,163 +52,170 @@ export default function SignupScreen() {
       style={styles.keyboardAvoid} 
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <StatusBar style={isDark ? "light" : "dark"} />
+      <View style={[styles.container, { backgroundColor: Colors.background }]}>
+        <StatusBar style="light" />
         
-        <ScrollView 
-          showsVerticalScrollIndicator={false} 
-          contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 40 }]}
-        >
-          {/* HEADER LOGO */}
-          <View style={styles.headerSection}>
-            <Image 
-              source={require('../assets/splash-r.png')} 
-              style={styles.logoImage} 
-              resizeMode="contain" 
-            />
-          </View>
+        {/* REUSABLE HERO SECTION */}
+        <View style={[ { top: -90 }]}>
+          <HeroHeader 
+            heightRatio={0.35}
+            logoPaddingBottom={35} 
+          />
+        </View>
 
-          {/* FORM FIELDS */}
-          <View style={styles.inputGroup}>
-            <Text style={[styles.inputLabel, { color: colors.text }]}>
-              Full Name
+        {/* WHITE FORM SECTION (Overlapping) */}
+        <View style={[styles.formSection, { backgroundColor: colors.background }]}>
+          <ScrollView
+            showsVerticalScrollIndicator={false} 
+            contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 40 }]}
+          >
+
+            <Text style={[styles.header, { color: colors.text }]}>
+              Create <Text style={{ color: colors.primary }}>Account</Text> 
             </Text>
-            <View style={[styles.inputWrapper, { backgroundColor: isDark ? colors.surface : '#FFF', borderColor: colors.border }]}>
-              <TextInput
-                style={[styles.textInput, { color: colors.text }]}
-                placeholder="Enter your full name"
-                placeholderTextColor={colors.textMuted}
-                value={name}
-                onChangeText={setName}
-                autoCapitalize="words"
-              />
+
+            {/* FORM FIELDS */}
+            <View style={styles.inputGroup}>
+              <Text style={[styles.inputLabel, { color: colors.text }]}>
+                Full Name
+              </Text>
+              <View style={[styles.inputWrapper, { backgroundColor: isDark ? colors.surface : '#FFF', borderColor: colors.border }]}>
+                <TextInput
+                  style={[styles.textInput, { color: colors.text }]}
+                  placeholder="Enter your full name"
+                  placeholderTextColor={colors.textMuted}
+                  value={name}
+                  onChangeText={setName}
+                  autoCapitalize="words"
+                />
+              </View>
             </View>
-          </View>
 
-          <View style={styles.inputGroup}>
-            <Text style={[styles.inputLabel, { color: colors.text }]}>
-              Email Address
-            </Text>
-            <View style={[styles.inputWrapper, { backgroundColor: isDark ? colors.surface : '#FFF', borderColor: colors.border }]}>
-              <TextInput
-                style={[styles.textInput, { color: colors.text }]}
-                placeholder="Enter your email address"
-                placeholderTextColor={colors.textMuted}
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-              />
+            <View style={styles.inputGroup}>
+              <Text style={[styles.inputLabel, { color: colors.text }]}>
+                Email Address
+              </Text>
+              <View style={[styles.inputWrapper, { backgroundColor: isDark ? colors.surface : '#FFF', borderColor: colors.border }]}>
+                <TextInput
+                  style={[styles.textInput, { color: colors.text }]}
+                  placeholder="Enter your email address"
+                  placeholderTextColor={colors.textMuted}
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                />
+              </View>
             </View>
-          </View>
 
-          <View style={styles.inputGroup}>
-            <Text style={[styles.inputLabel, { color: colors.text }]}>
-              Phone Number
-            </Text>
-            <View style={[styles.inputWrapper, { backgroundColor: isDark ? colors.surface : '#FFF', borderColor: colors.border }]}>
-              <TextInput
-                style={[styles.textInput, { color: colors.text }]}
-                placeholder="Enter your phone number"
-                placeholderTextColor={colors.textMuted}
-                value={phone}
-                onChangeText={setPhone}
-                keyboardType="phone-pad"
-              />
+            <View style={styles.inputGroup}>
+              <Text style={[styles.inputLabel, { color: colors.text }]}>
+                Phone Number
+              </Text>
+              <View style={[styles.inputWrapper, { backgroundColor: isDark ? colors.surface : '#FFF', borderColor: colors.border }]}>
+                <TextInput
+                  style={[styles.textInput, { color: colors.text }]}
+                  placeholder="Enter your phone number"
+                  placeholderTextColor={colors.textMuted}
+                  value={phone}
+                  onChangeText={setPhone}
+                  keyboardType="phone-pad"
+                />
+              </View>
             </View>
-          </View>
 
-          <View style={styles.inputGroup}>
-            <Text style={[styles.inputLabel, { color: colors.text }]}>
-              Password
-            </Text>
-            <View style={[styles.inputWrapper, { backgroundColor: isDark ? colors.surface : '#FFF', borderColor: colors.border }]}>
-              <TextInput
-                style={[styles.textInput, { color: colors.text }]}
-                placeholder="Create a password"
-                placeholderTextColor={colors.textMuted}
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry={!showPassword}
-              />
-              <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
-                <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={20} color={colors.textMuted} />
+            <View style={styles.inputGroup}>
+              <Text style={[styles.inputLabel, { color: colors.text }]}>
+                Password
+              </Text>
+              <View style={[styles.inputWrapper, { backgroundColor: isDark ? colors.surface : '#FFF', borderColor: colors.border }]}>
+                <TextInput
+                  style={[styles.textInput, { color: colors.text }]}
+                  placeholder="Create a password"
+                  placeholderTextColor={colors.textMuted}
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry={!showPassword}
+                />
+                <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
+                  <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={20} color={colors.textMuted} />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* AGREEMENT CHECKBOX */}
+            <View style={styles.agreementRow}>
+              {/* Only the checkbox is clickable now */}
+              <TouchableOpacity 
+                style={[
+                  styles.checkbox, 
+                  { 
+                    borderColor: agreed ? Colors.primary : colors.border,
+                    backgroundColor: agreed ? Colors.primary : 'transparent' 
+                  }
+                ]}
+                activeOpacity={0.8}
+                onPress={() => setAgreed(!agreed)}
+              >
+                {agreed && <Ionicons name="checkmark" size={14} color="#FFF" />}
               </TouchableOpacity>
-            </View>
-          </View>
 
-          {/* AGREEMENT CHECKBOX */}
-          <View style={styles.agreementRow}>
-            {/* Only the checkbox is clickable now */}
+              <Text style={[styles.agreementText, { color: colors.textMuted }]}>
+                I&apos;ve read and agreed to <Text style={{ color: Colors.primary, fontWeight: 'bold' }}>User Agreement</Text> and <Text style={{ color: Colors.primary, fontWeight: 'bold' }}>Privacy Policy</Text>
+              </Text>
+            </View>
+
+            {/* SIGN UP BUTTON */}
             <TouchableOpacity 
               style={[
-                styles.checkbox, 
-                { 
-                  borderColor: agreed ? Colors.primary : colors.border,
-                  backgroundColor: agreed ? Colors.primary : 'transparent' 
-                }
-              ]}
+                styles.primaryBtn, 
+                { backgroundColor: !isValid ? colors.border : Colors.primary }
+              ]} 
+              disabled={!isValid || isLoading}
               activeOpacity={0.8}
-              onPress={() => setAgreed(!agreed)}
+              onPress={handleSignup}
             >
-              {agreed && <Ionicons name="checkmark" size={14} color="#FFF" />}
+              {isLoading ? (
+                <ActivityIndicator color="#FFF" />
+              ) : (
+                <Text style={[
+                  styles.primaryBtnText, 
+                  { color: !isValid ? colors.textMuted : '#FFF' }
+                ]}>
+                  Sign Up
+                </Text>
+              )}
             </TouchableOpacity>
 
-            <Text style={[styles.agreementText, { color: colors.textMuted }]}>
-              I&apos;ve read and agreed to <Text style={{ color: Colors.primary, fontWeight: 'bold' }}>User Agreement</Text> and <Text style={{ color: Colors.primary, fontWeight: 'bold' }}>Privacy Policy</Text>
-            </Text>
-          </View>
-
-          {/* SIGN UP BUTTON */}
-          <TouchableOpacity 
-            style={[
-              styles.primaryBtn, 
-              { backgroundColor: !isValid ? colors.border : Colors.primary }
-            ]} 
-            disabled={!isValid || isLoading}
-            activeOpacity={0.8}
-            onPress={handleSignup}
-          >
-            {isLoading ? (
-              <ActivityIndicator color="#FFF" />
-            ) : (
-              <Text style={[
-                styles.primaryBtnText, 
-                { color: !isValid ? colors.textMuted : '#FFF' }
-              ]}>
-                Sign Up
+            {/* SOCIAL SIGN UP */}
+            <View style={styles.socialSection}>
+              <Text style={[styles.socialDividerText, { color: colors.textMuted }]}>
+                other ways to sign up
               </Text>
-            )}
-          </TouchableOpacity>
+              <View style={styles.socialButtonsRow}>
+                <TouchableOpacity style={[styles.socialBtn, { backgroundColor: isDark ? colors.surface : '#FFF' }]} activeOpacity={0.8}>
+                  <Ionicons name="logo-google" size={24} color="#DB4437" />
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.socialBtn, { backgroundColor: isDark ? colors.surface : '#FFF' }]} activeOpacity={0.8}>
+                  <Ionicons name="logo-facebook" size={24} color="#4267B2" />
+                </TouchableOpacity>
+              </View>
+            </View>
 
-          {/* SOCIAL SIGN UP */}
-          <View style={styles.socialSection}>
-            <Text style={[styles.socialDividerText, { color: colors.textMuted }]}>
-              other ways to sign up
-            </Text>
-            <View style={styles.socialButtonsRow}>
-              <TouchableOpacity style={[styles.socialBtn, { backgroundColor: isDark ? colors.surface : '#FFF' }]} activeOpacity={0.8}>
-                <Ionicons name="logo-google" size={24} color="#DB4437" />
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.socialBtn, { backgroundColor: isDark ? colors.surface : '#FFF' }]} activeOpacity={0.8}>
-                <Ionicons name="logo-facebook" size={24} color="#4267B2" />
+            {/* FOOTER LINK */}
+            <View style={styles.footerContainer}>
+              <Text style={[styles.footerText, { color: colors.textMuted }]}>
+                Already have an account?
+              </Text>
+              <TouchableOpacity onPress={() => router.push('/login')} activeOpacity={0.7}>
+                <Text style={[styles.footerLink, { color: Colors.primary }]}>
+                  Sign In
+                </Text>
               </TouchableOpacity>
             </View>
-          </View>
 
-          {/* FOOTER LINK */}
-          <View style={styles.footerContainer}>
-            <Text style={[styles.footerText, { color: colors.textMuted }]}>
-              Already have an account?
-            </Text>
-            <TouchableOpacity onPress={() => router.push('/login')} activeOpacity={0.7}>
-              <Text style={[styles.footerLink, { color: Colors.primary }]}>
-                Sign In
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-        </ScrollView>
+          </ScrollView>
+        </View>
       </View>
     </KeyboardAvoidingView>
   );
@@ -222,8 +229,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  formSection: {
+    flex: 1,
+    paddingTop: -30,
+    marginTop: -200, 
+    zIndex: 10,
+    elevation: 30, 
+  },
   scrollContent: {
     paddingHorizontal: 25,
+    paddingTop: 120,
     flexGrow: 1,
   },
   headerSection: {
@@ -236,6 +251,11 @@ const styles = StyleSheet.create({
   },
   inputGroup: {
     marginBottom: 20,
+  },
+  header: {
+    fontSize: 28,
+    // fontWeight: 'bold',
+    marginBottom: 30,
   },
   inputLabel: {
     fontSize: 14,
