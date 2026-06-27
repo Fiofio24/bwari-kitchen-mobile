@@ -2,6 +2,8 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
+import Orders from './pages/Orders'
+import Menu from './pages/Menu'
 
 function ProtectedRoute({ children }: { children: JSX.Element }) {
   const { admin, loading } = useAuth()
@@ -20,11 +22,15 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route
             path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            }
+            element={<ProtectedRoute><Dashboard /></ProtectedRoute>}
+          />
+          <Route
+            path="/orders"
+            element={<ProtectedRoute><Orders /></ProtectedRoute>}
+          />
+          <Route
+            path="/menu"
+            element={<ProtectedRoute><Menu /></ProtectedRoute>}
           />
           <Route path="/" element={<Navigate to="/dashboard" />} />
         </Routes>
