@@ -86,8 +86,10 @@ export const adminGetOrder = async (
       statusHistory: {
         orderBy: { createdAt: 'asc' },
         select: {
-          status: true, note: true, createdAt: true,
-          changedBy: { select: { fullName: true, role: true } }
+          status: true,
+          note: true,
+          changedByType: true,   
+          createdAt: true,
         }
       },
       delivery: {
@@ -159,7 +161,13 @@ export const updateOrderStatus = async (
     })
 
     await tx.orderStatusHistory.create({
-      data: { orderId: id, status, changedById: req.admin!.id, note: note || null }
+      data: {
+        orderId: id,
+        status,
+        changedById: req.admin!.id,
+        changedByType: 'admin',
+        note: note || null,
+      }
     })
 
     const statusMessages: Record<string, string> = {
@@ -251,6 +259,7 @@ export const assignRider = async (
         orderId: id,
         status: order.status,
         changedById: req.admin!.id,
+        changedByType: 'admin',
         note: `Rider ${rider.fullName} assigned`,
       }
     })
@@ -345,8 +354,10 @@ export const adminCancelOrder = async (
     }),
     prisma.orderStatusHistory.create({
       data: {
-        orderId: id, status: 'cancelled',
+        orderId: id,
+        status: 'cancelled',
         changedById: req.admin!.id,
+        changedByType: 'admin',
         note: reason || 'Cancelled by admin',
       }
     }),

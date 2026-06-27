@@ -405,6 +405,7 @@ export const placeOrder = async (
         orderId: newOrder.id,
         status: 'pending',
         changedById: req.user!.id,
+        changedByType: 'customer',
         note: 'Order placed by customer',
       }
     })
@@ -568,7 +569,12 @@ export const getOrder = async (
       },
       statusHistory: {
         orderBy: { createdAt: 'asc' },
-        select: { status: true, note: true, createdAt: true }
+        select: {
+          status: true,
+          note: true,
+          changedByType: true,   // ← replaces the relation
+          createdAt: true
+        }
       },
       delivery: {
         select: {
@@ -626,6 +632,7 @@ export const cancelOrder = async (
         orderId: id,
         status: 'cancelled',
         changedById: req.user!.id,
+        changedByType: 'customer',
         note: reason || 'Cancelled by customer',
       }
     }),

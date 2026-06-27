@@ -199,6 +199,7 @@ export const updateDeliveryStatus = async (
         orderId: id,
         status,
         changedById: req.user!.id,
+        changedByType: 'rider',
         note: note || null,
       }
     })
