@@ -233,9 +233,7 @@ export default function MenuScreen() {
           <Text style={[menuStyles.mainTitle, { color: Colors.primary }]}>Made Just For You</Text>
         </View>
 
-        <View style={menuStyles.searchContainer}>
-           <SearchBar onPress={() => router.push('/search')} />
-        </View>
+        
 
         {isPackageEmpty ? (
           <View style={[menuStyles.emptyBox, { borderColor: isDark ? colors.border : '#FFCCCC', backgroundColor: isDark ? 'rgba(255,0,0,0.05)' : '#FFF0F0' }]}>
@@ -299,6 +297,10 @@ export default function MenuScreen() {
           <View style={menuStyles.redLine} />
           <Text style={[menuStyles.menuTitle, { color: colors.text }]}>Menu</Text>
           <Ionicons name="chevron-forward" size={18} color={colors.text} />
+        </View>
+
+        <View style={menuStyles.searchContainer}>
+           <SearchBar onPress={() => router.push('/search')} />
         </View>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={menuStyles.categoryScroll}>

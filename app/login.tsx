@@ -8,9 +8,7 @@ import {
   KeyboardAvoidingView, 
   Platform, 
   ScrollView,
-  Image,
-  ActivityIndicator,
-  Dimensions
+  ActivityIndicator
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,8 +17,7 @@ import { useTheme } from '../context/ThemeContext';
 import { Colors } from '../constants/Colors';
 import { StatusBar } from 'expo-status-bar';
 import { useUser } from '../context/UserContext';
-
-const { height } = Dimensions.get('window');
+import HeroHeader from '../components/HeroHeader';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -38,7 +35,6 @@ export default function LoginScreen() {
     if (!email || !password || !agreed) return;
     
     setIsLoading(true);
-    // Simulate Backend API Call
     setTimeout(() => {
       setIsLoading(false);
       updateUserData({ email });
@@ -51,25 +47,26 @@ export default function LoginScreen() {
       style={styles.keyboardAvoid} 
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <View style={[styles.container, { backgroundColor: Colors.primary }]}>
+      <View style={[styles.container, { backgroundColor: Colors.background }]}>
         <StatusBar style="light" />
         
-        {/* RED HEADER SECTION */}
-        <View style={[styles.headerSection, { paddingTop: insets.top }]}>
-          <Image 
-            source={require('../assets/splash.png')} 
-            style={styles.logoImage} 
-            resizeMode="contain" 
-          />
-        </View>
+        {/* REUSABLE HERO SECTION */}
+        <HeroHeader 
+          heightRatio={0.35}
+          logoPaddingBottom={35} 
+          // logoPath={require('../assets/splash.png')}
+        />
 
-        {/* WHITE FORM SECTION (Overlapping with pure upward shadow) */}
+        {/* WHITE FORM SECTION (Overlapping) */}
         <View style={[styles.formSection, { backgroundColor: colors.background }]}>
-          <ScrollView 
+          <ScrollView
             showsVerticalScrollIndicator={false} 
             contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 40 }]}
           >
-            
+            <Text style={[styles.header, { color: colors.text }]}>
+              Welcome <Text style={{ color: Colors.primary }}>Back</Text> 
+            </Text>
+
             {/* EMAIL */}
             <View style={styles.inputGroup}>
               <Text style={[styles.inputLabel, { color: colors.text }]}>
@@ -116,7 +113,6 @@ export default function LoginScreen() {
 
             {/* AGREEMENT CHECKBOX */}
             <View style={styles.agreementRow}>
-              {/* Only the checkbox is clickable now */}
               <TouchableOpacity 
                 style={[
                   styles.checkbox, 
@@ -192,7 +188,6 @@ export default function LoginScreen() {
   );
 }
 
-// PRO CSS COMPLIANCE: Every property strictly on its own line
 const styles = StyleSheet.create({
   keyboardAvoid: {
     flex: 1,
@@ -212,23 +207,20 @@ const styles = StyleSheet.create({
   },
   formSection: {
     flex: 1,
-    borderTopLeftRadius: 40,
-    borderTopRightRadius: 40,
-    paddingTop: 30,
-    marginTop: -30, 
+    paddingTop: -30,
+    marginTop: -100, 
     zIndex: 10,
-    elevation: 30, // Android pure shadow
-    shadowColor: '#000', // iOS & Web shadow
-    shadowOffset: {
-      width: 0,
-      height: -10, // Upward casting offset
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 20,
+    elevation: 30, 
   },
   scrollContent: {
     paddingHorizontal: 25,
+    paddingTop: 120,
     flexGrow: 1,
+  },
+  header: {
+    fontSize: 28,
+    // fontWeight: 'bold',
+    marginBottom: 30,
   },
   inputGroup: {
     marginBottom: 20,

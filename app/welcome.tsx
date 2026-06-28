@@ -1,21 +1,16 @@
 import React from 'react';
 import { 
-  ScrollView,
   View, 
   Text, 
   StyleSheet, 
-  TouchableOpacity, 
-  Image,
-  ImageBackground,
-  Dimensions
+  TouchableOpacity
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../context/ThemeContext';
 import { Colors } from '../constants/Colors';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
-const { width } = Dimensions.get('window');
+import HeroHeader from '../components/HeroHeader';
 
 export default function WelcomeScreen() {
   const router = useRouter();
@@ -27,42 +22,23 @@ export default function WelcomeScreen() {
       styles.container, 
       { 
         backgroundColor: colors.background, 
-        paddingTop: insets.top, 
         paddingBottom: insets.bottom + 20 
       }
     ]}>
       <StatusBar style={isDark ? "light" : "dark"} />
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        
-        {/* TOP DECORATION: Circular Background + Food Watermark + Logo */}
-        <View style={styles.topDecoration}>
-          <ImageBackground 
-            source={require('../assets/RicePack.jpg')}
-            style={styles.circleDeco}
-            imageStyle={{ opacity: 0.15, borderRadius: width * 0.6 }}
-          >
-            <View style={[
-              styles.circleDeco, 
-              { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(211,0,0,0.05)' }
-            ]}>
-              {/* LOGO CONTAINER: Red-tinted logo centered inside circle */}
-              <Image 
-                source={require('../assets/splash.png')} 
-                style={[styles.logoImage, { tintColor: Colors.primary }]} 
-                resizeMode="contain" 
-              />
-            </View>
-          </ImageBackground>
-        </View>
+      {/* REUSABLE HERO SECTION */}
+      <HeroHeader 
+        heightRatio={0.55} 
+        logoPaddingBottom={25} 
+      />
 
-        {/* CENTER BRANDING: Subtitle positioned below the circle */}
-        <View style={styles.brandSection}>
-          <Text style={[styles.brandSubtitle, { color: colors.textMuted }]}>
-            Premium meals. Rapid delivery.
-          </Text>
-        </View>
-      </ScrollView>
+      {/* CENTER BRANDING */}
+      <View style={styles.brandSection}>
+        <Text style={[styles.brandSubtitle, { color: colors.textMuted }]}>
+          Premium meals. Rapid delivery.
+        </Text>
+      </View>
 
       {/* BOTTOM ACTION BUTTONS */}
       <View style={styles.actionSection}>
@@ -92,7 +68,6 @@ export default function WelcomeScreen() {
           </Text>
         </TouchableOpacity>
       </View>
-
     </View>
   );
 }
@@ -102,44 +77,23 @@ const styles = StyleSheet.create({
     flex: 1,
     overflow: 'hidden',
   },
-  scrollContent: {
-    flexGrow: 1,
-    alignItems: 'center',
-    paddingBottom: 20,
-  },
-  topDecoration: {
-    width: width,
-    alignItems: 'center',
-    marginTop: -width * 0.5,
-  },
-  circleDeco: {
-    width: width * 1.5,
-    height: width * 1.5,
-    borderRadius: width * 1,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'flex-end',
-    overflow: 'hidden',
-  },
-  logoImage: {
-    width: '30%',
-    height: '30%',
-  },
   brandSection: {
-    marginTop: 20,
+    flex: 1,
     alignItems: 'center',
+    paddingTop: 30,
     paddingHorizontal: 20,
   },
   brandSubtitle: {
     fontSize: 16,
     textAlign: 'center',
-    lineHeight: 10,
-    fontWeight: '500',
+    lineHeight: 24,
+    fontWeight: '600',
   },
   actionSection: {
     width: '100%',
     paddingHorizontal: 25,
     paddingBottom: 10,
+    zIndex: 1,
   },
   primaryBtn: {
     width: '100%',
