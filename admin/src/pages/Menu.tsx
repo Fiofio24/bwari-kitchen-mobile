@@ -4,6 +4,7 @@ import Modal from '../components/Modal'
 import ConfirmDialog from '../components/ConfirmDialog'
 import Toggle from '../components/Toggle'
 import api from '../lib/api'
+import { Tag, UtensilsCrossed, Package as PackageIcon } from 'lucide-react'
 
 interface Category {
   id: string
@@ -42,25 +43,35 @@ type Tab = 'categories' | 'items' | 'packages'
 export default function Menu() {
   const [tab, setTab] = useState<Tab>('categories')
 
+  const tabIcons = {
+    categories: Tag,
+    items: UtensilsCrossed,
+    packages: PackageIcon,
+  }
+  
   return (
     <Layout>
       <h2 className="text-2xl font-bold text-gray-900 mb-4">Menu Management</h2>
 
-      <div className="flex gap-1 mb-6 border-b border-gray-200">
-        {(['categories', 'items', 'packages'] as Tab[]).map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`px-4 py-2.5 text-sm font-medium capitalize border-b-2 transition ${
-              tab === t
-                ? 'border-brand-600 text-brand-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            {t}
-          </button>
-        ))}
-      </div>
+      <div className="flex gap-1 mb-6 border-b border-gray-200 overflow-x-auto">
+        {(['categories', 'items', 'packages'] as Tab[]).map((t) => {
+          const Icon = tabIcons[t]
+          return (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium capitalize border-b-2 transition whitespace-nowrap ${
+                tab === t
+                  ? 'border-brand-600 text-brand-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <Icon size={16} />
+              {t}
+            </button>
+          )
+        })}
+    </div>
 
       {tab === 'categories' && <CategoriesTab />}
       {tab === 'items' && <ItemsTab />}
@@ -85,7 +96,10 @@ function CategoriesTab() {
   const fetchCategories = async () => {
     setLoading(true)
     const res = await api.get('/api/admin/menu/categories')
-    setCategories(res.data.categories)
+    const sorted = [...res.data.categories].sort((a: Category, b: Category) =>
+      a.name.localeCompare(b.name)
+    )
+    setCategories(sorted)
     setLoading(false)
   }
 
@@ -141,8 +155,8 @@ function CategoriesTab() {
         </button>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="bg-white rounded-xl border border-gray-100 overflow-x-auto">
+        <table className="w-full text-sm min-w-[600px]">
           <thead>
             <tr className="bg-gray-50 text-left text-gray-500 text-xs uppercase">
               <th className="px-4 py-3">Name</th>
@@ -247,15 +261,23 @@ function ItemsTab() {
   }, [categoryFilter])
 
   const fetchCategories = async () => {
+    setLoading(true)
     const res = await api.get('/api/admin/menu/categories')
-    setCategories(res.data.categories)
+    const sorted = [...res.data.categories].sort((a: Category, b: Category) =>
+      a.name.localeCompare(b.name)
+    )
+    setCategories(sorted)
+    setLoading(false)
   }
 
   const fetchItems = async () => {
     setLoading(true)
     const params = categoryFilter ? `?categoryId=${categoryFilter}` : ''
     const res = await api.get(`/api/admin/menu/items${params}`)
-    setItems(res.data.items)
+    const sorted = [...res.data.items].sort((a: MenuItem, b: MenuItem) =>
+      a.name.localeCompare(b.name)
+    )
+    setItems(sorted)
     setLoading(false)
   }
 
@@ -497,7 +519,10 @@ function PackagesTab() {
   const fetchPackages = async () => {
     setLoading(true)
     const res = await api.get('/api/admin/menu/packages')
-    setPackages(res.data.packages)
+    const sorted = [...res.data.packages].sort((a: Package, b: Package) =>
+      a.name.localeCompare(b.name)
+    )
+    setPackages(sorted)
     setLoading(false)
   }
 

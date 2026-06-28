@@ -1,3 +1,4 @@
+import { Receipt, Wallet, Users, Bike, Clock, CheckCircle, XCircle } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import Layout from '../components/Layout'
 import StatCard from '../components/StatCard'
@@ -73,31 +74,31 @@ export default function Dashboard() {
               label="Total Orders"
               value={overview.orders.total}
               subtext={`${overview.orders.completionRate}% completion rate`}
-              icon="🧾"
+              icon={<Receipt size={20} className="text-gray-400" />}
             />
             <StatCard
               label="Total Revenue"
               value={formatCurrency(overview.revenue.total)}
               subtext={`Avg ${formatCurrency(overview.revenue.average)} per order`}
-              icon="💰"
+              icon={<Wallet size={20} className="text-gray-400" />}
             />
             <StatCard
               label="Customers"
               value={overview.customers.total}
               subtext={`${overview.customers.new} new this period`}
-              icon="👥"
+              icon={<Users size={20} className="text-gray-400" />}
             />
             <StatCard
               label="Active Riders"
               value={overview.riders.active}
-              icon="🛵"
+              icon={<Bike size={20} className="text-gray-400" />}
             />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <StatCard label="Pending Orders" value={overview.orders.pending} icon="⏳" />
-            <StatCard label="Completed Orders" value={overview.orders.completed} icon="✅" />
-            <StatCard label="Cancelled Orders" value={overview.orders.cancelled} icon="❌" />
+            <StatCard label="Pending Orders" value={overview.orders.pending} icon={<Clock size={20} className="text-gray-400" />} />
+            <StatCard label="Completed Orders" value={overview.orders.completed} icon={<CheckCircle size={20} className="text-gray-400" />} />
+            <StatCard label="Cancelled Orders" value={overview.orders.cancelled} icon={<XCircle size={20} className="text-gray-400" />} />
           </div>
         </>
       ) : (

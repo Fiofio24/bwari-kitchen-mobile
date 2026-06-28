@@ -1,8 +1,10 @@
+import { ReactNode } from 'react'
+
 interface StatCardProps {
   label: string
   value: string | number
   subtext?: string
-  icon?: string
+  icon?: ReactNode
 }
 
 export default function StatCard({ label, value, subtext, icon }: StatCardProps) {
@@ -10,7 +12,7 @@ export default function StatCard({ label, value, subtext, icon }: StatCardProps)
     <div className="bg-white rounded-xl shadow-sm p-5 border border-gray-100">
       <div className="flex items-center justify-between mb-2">
         <span className="text-gray-500 text-sm">{label}</span>
-        {icon && <span className="text-2xl">{icon}</span>}
+        {icon}
       </div>
       <div className="text-2xl font-bold text-gray-900">{value}</div>
       {subtext && <div className="text-xs text-gray-400 mt-1">{subtext}</div>}

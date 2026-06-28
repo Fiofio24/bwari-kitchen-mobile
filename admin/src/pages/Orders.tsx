@@ -50,22 +50,28 @@ export default function Orders() {
   }, [page, statusFilter, typeFilter])
 
   const fetchOrders = async () => {
-    setLoading(true)
-    try {
-      const params = new URLSearchParams()
-      params.append('page', String(page))
-      params.append('limit', '15')
-      if (statusFilter) params.append('status', statusFilter)
-      if (typeFilter) params.append('orderType', typeFilter)
-      if (search) params.append('search', search)
+  setLoading(true)
+  try {
+    const params = new URLSearchParams()
+    params.append('page', String(page))
+    params.append('limit', '15')
+    if (statusFilter) params.append('status', statusFilter)
+    if (typeFilter) params.append('orderType', typeFilter)
+    if (search) params.append('search', search)
 
-      const res = await api.get(`/api/admin/orders?${params.toString()}`)
-      setOrders(res.data.orders)
-      setTotalPages(res.data.meta.totalPages)
-    } finally {
-      setLoading(false)
-    }
+    const res = await api.get(`/api/admin/orders?${params.toString()}`)
+
+    // Sort by order number ascending (BWK-00001 before BWK-00002)
+    const sorted = [...res.data.orders].sort((a: Order, b: Order) =>
+      a.orderNumber.localeCompare(b.orderNumber, undefined, { numeric: true })
+    )
+
+    setOrders(sorted)
+    setTotalPages(res.data.meta.totalPages)
+  } finally {
+    setLoading(false)
   }
+}
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
@@ -196,8 +202,8 @@ export default function Orders() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="bg-white rounded-xl border border-gray-100 overflow-x-auto">
+        <table className="w-full text-sm min-w-[700px]">
           <thead>
             <tr className="bg-gray-50 text-left text-gray-500 text-xs uppercase">
               <th className="px-4 py-3">Order</th>
