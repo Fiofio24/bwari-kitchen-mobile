@@ -67,12 +67,17 @@ function RootContent() {
       SplashScreen.hideAsync();
       
       // Smart routing: Only force the redirect if the app is booting from the root.
-      // This prevents overriding the screen if the user is deep-linking to a specific page.
-      if (segments.length === 0) {
-        router.replace(initialRoute as any);
+      if ((segments.length as number) === 0) {
+        
+        // 🚨 FIX: Delay the routing command just enough so Android has time 
+        // to finish mounting the base Stack first. This prevents the native crash.
+        setTimeout(() => {
+          router.replace(initialRoute as any);
+        }, 50); 
+        
       }
     }
-  }, [appIsReady, initialRoute, segments]);
+  }, [appIsReady, initialRoute, segments, router]);
 
   if (!appIsReady) {
     return null; 
@@ -93,9 +98,6 @@ function RootContent() {
         
         {/* Role-Based App Environments */}
         <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
-        <Stack.Screen name="(admin)" options={{ animation: 'fade' }} />
-        <Stack.Screen name="(kitchen)" options={{ animation: 'fade' }} />
-        <Stack.Screen name="(rider)" options={{ animation: 'fade' }} />
         
         {/* Modals & Sub-pages */}
         <Stack.Screen 

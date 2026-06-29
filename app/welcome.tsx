@@ -36,7 +36,7 @@ export default function WelcomeScreen() {
       {/* CENTER BRANDING */}
       <View style={styles.brandSection}>
         <Text style={[styles.brandSubtitle, { color: colors.textMuted }]}>
-          Premium meals. Rapid delivery.
+          Premium meals. Rapid delivery..
         </Text>
       </View>
 
