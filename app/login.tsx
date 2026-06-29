@@ -195,6 +195,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  headerSection: {
+    height: height * 0.35,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1,
+  },
+  logoImage: {
+    width: 300,
+    height: 220,
+  },
   formSection: {
     flex: 1,
     paddingTop: -30,

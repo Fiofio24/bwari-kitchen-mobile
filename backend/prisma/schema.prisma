@@ -10,10 +10,25 @@ datasource db {
 // ENUMS
 // ─────────────────────────────────────────
 
+// Customer app roles
 enum UserRole {
   customer
-  admin
   rider
+}
+
+// Separate admin model
+model AdminUser {
+  id           String    @id @default(uuid())
+  fullName     String
+  email        String    @unique // admins log in with email, not phone
+  passwordHash String
+  isSuperAdmin Boolean   @default(false) // super admin can create other admins
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+
+  @@map("admin_users")
 }
 
 enum OrderType {
@@ -123,15 +138,13 @@ model User {
   deletedAt       DateTime?
 
   addresses          UserAddress[]
-  orders             Order[]              @relation("CustomerOrders")
-  assignedDeliveries Order[]              @relation("RiderOrders")
-  cancelledOrders    Order[]              @relation("CancelledByUser")
+  orders             Order[]        @relation("CustomerOrders")
+  assignedDeliveries Order[]        @relation("RiderOrders")
   wallet             Wallet?
-  reviews            Review[]             @relation("CustomerReviews")
-  riderReviews       Review[]             @relation("RiderReviews")
+  reviews            Review[]       @relation("CustomerReviews")
+  riderReviews       Review[]       @relation("RiderReviews")
   notifications      Notification[]
   promoUsages        PromoUsage[]
-  orderStatusChanges OrderStatusHistory[]
   payments           Payment[]
 
   @@map("users")
@@ -261,17 +274,16 @@ model Order {
   createdAt             DateTime    @default(now())
   updatedAt             DateTime    @updatedAt
 
-  customer        User             @relation("CustomerOrders", fields: [customerId], references: [id])
-  branch          Branch           @relation(fields: [branchId], references: [id])
-  deliveryAddress UserAddress?     @relation(fields: [deliveryAddressId], references: [id])
-  rider           User?            @relation("RiderOrders", fields: [riderId], references: [id])
-  cancelledByUser User?            @relation("CancelledByUser", fields: [cancelledBy], references: [id])
+  customer        User                 @relation("CustomerOrders", fields: [customerId], references: [id])
+  branch          Branch               @relation(fields: [branchId], references: [id])
+  deliveryAddress UserAddress?         @relation(fields: [deliveryAddressId], references: [id])
+  rider           User?                @relation("RiderOrders", fields: [riderId], references: [id])
   payment         Payment?
   delivery        DeliveryTracking?
   review          Review?
   statusHistory   OrderStatusHistory[]
   promoUsage      PromoUsage?
-  orderPackages   OrderPackage[]   // ← only packages now, no loose order_items
+  orderPackages   OrderPackage[] // ← only packages now, no loose order_items
 
   @@map("orders")
 }
@@ -282,13 +294,13 @@ model OrderPackage {
   orderId           String
   packageId         String? // NULL if custom or edited combo
   originalPackageId String? // remembers which combo it was based on if edited
-  packageName       String  // snapshot
+  packageName       String // snapshot
   totalPrice        Decimal @db.Decimal(10, 2)
   isCustom          Boolean @default(false) // true = user built or edited it
   wasEdited         Boolean @default(false) // true = started as combo, user modified it
 
-  order   Order        @relation(fields: [orderId], references: [id])
-  package Package?     @relation(fields: [packageId], references: [id])
+  order   Order              @relation(fields: [orderId], references: [id])
+  package Package?           @relation(fields: [packageId], references: [id])
   items   OrderPackageItem[]
 
   @@map("order_packages")
@@ -299,27 +311,27 @@ model OrderPackageItem {
   id             String  @id @default(uuid())
   orderPackageId String
   menuItemId     String
-  itemName       String  // snapshot
+  itemName       String // snapshot
   quantity       Int
   unitPrice      Decimal @db.Decimal(10, 2) // snapshot
   totalPrice     Decimal @db.Decimal(10, 2)
 
-  orderPackage OrderPackage             @relation(fields: [orderPackageId], references: [id])
-  menuItem     MenuItem                 @relation(fields: [menuItemId], references: [id])
+  orderPackage OrderPackage @relation(fields: [orderPackageId], references: [id])
+  menuItem     MenuItem     @relation(fields: [menuItemId], references: [id])
 
   @@map("order_package_items")
 }
 
 model OrderStatusHistory {
-  id          String   @id @default(uuid())
-  orderId     String
-  status      String
-  changedById String?
-  note        String?
-  createdAt   DateTime @default(now())
+  id            String   @id @default(uuid())
+  orderId       String
+  status        String
+  changedById   String?
+  changedByType String? // 'customer' | 'rider' | 'admin' | 'system'
+  note          String?
+  createdAt     DateTime @default(now())
 
-  order     Order @relation(fields: [orderId], references: [id])
-  changedBy User? @relation(fields: [changedById], references: [id])
+  order Order @relation(fields: [orderId], references: [id])
 
   @@map("order_status_history")
 }
@@ -406,9 +418,9 @@ model Review {
   isVisible      Boolean  @default(true)
   createdAt      DateTime @default(now())
 
-  order    Order  @relation(fields: [orderId], references: [id])
-  customer User   @relation("CustomerReviews", fields: [customerId], references: [id])
-  rider    User?  @relation("RiderReviews", fields: [riderId], references: [id])
+  order    Order @relation(fields: [orderId], references: [id])
+  customer User  @relation("CustomerReviews", fields: [customerId], references: [id])
+  rider    User? @relation("RiderReviews", fields: [riderId], references: [id])
 
   @@map("reviews")
 }

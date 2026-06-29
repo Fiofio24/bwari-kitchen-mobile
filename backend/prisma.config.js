@@ -8,10 +8,14 @@ module.exports = defineConfig({
     url: process.env.DATABASE_URL,
   },
   migrate: {
-    seed: 'ts-node prisma/seed.ts',        // ← add this
+    seed: 'ts-node prisma/seed.ts',
     adapter: async () => {
       const { PrismaPg } = await import('@prisma/adapter-pg')
-      return new PrismaPg({ connectionString: process.env.DATABASE_URL })
+      return new PrismaPg({
+        connectionString: process.env.DATABASE_URL,
+        connectionTimeoutMillis: 30000,   // ← 30 seconds instead of default 5
+        idleTimeoutMillis: 30000,
+      })
     },
   },
 })

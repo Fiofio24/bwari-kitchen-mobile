@@ -1,38 +1,24 @@
 import { Router } from 'express'
 import {
-  register,
-  login,
-  getMe,
-  updateProfile,
   changePassword,
-  createStaff,
-  getAllUsers,
-  deactivateUser,
+  getMe,
+  login,
   logout,
+  register,
+  updateProfile,
 } from '../controllers/auth.controller'
-import { authenticate, authorize } from '../middleware/auth'
+import { authenticate } from '../middleware/auth'
 
 const router = Router()
 
-// ─────────────────────────────────────────
-// Public routes
-// ─────────────────────────────────────────
+// Public
 router.post('/register', register)
 router.post('/login', login)
 
-// ─────────────────────────────────────────
-// Customer + Admin + Rider routes
-// ─────────────────────────────────────────
+// Protected — customers and riders
 router.get('/me', authenticate, getMe)
 router.patch('/profile', authenticate, updateProfile)
 router.patch('/change-password', authenticate, changePassword)
 router.post('/logout', authenticate, logout)
-
-// ─────────────────────────────────────────
-// Admin only routes
-// ─────────────────────────────────────────
-router.post('/staff/create', authenticate, authorize('admin'), createStaff)
-router.get('/users', authenticate, authorize('admin'), getAllUsers)
-router.patch('/users/:id/deactivate', authenticate, authorize('admin'), deactivateUser)
 
 export default router
