@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react'
+import { showSuccess, showError, getErrorMessage } from '../lib/toast'
+import LoadingButton from '../components/LoadingButton'
 import Layout from '../components/Layout'
 import StatusBadge from '../components/StatusBadge'
 import Pagination from '../components/Pagination'
 import Modal from '../components/Modal'
 import api from '../lib/api'
+import ReasonDialog from '../components/ReasonDialog'
 
 interface Order {
   id: string
@@ -27,10 +30,6 @@ interface Order {
   payment: { paymentMethod: string; paymentStatus: string; amount: number } | null
 }
 
-const STATUS_FLOW = [
-  'confirmed', 'preparing', 'ready', 'picked_up', 'on_the_way', 'delivered'
-]
-
 export default function Orders() {
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
@@ -44,6 +43,8 @@ export default function Orders() {
   const [riders, setRiders] = useState<{ id: string; fullName: string }[]>([])
   const [selectedRiderId, setSelectedRiderId] = useState('')
   const [actionLoading, setActionLoading] = useState(false)
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
+  const [cancelReason, setCancelReason] = useState('')
 
   useEffect(() => {
     fetchOrders()
@@ -107,8 +108,9 @@ export default function Orders() {
       await api.patch(`/api/admin/orders/${selectedOrder.id}/status`, { status: newStatus })
       await openOrderDetail(selectedOrder.id)
       fetchOrders()
+      showSuccess(`Order marked as ${newStatus.replace('_', ' ')}`)
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Failed to update status')
+      showError(getErrorMessage(err))
     } finally {
       setActionLoading(false)
     }
@@ -118,33 +120,31 @@ export default function Orders() {
     if (!selectedOrder || !selectedRiderId) return
     setActionLoading(true)
     try {
-      await api.patch(`/api/admin/orders/${selectedOrder.id}/assign-rider`, {
-        riderId: selectedRiderId
-      })
+      await api.patch(`/api/admin/orders/${selectedOrder.id}/assign-rider`, { riderId: selectedRiderId })
       await openOrderDetail(selectedOrder.id)
       fetchOrders()
       setSelectedRiderId('')
+      showSuccess('Rider assigned successfully')
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Failed to assign rider')
+      showError(getErrorMessage(err))
     } finally {
       setActionLoading(false)
     }
   }
 
-  const handleCancelOrder = async () => {
+  const confirmCancelOrder = async (reason: string) => {
     if (!selectedOrder) return
-    const reason = prompt('Reason for cancellation (optional):')
-    if (reason === null) return
-
     setActionLoading(true)
     try {
       await api.patch(`/api/admin/orders/${selectedOrder.id}/cancel`, { reason })
       await openOrderDetail(selectedOrder.id)
       fetchOrders()
+      showSuccess('Order cancelled')
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Failed to cancel order')
+      showError(getErrorMessage(err))
     } finally {
       setActionLoading(false)
+      setCancelDialogOpen(false)
     }
   }
 
@@ -302,13 +302,14 @@ export default function Orders() {
                         <option key={r.id} value={r.id}>{r.fullName}</option>
                       ))}
                     </select>
-                    <button
+                    <LoadingButton
+                      loading={actionLoading}
+                      disabled={!selectedRiderId}
                       onClick={handleAssignRider}
-                      disabled={!selectedRiderId || actionLoading}
-                      className="px-3 py-1.5 bg-brand-600 text-white rounded-lg text-sm disabled:opacity-50"
+                      className="px-3 py-1.5"
                     >
                       Assign
-                    </button>
+                    </LoadingButton>
                   </div>
                 ) : (
                   <p className="text-sm text-gray-400">No rider assigned</p>
@@ -370,26 +371,33 @@ export default function Orders() {
             {!['delivered', 'cancelled', 'refunded'].includes(selectedOrder.status) && (
               <div className="flex gap-2 pt-2">
                 {getNextStatus(selectedOrder.status) && (
-                  <button
+                  <LoadingButton
+                    loading={actionLoading}
                     onClick={() => handleUpdateStatus(getNextStatus(selectedOrder.status))}
-                    disabled={actionLoading}
-                    className="flex-1 bg-brand-600 text-white py-2 rounded-lg text-sm font-medium disabled:opacity-50"
+                    className="flex-1 py-2"
                   >
                     Mark as {getNextStatus(selectedOrder.status).replace('_', ' ')}
-                  </button>
+                  </LoadingButton>
                 )}
-                <button
-                  onClick={handleCancelOrder}
-                  disabled={actionLoading}
-                  className="px-4 py-2 border border-red-200 text-red-600 rounded-lg text-sm font-medium hover:bg-red-50 disabled:opacity-50"
+                <LoadingButton
+                  loading={actionLoading}
+                  onClick={() => setCancelDialogOpen(true)}
+                  className="px-4 py-2 border border-red-200 text-red-600 rounded-lg text-sm font-medium hover:bg-red-50"
                 >
                   Cancel Order
-                </button>
+                </LoadingButton>
               </div>
             )}
           </div>
         )}
       </Modal>
+      <ReasonDialog
+        isOpen={cancelDialogOpen}
+        title="Cancel Order"
+        onConfirm={confirmCancelOrder}
+        onCancel={() => setCancelDialogOpen(false)}
+        loading={actionLoading}
+      />
     </Layout>
   )
 }

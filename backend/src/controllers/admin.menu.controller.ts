@@ -1,5 +1,6 @@
 import { Request, Response } from 'express'
 import prisma from '../lib/prisma'
+import { logActivity } from '../lib/activityLog'
 
 export const adminGetCategories = async (
   req: Request,
@@ -52,6 +53,15 @@ export const createCategory = async (
   })
 
   res.status(201).json({ message: 'Category created successfully', category })
+
+  await logActivity({
+    adminId: req.admin!.id,
+    adminName: req.admin!.email,
+    action: 'create',
+    targetType: 'Category',
+    targetId: category.id,
+    description: `Created category "${category.name}"`,
+  })
 }
 
 export const updateCategory = async (
@@ -89,6 +99,15 @@ export const updateCategory = async (
   })
 
   res.status(200).json({ message: 'Category updated successfully', category })
+
+  await logActivity({
+    adminId: req.admin!.id,
+    adminName: req.admin!.email,
+    action: 'update',
+    targetType: 'Category',
+    targetId: category.id,
+    description: `Updated category "${category.name}"`,
+  })
 }
 
 export const toggleCategoryAvailability = async (
@@ -106,22 +125,34 @@ export const toggleCategoryAvailability = async (
 
   const newStatus = !category.isActive
 
-  if (!newStatus) {
-    await prisma.$transaction([
-      prisma.category.update({ where: { id }, data: { isActive: false } }),
-      prisma.menuItem.updateMany({ where: { categoryId: id }, data: { isAvailable: false } })
-    ])
-    res.status(200).json({
-      message: 'Category deactivated. All items in this category are now unavailable.',
-      isActive: false,
+  // Cascade in both directions — deactivating turns off all items,
+  // reactivating turns all items back on
+  await prisma.$transaction([
+    prisma.category.update({
+      where: { id },
+      data: { isActive: newStatus }
+    }),
+    prisma.menuItem.updateMany({
+      where: { categoryId: id },
+      data: { isAvailable: newStatus }
     })
-  } else {
-    await prisma.category.update({ where: { id }, data: { isActive: true } })
-    res.status(200).json({
-      message: 'Category activated. Individual items retain their own availability status.',
-      isActive: true,
-    })
-  }
+  ])
+
+  res.status(200).json({
+    message: newStatus
+      ? 'Category activated. All items in this category are now available.'
+      : 'Category deactivated. All items in this category are now unavailable.',
+    isActive: newStatus,
+  })
+
+  await logActivity({
+    adminId: req.admin!.id,
+    adminName: req.admin!.email,
+    action: 'toggle',
+    targetType: 'Category',
+    targetId: id,
+    description: `${newStatus ? 'Activated' : 'Deactivated'} category "${category.name}" (cascaded to items)`,
+  })
 }
 
 export const deleteCategory = async (

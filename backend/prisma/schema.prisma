@@ -482,3 +482,19 @@ model Notification {
 
   @@map("notifications")
 }
+
+model AdminActivityLog {
+  id          String   @id @default(uuid())
+  adminId     String
+  adminName   String   // snapshot — survives if admin account is later deleted
+  action      String   // e.g. "create", "update", "delete", "toggle", "login"
+  targetType  String   // e.g. "MenuItem", "Order", "Promotion", "Rider"
+  targetId    String?  // ID of the affected record, if applicable
+  description String   // human-readable summary, e.g. "Created menu item 'Jollof Rice'"
+  createdAt   DateTime @default(now())
+
+  @@map("admin_activity_logs")
+  @@index([adminId])
+  @@index([targetType])
+  @@index([createdAt])
+}

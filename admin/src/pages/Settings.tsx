@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import LoadingButton from '../components/LoadingButton'
+import { showSuccess, showError, getErrorMessage } from '../lib/toast'
 import Layout from '../components/Layout'
 import api from '../lib/api'
 import { Store, Clock, Banknote, MapPin, Power, Save } from 'lucide-react'
@@ -67,9 +69,9 @@ export default function Settings() {
     try {
       const settingsArray = Object.entries(settings).map(([key, value]) => ({ key, value }))
       await api.patch('/api/admin/settings', { settings: settingsArray })
-      alert('Settings saved')
+      showSuccess('Settings saved')
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Failed to save settings')
+      showError(getErrorMessage(err))
     } finally {
       setSavingSettings(false)
     }
@@ -98,9 +100,9 @@ export default function Settings() {
         acceptsDelivery: branch.acceptsDelivery,
         deliveryRadiusKm: branch.deliveryRadiusKm,
       })
-      alert('Branch info saved')
+      showSuccess('Branch info saved')
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Failed to save branch info')
+      showError(getErrorMessage(err))
     } finally {
       setSavingBranch(false)
     }
@@ -111,6 +113,9 @@ export default function Settings() {
     try {
       const res = await api.patch('/api/admin/settings/branch/toggle-open')
       setBranch((prev) => prev ? { ...prev, isOpen: res.data.isOpen } : prev)
+      showSuccess(res.data.message)
+    } catch (err: any) {
+      showError(getErrorMessage(err))
     } finally {
       setTogglingOpen(false)
     }
@@ -144,15 +149,16 @@ export default function Settings() {
               </p>
             </div>
           </div>
-          <button
+          <LoadingButton
+            loading={togglingOpen}
             onClick={handleToggleOpen}
-            disabled={togglingOpen}
-            className={`px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-50 ${
+            variant="ghost"
+            className={`px-4 py-2 rounded-lg text-white ${
               branch.isOpen ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'
             }`}
           >
             {branch.isOpen ? 'Close Restaurant' : 'Open Restaurant'}
-          </button>
+          </LoadingButton>
         </div>
       )}
 
@@ -285,14 +291,10 @@ export default function Settings() {
                 </label>
               </div>
 
-              <button
-                onClick={handleSaveBranch}
-                disabled={savingBranch}
-                className="w-full flex items-center justify-center gap-2 bg-brand-600 text-white py-2.5 rounded-lg font-medium mt-2 disabled:opacity-50"
-              >
+              <LoadingButton loading={savingBranch} onClick={handleSaveBranch} className="w-full py-2.5 mt-2">
                 <Save size={16} />
-                {savingBranch ? 'Saving...' : 'Save Branch Info'}
-              </button>
+                Save Branch Info
+              </LoadingButton>
             </div>
           </div>
         )}
@@ -364,14 +366,10 @@ export default function Settings() {
               </div>
             </div>
 
-            <button
-              onClick={handleSaveSettings}
-              disabled={savingSettings}
-              className="w-full flex items-center justify-center gap-2 bg-brand-600 text-white py-2.5 rounded-lg font-medium mt-2 disabled:opacity-50"
-            >
+            <LoadingButton loading={savingSettings} onClick={handleSaveSettings} className="w-full py-2.5 mt-2">
               <Save size={16} />
-              {savingSettings ? 'Saving...' : 'Save Settings'}
-            </button>
+              Save Settings
+            </LoadingButton>
           </div>
         </div>
       </div>

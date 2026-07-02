@@ -199,6 +199,15 @@ export const updateOrderStatus = async (
     orderNumber: order.orderNumber,
     status,
   })
+
+  await logActivity({
+    adminId: req.admin!.id,
+    adminName: req.admin!.email,
+    action: 'update_status',
+    targetType: 'Order',
+    targetId: id,
+    description: `Updated order ${order.orderNumber} status to "${status}"`,
+  })
 }
 
 export const assignRider = async (
@@ -278,6 +287,15 @@ export const assignRider = async (
   res.status(200).json({
     message: 'Rider assigned successfully',
     rider: { id: rider.id, fullName: rider.fullName, phoneNumber: rider.phoneNumber }
+  })
+
+  await logActivity({
+    adminId: req.admin!.id,
+    adminName: req.admin!.email,
+    action: 'assign_rider',
+    targetType: 'Order',
+    targetId: id,
+    description: `Assigned rider ${rider.fullName} to order ${order.orderNumber}`,
   })
 }
 
@@ -373,4 +391,13 @@ export const adminCancelOrder = async (
   ])
 
   res.status(200).json({ message: 'Order cancelled successfully' })
+
+  await logActivity({
+    adminId: req.admin!.id,
+    adminName: req.admin!.email,
+    action: 'cancel',
+    targetType: 'Order',
+    targetId: id,
+    description: `Cancelled order ${order.orderNumber}${reason ? ` — Reason: ${reason}` : ''}`,
+  })
 }

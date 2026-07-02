@@ -1,4 +1,7 @@
 import { useEffect, useState } from 'react'
+import LoadingButton from '../components/LoadingButton'
+import ConfirmDialog from '../components/ConfirmDialog'
+import { showSuccess, showError, getErrorMessage } from '../lib/toast'
 import Layout from '../components/Layout'
 import Pagination from '../components/Pagination'
 import api from '../lib/api'
@@ -24,6 +27,9 @@ export default function Reviews() {
   const [totalPages, setTotalPages] = useState(1)
   const [ratingFilter, setRatingFilter] = useState('')
   const [visibilityFilter, setVisibilityFilter] = useState('')
+  const [togglingId, setTogglingId] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
+  const [reviewToDelete, setReviewToDelete] = useState<Review | null>(null)
 
   useEffect(() => {
     fetchReviews()
@@ -48,14 +54,31 @@ export default function Reviews() {
   }
 
   const handleToggleVisibility = async (review: Review) => {
-    await api.patch(`/api/admin/reviews/${review.id}/visibility`)
-    fetchReviews()
+    setTogglingId(review.id)
+    try {
+      const res = await api.patch(`/api/admin/reviews/${review.id}/visibility`)
+      fetchReviews()
+      showSuccess(res.data.message)
+    } catch (err: any) {
+      showError(getErrorMessage(err))
+    } finally {
+      setTogglingId(null)
+    }
   }
 
-  const handleDelete = async (review: Review) => {
-    if (!confirm(`Delete this review from ${review.customer.fullName}?`)) return
-    await api.delete(`/api/admin/reviews/${review.id}`)
-    fetchReviews()
+  const handleDelete = async () => {
+    if (!reviewToDelete) return
+    setDeleting(true)
+    try {
+      await api.delete(`/api/admin/reviews/${reviewToDelete.id}`)
+      showSuccess('Review deleted')
+      setReviewToDelete(null)
+      fetchReviews()
+    } catch (err: any) {
+      showError(getErrorMessage(err))
+    } finally {
+      setDeleting(false)
+    }
   }
 
   const formatDate = (date: string) =>
@@ -182,7 +205,7 @@ export default function Reviews() {
                   {review.isVisible ? 'Hide' : 'Show'}
                 </button>
                 <button
-                  onClick={() => handleDelete(review)}
+                  onClick={() => setReviewToDelete(review)}
                   className="flex items-center gap-1.5 text-red-500 hover:text-red-700 font-medium"
                 >
                   <Trash2 size={14} /> Delete
@@ -194,6 +217,16 @@ export default function Reviews() {
       )}
 
       <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+      <ConfirmDialog
+        isOpen={!!reviewToDelete}
+        title="Delete Review"
+        message={`Delete this review from ${reviewToDelete?.customer.fullName}?`}
+        onConfirm={handleDelete}
+        onCancel={() => setReviewToDelete(null)}
+        confirmLabel="Delete"
+        danger
+        loading={deleting}
+      />
     </Layout>
   )
 }

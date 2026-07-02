@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { BarChart3 } from 'lucide-react'
 import { Star as StarIcon } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import { History } from 'lucide-react'
 import {
   LayoutDashboard,
   Receipt,
@@ -26,6 +27,7 @@ const navItems = [
   { label: 'Promotions', path: '/promotions', icon: Tag },
   { label: 'Reviews', path: '/reviews', icon: StarIcon },
   { label: 'Settings', path: '/settings', icon: Settings },
+  { label: 'Activity Log', path: '/activity-log', icon: History },
 ]
 
 export default function Layout({ children }: { children: ReactNode }) {

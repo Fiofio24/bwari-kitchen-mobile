@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import LoadingButton from '../components/LoadingButton'
+import { showSuccess, showError, getErrorMessage } from '../lib/toast'
 import Layout from '../components/Layout'
 import Modal from '../components/Modal'
 import ConfirmDialog from '../components/ConfirmDialog'
@@ -49,10 +51,12 @@ const typeLabels = {
 export default function Promotions() {
   const [promos, setPromos] = useState<Promotion[]>([])
   const [loading, setLoading] = useState(true)
+  const [togglingId, setTogglingId] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   const [createModalOpen, setCreateModalOpen] = useState(false)
   const [form, setForm] = useState({
-    code: '', description: '', type: 'percentage' as Promotion['type'],
+    description: '', type: 'percentage' as Promotion['type'],
     value: '', minOrderAmount: '', maxUses: '', perUserLimit: '1', validUntil: '',
   })
   const [creating, setCreating] = useState(false)
@@ -79,26 +83,27 @@ export default function Promotions() {
 
   const openCreate = () => {
     setForm({
-      code: '', description: '', type: 'percentage',
+      description: '', type: 'percentage',
       value: '', minOrderAmount: '', maxUses: '', perUserLimit: '1', validUntil: '',
     })
     setCreateModalOpen(true)
   }
 
   const handleCreate = async () => {
-    if (!form.code.trim() || !form.value) {
-      return alert('Code and value are required')
+    if (!form.value) {
+      return showError('Value is required')
     }
     setCreating(true)
     try {
-      await api.post('/api/admin/promotions', {
+      const res = await api.post('/api/admin/promotions', {
         ...form,
         validUntil: form.validUntil ? new Date(form.validUntil).toISOString() : undefined,
       })
       setCreateModalOpen(false)
       fetchPromos()
+      showSuccess(`Promotion created — code: ${res.data.promo.code}`)
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Failed to create promo')
+      showError(getErrorMessage(err))
     } finally {
       setCreating(false)
     }
@@ -110,19 +115,31 @@ export default function Promotions() {
   }
 
   const handleToggle = async (promo: Promotion) => {
-    await api.patch(`/api/admin/promotions/${promo.id}/toggle`)
-    fetchPromos()
-    if (selectedPromo?.id === promo.id) openDetail(promo.id)
+    setTogglingId(promo.id)
+    try {
+      await api.patch(`/api/admin/promotions/${promo.id}/toggle`)
+      fetchPromos()
+      if (selectedPromo?.id === promo.id) openDetail(promo.id)
+      showSuccess(`${promo.code} ${promo.isActive ? 'deactivated' : 'activated'}`)
+    } catch (err: any) {
+      showError(getErrorMessage(err))
+    } finally {
+      setTogglingId(null)
+    }
   }
 
   const handleDelete = async () => {
     if (!deleteTarget) return
+    setDeleting(true)
     try {
-      await api.delete(`/api/admin/promotions/${deleteTarget.id}`)
+      const res = await api.delete(`/api/admin/promotions/${deleteTarget.id}`)
       setDeleteTarget(null)
       fetchPromos()
+      showSuccess(res.data.message || 'Promotion deleted')
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Failed to delete')
+      showError(getErrorMessage(err))
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -217,16 +234,6 @@ export default function Promotions() {
       {/* Create Modal */}
       <Modal isOpen={createModalOpen} onClose={() => setCreateModalOpen(false)} title="New Promotion">
         <div className="space-y-3">
-          <div>
-            <label className="block text-sm font-medium mb-1">Promo Code</label>
-            <input
-              value={form.code}
-              onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm uppercase"
-              placeholder="e.g. BWARI20"
-            />
-          </div>
-
           <div>
             <label className="block text-sm font-medium mb-1">Description</label>
             <input
@@ -335,13 +342,9 @@ export default function Promotions() {
             </div>
           </div>
 
-          <button
-            onClick={handleCreate}
-            disabled={creating}
-            className="w-full bg-brand-600 text-white py-2.5 rounded-lg font-medium mt-2 disabled:opacity-50"
-          >
-            {creating ? 'Creating...' : 'Create Promotion'}
-          </button>
+          <LoadingButton loading={creating} onClick={handleCreate} className="w-full py-2.5 mt-2">
+            Create Promotion
+          </LoadingButton>
         </div>
       </Modal>
 
@@ -397,6 +400,7 @@ export default function Promotions() {
         onCancel={() => setDeleteTarget(null)}
         confirmLabel="Delete"
         danger
+        loading={deleting}
       />
     </Layout>
   )

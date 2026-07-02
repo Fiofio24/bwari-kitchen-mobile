@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
+import { Toaster } from 'react-hot-toast'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Analytics from './pages/Analytics'
@@ -10,6 +11,7 @@ import Customers from './pages/Customers'
 import Promotions from './pages/Promotions'
 import Reviews from './pages/Reviews'
 import Settings from './pages/Settings'
+import ActivityLog from './pages/ActivityLog'
 
 function ProtectedRoute({ children }: { children: JSX.Element }) {
   const { admin, loading } = useAuth()
@@ -24,6 +26,23 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            duration: 3500,
+            style: {
+              fontSize: '14px',
+              borderRadius: '10px',
+              padding: '10px 14px',
+            },
+            success: {
+              iconTheme: { primary: '#16a34a', secondary: '#fff' },
+            },
+            error: {
+              iconTheme: { primary: '#dc2626', secondary: '#fff' },
+            },
+          }}
+        />
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route
@@ -61,6 +80,10 @@ export default function App() {
           <Route
             path="/settings"
             element={<ProtectedRoute><Settings /></ProtectedRoute>}
+          />
+          <Route
+            path="/activity-log"
+            element={<ProtectedRoute><ActivityLog /></ProtectedRoute>}
           />
           <Route path="/" element={<Navigate to="/dashboard" />} />
         </Routes>

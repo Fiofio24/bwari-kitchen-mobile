@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
+import { Bike, Phone, Mail, Search } from 'lucide-react'
+import LoadingButton from '../components/LoadingButton'
+import { showSuccess, showError, getErrorMessage } from '../lib/toast'
 import Layout from '../components/Layout'
 import Modal from '../components/Modal'
 import ConfirmDialog from '../components/ConfirmDialog'
 import Toggle from '../components/Toggle'
 import Pagination from '../components/Pagination'
 import api from '../lib/api'
-import { Bike, Phone, Mail, Search } from 'lucide-react'
 
 interface Rider {
   id: string
@@ -38,10 +40,9 @@ export default function Riders() {
   const [createModalOpen, setCreateModalOpen] = useState(false)
   const [createForm, setCreateForm] = useState({ fullName: '', phoneNumber: '', password: '', email: '' })
   const [creating, setCreating] = useState(false)
+  const [togglingId, setTogglingId] = useState<string | null>(null)
 
   const [selectedRider, setSelectedRider] = useState<RiderDetail | null>(null)
-  const [resetPasswordTarget, setResetPasswordTarget] = useState<Rider | null>(null)
-  const [newPassword, setNewPassword] = useState('')
 
   useEffect(() => {
     fetchRiders()
@@ -82,8 +83,10 @@ export default function Riders() {
       setCreateModalOpen(false)
       setCreateForm({ fullName: '', phoneNumber: '', password: '', email: '' })
       fetchRiders()
+      showSuccess('Rider created successfully')
+    
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Failed to create rider')
+      showError(getErrorMessage(err))
     } finally {
       setCreating(false)
     }
@@ -94,23 +97,18 @@ export default function Riders() {
     setSelectedRider(res.data.rider)
   }
 
+  // AFTER
   const handleToggleActive = async (rider: Rider) => {
-    await api.patch(`/api/admin/users/${rider.id}/toggle-active`)
-    fetchRiders()
-    if (selectedRider?.id === rider.id) openDetail(rider.id)
-  }
-
-  const handleResetPassword = async () => {
-    if (!resetPasswordTarget || newPassword.length < 6) {
-      return alert('Password must be at least 6 characters')
-    }
+    setTogglingId(rider.id)
     try {
-      await api.patch(`/api/admin/users/${resetPasswordTarget.id}/reset-password`, { newPassword })
-      setResetPasswordTarget(null)
-      setNewPassword('')
-      alert('Password reset successfully')
+      await api.patch(`/api/admin/users/${rider.id}/toggle-active`)
+      fetchRiders()
+      if (selectedRider?.id === rider.id) openDetail(rider.id)
+      showSuccess(`${rider.fullName} ${rider.isActive ? 'deactivated' : 'activated'}`)
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Failed to reset password')
+      showError(getErrorMessage(err))
+    } finally {
+      setTogglingId(null)
     }
   }
 
@@ -175,7 +173,6 @@ export default function Riders() {
                   <td className="px-4 py-3 text-gray-500">{formatDate(rider.createdAt)}</td>
                   <td className="px-4 py-3 text-right space-x-3 whitespace-nowrap">
                     <button onClick={() => openDetail(rider.id)} className="text-brand-600 font-medium">View</button>
-                    <button onClick={() => setResetPasswordTarget(rider)} className="text-gray-500 font-medium">Reset Password</button>
                   </td>
                 </tr>
               ))
@@ -225,13 +222,9 @@ export default function Riders() {
               placeholder="At least 6 characters"
             />
           </div>
-          <button
-            onClick={handleCreate}
-            disabled={creating}
-            className="w-full bg-brand-600 text-white py-2.5 rounded-lg font-medium mt-2 disabled:opacity-50"
-          >
-            {creating ? 'Creating...' : 'Create Rider'}
-          </button>
+          <LoadingButton loading={creating} onClick={handleCreate} className="w-full py-2.5">
+            Create Rider
+          </LoadingButton>
         </div>
       </Modal>
 
@@ -283,44 +276,20 @@ export default function Riders() {
               )}
             </div>
 
-            <button
+            <LoadingButton
+              loading={togglingId === selectedRider.id}
               onClick={() => handleToggleActive(selectedRider)}
-              className={`w-full py-2 rounded-lg text-sm font-medium border ${
+              variant="ghost"
+              className={`w-full py-2 border rounded-lg ${
                 selectedRider.isActive
                   ? 'border-red-200 text-red-600 hover:bg-red-50'
                   : 'border-green-200 text-green-600 hover:bg-green-50'
               }`}
             >
               {selectedRider.isActive ? 'Deactivate Rider' : 'Activate Rider'}
-            </button>
+            </LoadingButton>
           </div>
         )}
-      </Modal>
-
-      {/* Reset Password Modal */}
-      <Modal
-        isOpen={!!resetPasswordTarget}
-        onClose={() => { setResetPasswordTarget(null); setNewPassword('') }}
-        title={`Reset Password — ${resetPasswordTarget?.fullName || ''}`}
-      >
-        <div className="space-y-3">
-          <div>
-            <label className="block text-sm font-medium mb-1">New Password</label>
-            <input
-              type="password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-              placeholder="At least 6 characters"
-            />
-          </div>
-          <button
-            onClick={handleResetPassword}
-            className="w-full bg-brand-600 text-white py-2.5 rounded-lg font-medium"
-          >
-            Reset Password
-          </button>
-        </div>
       </Modal>
     </Layout>
   )

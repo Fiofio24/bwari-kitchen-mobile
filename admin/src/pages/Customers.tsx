@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import LoadingButton from '../components/LoadingButton'
+import { showSuccess, showError, getErrorMessage } from '../lib/toast'
 import Layout from '../components/Layout'
 import Modal from '../components/Modal'
 import Toggle from '../components/Toggle'
@@ -42,10 +44,9 @@ export default function Customers() {
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [search, setSearch] = useState('')
+  const [togglingId, setTogglingId] = useState<string | null>(null)
 
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerDetail | null>(null)
-  const [resetPasswordTarget, setResetPasswordTarget] = useState<Customer | null>(null)
-  const [newPassword, setNewPassword] = useState('')
 
   useEffect(() => {
     fetchCustomers()
@@ -82,25 +83,18 @@ export default function Customers() {
   }
 
   const handleToggleActive = async (customer: Customer) => {
-    await api.patch(`/api/admin/users/${customer.id}/toggle-active`)
-    fetchCustomers()
-    if (selectedCustomer?.id === customer.id) openDetail(customer.id)
-  }
-
-  const handleResetPassword = async () => {
-    if (!resetPasswordTarget || newPassword.length < 6) {
-      return alert('Password must be at least 6 characters')
-    }
+    setTogglingId(customer.id)
     try {
-      await api.patch(`/api/admin/users/${resetPasswordTarget.id}/reset-password`, { newPassword })
-      setResetPasswordTarget(null)
-      setNewPassword('')
-      alert('Password reset successfully')
+      await api.patch(`/api/admin/users/${customer.id}/toggle-active`)
+      fetchCustomers()
+      if (selectedCustomer?.id === customer.id) openDetail(customer.id)
+      showSuccess(`${customer.fullName} ${customer.isActive ? 'deactivated' : 'activated'}`)
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Failed to reset password')
+      showError(getErrorMessage(err))
+    } finally {
+      setTogglingId(null)
     }
   }
-
   const formatDate = (date: string) =>
     new Date(date).toLocaleDateString('en-NG', { dateStyle: 'medium' })
   const formatCurrency = (amount: number) => `₦${Number(amount).toLocaleString()}`
@@ -162,7 +156,6 @@ export default function Customers() {
                   <td className="px-4 py-3 text-gray-500">{formatDate(customer.createdAt)}</td>
                   <td className="px-4 py-3 text-right space-x-3 whitespace-nowrap">
                     <button onClick={() => openDetail(customer.id)} className="text-brand-600 font-medium">View</button>
-                    <button onClick={() => setResetPasswordTarget(customer)} className="text-gray-500 font-medium">Reset Password</button>
                   </td>
                 </tr>
               ))
@@ -237,44 +230,20 @@ export default function Customers() {
               )}
             </div>
 
-            <button
+            <LoadingButton
+              loading={togglingId === selectedCustomer.id}
               onClick={() => handleToggleActive(selectedCustomer)}
-              className={`w-full py-2 rounded-lg text-sm font-medium border ${
+              variant="ghost"
+              className={`w-full py-2 border rounded-lg ${
                 selectedCustomer.isActive
                   ? 'border-red-200 text-red-600 hover:bg-red-50'
                   : 'border-green-200 text-green-600 hover:bg-green-50'
               }`}
             >
               {selectedCustomer.isActive ? 'Deactivate Customer' : 'Activate Customer'}
-            </button>
+            </LoadingButton>
           </div>
         )}
-      </Modal>
-
-      {/* Reset Password Modal */}
-      <Modal
-        isOpen={!!resetPasswordTarget}
-        onClose={() => { setResetPasswordTarget(null); setNewPassword('') }}
-        title={`Reset Password — ${resetPasswordTarget?.fullName || ''}`}
-      >
-        <div className="space-y-3">
-          <div>
-            <label className="block text-sm font-medium mb-1">New Password</label>
-            <input
-              type="password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-              placeholder="At least 6 characters"
-            />
-          </div>
-          <button
-            onClick={handleResetPassword}
-            className="w-full bg-brand-600 text-white py-2.5 rounded-lg font-medium"
-          >
-            Reset Password
-          </button>
-        </div>
       </Modal>
     </Layout>
   )

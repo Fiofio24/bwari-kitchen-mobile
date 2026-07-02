@@ -219,6 +219,15 @@ export const toggleReviewVisibility = async (
     message: `Review is now ${updated.isVisible ? 'visible' : 'hidden'}`,
     review: updated,
   })
+
+  await logActivity({
+    adminId: req.admin!.id,
+    adminName: req.admin!.email,
+    action: 'toggle',
+    targetType: 'Review',
+    targetId: id,
+    description: `${updated.isVisible ? 'Showed' : 'Hid'} a review`,
+  })
 }
 
 export const adminDeleteReview = async (
@@ -236,4 +245,13 @@ export const adminDeleteReview = async (
 
   await prisma.review.delete({ where: { id } })
   res.status(200).json({ message: 'Review deleted successfully' })
+
+  await logActivity({
+    adminId: req.admin!.id,
+    adminName: req.admin!.email,
+    action: 'delete',
+    targetType: 'Review',
+    targetId: id,
+    description: `Deleted a review`,
+  })
 }

@@ -1,5 +1,7 @@
 import { Request, Response } from 'express'
 import prisma from '../lib/prisma'
+import { generatePromoCode } from '../lib/promoCode'
+import { logActivity } from '../lib/activityLog'
 
 export const validatePromoCode = async (
   req: Request,
@@ -220,13 +222,13 @@ export const createPromo = async (
   res: Response
 ): Promise<void> => {
   const {
-    code, description, type, value,
+    description, type, value,
     minOrderAmount, maxUses, perUserLimit,
     validFrom, validUntil,
   } = req.body
 
-  if (!code || !type || !value) {
-    res.status(400).json({ message: 'Code, type and value are required' })
+  if (!type || !value) {
+    res.status(400).json({ message: 'Type and value are required' })
     return
   }
 
@@ -241,18 +243,25 @@ export const createPromo = async (
     return
   }
 
-  const existing = await prisma.promotion.findUnique({
-    where: { code: code.toUpperCase() }
-  })
+  // Auto-generate a unique code, retrying on the rare collision
+  let code = generatePromoCode(type)
+  let existing = await prisma.promotion.findUnique({ where: { code } })
+  let attempts = 0
+
+  while (existing && attempts < 5) {
+    code = generatePromoCode(type)
+    existing = await prisma.promotion.findUnique({ where: { code } })
+    attempts++
+  }
 
   if (existing) {
-    res.status(409).json({ message: 'A promo with this code already exists' })
+    res.status(500).json({ message: 'Could not generate a unique promo code. Try again.' })
     return
   }
 
   const promo = await prisma.promotion.create({
     data: {
-      code: code.toUpperCase(),
+      code,
       description: description || null,
       type,
       value: parseFloat(value),
@@ -266,6 +275,15 @@ export const createPromo = async (
   })
 
   res.status(201).json({ message: 'Promo created successfully', promo })
+
+  await logActivity({
+    adminId: req.admin!.id,
+    adminName: req.admin!.email,
+    action: 'create',
+    targetType: 'Promotion',
+    targetId: promo.id,
+    description: `Created promotion ${promo.code}`,
+  })
 }
 
 export const updatePromo = async (
@@ -300,6 +318,15 @@ export const updatePromo = async (
   })
 
   res.status(200).json({ message: 'Promo updated successfully', promo: updated })
+
+  await logActivity({
+    adminId: req.admin!.id,
+    adminName: req.admin!.email,
+    action: 'update',
+    targetType: 'Promotion',
+    targetId: id,
+    description: `Updated promotion ${updated.code}`,
+  })
 }
 
 export const togglePromo = async (
@@ -324,6 +351,15 @@ export const togglePromo = async (
   res.status(200).json({
     message: `Promo ${updated.code} is now ${updated.isActive ? 'active' : 'inactive'}`,
     promo: updated,
+  })
+
+  await logActivity({
+    adminId: req.admin!.id,
+    adminName: req.admin!.email,
+    action: 'toggle',
+    targetType: 'Promotion',
+    targetId: id,
+    description: `${updated.isActive ? 'Activated' : 'Deactivated'} promotion ${updated.code}`,
   })
 }
 
@@ -353,4 +389,13 @@ export const deletePromo = async (
 
   await prisma.promotion.delete({ where: { id } })
   res.status(200).json({ message: 'Promo deleted successfully' })
+
+  await logActivity({
+    adminId: req.admin!.id,
+    adminName: req.admin!.email,
+    action: 'delete',
+    targetType: 'Promotion',
+    targetId: id,
+    description: `Deleted promotion ${promo.code}`,
+  })
 }
