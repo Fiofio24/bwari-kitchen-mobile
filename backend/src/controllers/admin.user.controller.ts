@@ -185,6 +185,15 @@ export const createRider = async (
   })
 
   res.status(201).json({ message: 'Rider account created successfully', rider })
+
+  await logActivity({
+    adminId: req.admin!.id,
+    adminName: req.admin!.email,
+    action: 'create',
+    targetType: 'Rider',
+    targetId: rider.id,
+    description: `Created rider account for ${rider.fullName}`,
+  })
 }
 
 export const updateRider = async (
@@ -222,6 +231,15 @@ export const updateRider = async (
   })
 
   res.status(200).json({ message: 'Rider updated successfully', rider: updated })
+
+  await logActivity({
+    adminId: req.admin!.id,
+    adminName: req.admin!.email,
+    action: 'update',
+    targetType: 'Rider',
+    targetId: id,
+    description: `Updated rider "${updated.fullName}"`,
+  })
 }
 
 export const toggleUserActive = async (
@@ -246,6 +264,15 @@ export const toggleUserActive = async (
   res.status(200).json({
     message: `${updated.fullName} has been ${updated.isActive ? 'activated' : 'deactivated'}`,
     user: updated,
+  })
+
+  await logActivity({
+    adminId: req.admin!.id,
+    adminName: req.admin!.email,
+    action: 'toggle',
+    targetType: updated.role === 'rider' ? 'Rider' : 'Customer',
+    targetId: id,
+    description: `${updated.isActive ? 'Activated' : 'Deactivated'} ${updated.fullName}`,
   })
 }
 
@@ -293,6 +320,15 @@ export const deleteUser = async (
   })
 
   res.status(200).json({ message: 'User deleted successfully' })
+
+  await logActivity({
+    adminId: req.admin!.id,
+    adminName: req.admin!.email,
+    action: 'delete',
+    targetType: 'User',
+    targetId: id,
+    description: `Deleted user account for ${user.fullName}`,
+  })
 }
 
 export const getUserStats = async (

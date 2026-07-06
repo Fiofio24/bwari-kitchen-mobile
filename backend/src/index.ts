@@ -26,6 +26,7 @@ import adminSettingsRoutes from './routes/admin.settings'
 import adminAnalyticsRoutes from './routes/admin.analytics'
 import adminReviewRoutes from './routes/admin.review'
 import adminPromotionRoutes from './routes/admin.promotion'
+import adminActivityLogRoutes from './routes/admin.activityLog'
 
 dotenv.config()
 
@@ -77,6 +78,7 @@ app.use('/api/admin/settings', adminSettingsRoutes)
 app.use('/api/admin/analytics', adminAnalyticsRoutes)
 app.use('/api/admin/reviews', adminReviewRoutes)
 app.use('/api/admin/promotions', adminPromotionRoutes)
+app.use('/api/admin/activity-logs', adminActivityLogRoutes)
 
 // ─── Global error handler ─────────────────
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {

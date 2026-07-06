@@ -1,5 +1,6 @@
 import { Request, Response } from 'express'
 import prisma from '../lib/prisma'
+import { logActivity } from '../lib/activityLog'
 
 export const getSettings = async (
   req: Request,
@@ -64,6 +65,14 @@ export const updateSetting = async (
   })
 
   res.status(200).json({ message: 'Setting updated successfully', setting })
+
+  await logActivity({
+    adminId: req.admin!.id,
+    adminName: req.admin!.email,
+    action: 'update',
+    targetType: 'Settings',
+    description: `Updated setting "${key}" to "${value}"`,
+  })
 }
 
 export const updateMultipleSettings = async (
@@ -101,6 +110,14 @@ export const updateMultipleSettings = async (
   res.status(200).json({
     message: `${updated.length} setting(s) updated successfully`,
     settings: updated,
+  })
+
+  await logActivity({
+    adminId: req.admin!.id,
+    adminName: req.admin!.email,
+    action: 'update',
+    targetType: 'Settings',
+    description: `Updated setting "${key}" to "${value}"`,
   })
 }
 
@@ -194,6 +211,15 @@ export const updateBranch = async (
   })
 
   res.status(200).json({ message: 'Branch updated successfully', branch: updated })
+
+  await logActivity({
+    adminId: req.admin!.id,
+    adminName: req.admin!.email,
+    action: 'update',
+    targetType: 'Branch',
+    targetId: 'main-branch',
+    description: `Updated branch information`,
+  })
 }
 
 export const toggleRestaurantOpen = async (
@@ -216,5 +242,14 @@ export const toggleRestaurantOpen = async (
   res.status(200).json({
     message: `Restaurant is now ${updated.isOpen ? 'open' : 'closed'} for orders`,
     isOpen: updated.isOpen,
+  })
+
+  await logActivity({
+    adminId: req.admin!.id,
+    adminName: req.admin!.email,
+    action: 'toggle',
+    targetType: 'Branch',
+    targetId: 'main-branch',
+    description: `${updated.isOpen ? 'Opened' : 'Closed'} the restaurant for orders`,
   })
 }

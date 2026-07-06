@@ -2,6 +2,7 @@ import { Request, Response } from 'express'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import prisma from '../lib/prisma'
+import { logActivity } from '../lib/activityLog'
 
 // ─────────────────────────────────────────
 // ADMIN LOGIN
@@ -61,6 +62,15 @@ export const adminLogin = async (
       isSuperAdmin: admin.isSuperAdmin,
     }
   })
+
+  await logActivity({
+    adminId: admin.id,
+    adminName: admin.email,
+    action: 'login',
+    targetType: 'AdminUser',
+    targetId: admin.id,
+    description: `Logged in`,
+  })
 }
 
 // ─────────────────────────────────────────
@@ -111,6 +121,15 @@ export const createAdmin = async (
     message: 'Admin account created successfully',
     admin,
   })
+
+  await logActivity({
+    adminId: req.admin!.id,
+    adminName: req.admin!.email,
+    action: 'create',
+    targetType: 'AdminUser',
+    targetId: admin.id,
+    description: `Created admin account for ${admin.fullName}`,
+})
 }
 
 // ─────────────────────────────────────────
