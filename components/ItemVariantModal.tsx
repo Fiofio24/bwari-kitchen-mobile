@@ -25,7 +25,7 @@ interface ItemVariantModalProps {
 }
 
 export default function ItemVariantModal({ item, visible, onClose, onAddVariant }: ItemVariantModalProps) {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   
   const [isRendering, setIsRendering] = useState(false);

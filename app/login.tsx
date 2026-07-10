@@ -8,7 +8,8 @@ import {
   KeyboardAvoidingView, 
   Platform, 
   ScrollView,
-  ActivityIndicator
+  ActivityIndicator,
+  Dimensions
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,6 +19,8 @@ import { Colors } from '../constants/Colors';
 import { StatusBar } from 'expo-status-bar';
 import { useUser } from '../context/UserContext';
 import HeroHeader from '../components/HeroHeader';
+
+const { height } = Dimensions.get('window');
 
 export default function LoginScreen() {
   const router = useRouter();

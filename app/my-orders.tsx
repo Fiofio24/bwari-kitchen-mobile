@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context'; 
+// import { useSafeAreaInsets } from 'react-native-safe-area-context'; 
 import { useTheme } from '../context/ThemeContext';
 import { Colors } from '../constants/Colors';
 import { StatusBar } from 'expo-status-bar';
@@ -112,7 +112,7 @@ const MOCK_ORDERS = [
 export default function MyOrdersScreen() {
   const router = useRouter();
   const { colors, isDark } = useTheme();
-  const insets = useSafeAreaInsets();
+  // const insets = useSafeAreaInsets();
   
   const [activeTab, setActiveTab] = useState<'active' | 'past'>('active');
   const [expandedId, setExpandedId] = useState<string | null>(null);
