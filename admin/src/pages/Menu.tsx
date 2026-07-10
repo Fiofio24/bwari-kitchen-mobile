@@ -422,6 +422,8 @@ function ItemsTab() {
           <tbody>
             {loading ? (
               <tr><td colSpan={5} className="text-center py-8 text-gray-400">Loading...</td></tr>
+            ) : items.length === 0 ? (
+              <tr><td colSpan={5} className="text-center py-8 text-gray-400">No items in this category</td></tr>
             ) : items.map((item) => (
               <tr key={item.id} className="border-t border-gray-100">
                 <td className="px-4 py-3">
