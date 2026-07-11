@@ -1,6 +1,7 @@
 import { Request, Response } from 'express'
 import prisma from '../lib/prisma'
 import bcrypt from 'bcryptjs'
+import { logActivity } from '../lib/activityLog'
 
 export const getCustomers = async (
   req: Request,

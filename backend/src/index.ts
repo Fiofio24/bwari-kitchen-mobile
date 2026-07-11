@@ -2,6 +2,7 @@ import express, { Request, Response, NextFunction } from 'express'
 import cors from 'cors'
 import helmet from 'helmet'
 import dotenv from 'dotenv'
+import prisma from './lib/prisma'
 
 // Customer app routes
 import authRoutes from './routes/auth'
@@ -47,12 +48,18 @@ app.use('/api/payments/webhook', express.raw({ type: 'application/json' }))
 app.use(express.json())
 
 // Health check
-app.get('/health', (req, res) => {
-  res.json({
-    status: 'ok',
-    app: 'Bwari Kitchen API',
-    timestamp: new Date().toISOString()
-  })
+app.get('/health', async (req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`
+    res.json({
+      status: 'ok',
+      app: 'Bwari Kitchen API',
+      db: 'connected',
+      timestamp: new Date().toISOString()
+    })
+  } catch (err) {
+    res.status(500).json({ status: 'error', db: 'disconnected' })
+  }
 })
 
 // ─── Customer app routes ──────────────────
@@ -88,7 +95,7 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   })
 })
 
-app.listen(PORT, () => {
+app.listen(Number(PORT), '0.0.0.0', () => {
   console.log(`🍽️  Bwari Kitchen API running on port ${PORT}`)
 })
 

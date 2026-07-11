@@ -117,7 +117,7 @@ export const updateMultipleSettings = async (
     adminName: req.admin!.email,
     action: 'update',
     targetType: 'Settings',
-    description: `Updated setting "${key}" to "${value}"`,
+    description: `Updated ${updated.length} setting(s): ${updated.map(s => s.key).join(', ')}`,
   })
 }
 

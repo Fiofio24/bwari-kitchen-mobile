@@ -1,5 +1,6 @@
 import { Request, Response } from 'express'
 import prisma from '../lib/prisma'
+import { logActivity } from '../lib/activityLog'
 
 export const adminGetOrders = async (
   req: Request,
