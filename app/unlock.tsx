@@ -1,11 +1,12 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   View, 
   Text, 
   StyleSheet, 
   TouchableOpacity, 
   Image,
-  Alert
+  Animated,
+  Dimensions
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,14 +14,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import * as LocalAuthentication from 'expo-local-authentication';
 import * as SecureStore from 'expo-secure-store';
+import * as Haptics from 'expo-haptics';
 import { useTheme } from '../context/ThemeContext';
 import { Colors } from '../constants/Colors';
 import { useUser } from '../context/UserContext';
 
-// FIX: Removed unused 'width' variable
-
-// Mock function - In reality, you'd compare this to the securely stored PIN
-const VALID_PIN = '1234'; 
+const VALID_PIN = '123456'; 
 
 export default function UnlockScreen() {
   const router = useRouter();
@@ -30,14 +29,15 @@ export default function UnlockScreen() {
 
   const [pin, setPin] = useState<string>('');
   const [isBiometricSupported, setIsBiometricSupported] = useState(false);
+  const [isError, setIsError] = useState(false);
+  
+  // Animation for the shake effect
+  const shakeAnim = useRef(new Animated.Value(0)).current;
 
-  // FIX: Wrapped handleSuccess in useCallback to safely use it in useEffect
   const handleSuccess = useCallback(() => {
-    // Here you would retrieve the JWT from SecureStore and set it in your API headers
     router.replace('/(tabs)');
   }, [router]);
 
-  // FIX: Wrapped handleBiometricAuth in useCallback
   const handleBiometricAuth = useCallback(async () => {
     const result = await LocalAuthentication.authenticateAsync({
       promptMessage: 'Unlock Bwari Kitchen',
@@ -49,43 +49,57 @@ export default function UnlockScreen() {
     }
   }, [handleSuccess]);
 
-  // Check if the device supports FaceID / Fingerprint
+  // Shake animation trigger
+  const triggerShake = () => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    setIsError(true);
+    Animated.sequence([
+      Animated.timing(shakeAnim, { toValue: 10, duration: 50, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: -10, duration: 50, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: 10, duration: 50, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: 0, duration: 50, useNativeDriver: true })
+    ]).start(() => {
+      setPin(''); // Clear the input field after shake
+      setIsError(false); // Reset to white borders
+    });
+  };
+
   useEffect(() => {
     (async () => {
       const compatible = await LocalAuthentication.hasHardwareAsync();
       const enrolled = await LocalAuthentication.isEnrolledAsync();
       setIsBiometricSupported(compatible && enrolled);
       
-      // Auto-prompt biometrics on load if supported
       if (compatible && enrolled) {
         handleBiometricAuth();
       }
     })();
-  // FIX: Added handleBiometricAuth to dependencies
   }, [handleBiometricAuth]);
+
+  const handleKeyPress = (num: string) => {
+    if (isError) return; // Prevent input during animation
+    if (pin.length < 6) {
+      setPin(prev => prev + num);
+    }
+  };
 
   // Monitor PIN entry
   useEffect(() => {
-    if (pin.length === 4) {
+    if (pin.length === 6) {
       if (pin === VALID_PIN) {
         handleSuccess();
       } else {
-        Alert.alert("Incorrect PIN", "Please try again.", [{ text: "OK", onPress: () => setPin('') }]);
+        triggerShake();
       }
     }
-  // FIX: Added handleSuccess to dependencies
   }, [pin, handleSuccess]);
 
-  const handleKeyPress = (num: string) => {
-    if (pin.length < 4) setPin(prev => prev + num);
-  };
-
   const handleDelete = () => {
+    if (isError) return;
     setPin(prev => prev.slice(0, -1));
   };
 
   const handleLogout = async () => {
-    // Clear the secure store and go back to welcome
     await SecureStore.deleteItemAsync('user_token');
     router.replace('/welcome');
   };
@@ -107,23 +121,25 @@ export default function UnlockScreen() {
       </View>
 
       <View style={[styles.bottomSection, { backgroundColor: colors.background, paddingBottom: insets.bottom + 20 }]}>
-        <Text style={[styles.instructionText, { color: colors.text }]}>Enter your 4-digit PIN</Text>
+        <Text style={[styles.instructionText, { color: isError ? '#D32F2F' : colors.text }]}>
+          {isError ? "Incorrect PIN" : "Enter your 6-digit PIN"}
+        </Text>
         
-        {/* PIN Indicators */}
-        <View style={styles.pinContainer}>
-          {[0, 1, 2, 3].map((index) => (
+        {/* Animated PIN Indicators */}
+        <Animated.View style={[styles.pinContainer, { transform: [{ translateX: shakeAnim }] }]}>
+          {[0, 1, 2, 3, 4, 5].map((index) => (
             <View 
               key={index} 
               style={[
                 styles.pinDot, 
                 { 
-                  borderColor: isDark ? colors.border : '#CCC',
+                  borderColor: isError ? '#D32F2F' : '#FFF', // Default White, Red on Error
                   backgroundColor: pin.length > index ? Colors.primary : 'transparent'
                 }
               ]} 
             />
           ))}
-        </View>
+        </Animated.View>
 
         {/* Number Pad */}
         <View style={styles.numpadContainer}>
@@ -143,7 +159,6 @@ export default function UnlockScreen() {
           ))}
           
           <View style={styles.numpadRow}>
-            {/* Biometric Button */}
             <TouchableOpacity 
               style={styles.actionButton}
               onPress={handleBiometricAuth}
@@ -160,7 +175,6 @@ export default function UnlockScreen() {
               <Text style={[styles.numText, { color: colors.text }]}>0</Text>
             </TouchableOpacity>
 
-            {/* Delete Button */}
             <TouchableOpacity 
               style={styles.actionButton}
               onPress={handleDelete}
@@ -239,13 +253,13 @@ const styles = StyleSheet.create({
   pinContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 20,
+    gap: 15,
     marginBottom: 40,
   },
   pinDot: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
     borderWidth: 2,
   },
   numpadContainer: {
