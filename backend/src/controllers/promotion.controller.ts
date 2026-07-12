@@ -1,7 +1,7 @@
 import { Request, Response } from 'express'
+import { logActivity } from '../lib/activityLog'
 import prisma from '../lib/prisma'
 import { generatePromoCode } from '../lib/promoCode'
-import { logActivity } from '../lib/activityLog'
 
 export const validatePromoCode = async (
   req: Request,

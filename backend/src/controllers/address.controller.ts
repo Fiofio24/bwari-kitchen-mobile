@@ -1,10 +1,10 @@
 import { Request, Response } from 'express'
-import prisma from '../lib/prisma'
 import {
-  calculateDistance,
   calculateDeliveryFee,
+  calculateDistance,
   isWithinDeliveryRadius,
 } from '../lib/delivery'
+import prisma from '../lib/prisma'
 
 export const getAddresses = async (
   req: Request,

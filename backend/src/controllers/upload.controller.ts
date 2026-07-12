@@ -1,7 +1,7 @@
 import { Request, Response } from 'express'
-import supabase from '../lib/supabase'
-import prisma from '../lib/prisma'
 import path from 'path'
+import prisma from '../lib/prisma'
+import supabase from '../lib/supabase'
 
 const uploadToSupabase = async (
   bucket: string,

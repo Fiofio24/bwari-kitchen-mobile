@@ -1,6 +1,6 @@
 import { Request, Response } from 'express'
-import prisma from '../lib/prisma'
 import { logActivity } from '../lib/activityLog'
+import prisma from '../lib/prisma'
 
 export const submitReview = async (
   req: Request,

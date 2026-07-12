@@ -1,5 +1,5 @@
-import { Request, Response } from 'express'
 import bcrypt from 'bcryptjs'
+import { Request, Response } from 'express'
 import jwt from 'jsonwebtoken'
 import prisma from '../lib/prisma'
 
@@ -236,7 +236,7 @@ export const createStaff = async (
   
     const user = await prisma.user.findUnique({
       where: { id },
-      select: { id: true, role: true, isActive: true }
+      select: { id: true, role: true, isActive: true, deletedAt: true }
     })
   
     if (!user || user.deletedAt) {

@@ -1,11 +1,11 @@
 import { Request, Response } from 'express'
-import prisma from '../lib/prisma'
-import { generateOrderNumber } from '../lib/orderNumber'
 import {
-  calculateDistance,
-  calculateDeliveryFee,
-  isWithinDeliveryRadius,
+    calculateDeliveryFee,
+    calculateDistance,
+    isWithinDeliveryRadius,
 } from '../lib/delivery'
+import { generateOrderNumber } from '../lib/orderNumber'
+import prisma from '../lib/prisma'
 
 export const placeOrder = async (
   req: Request,
