@@ -487,6 +487,15 @@ export const createPackage = async (
     }
   })
 
+    await logActivity({
+      adminId: req.admin!.id,
+      adminName: req.admin!.email,
+      action: 'create',
+      targetType: 'Package',
+      targetId: pkg.id,
+      description: `Created package "${pkg.name}"`,
+    })
+
   res.status(201).json({ message: 'Package created successfully', package: pkg })
 }
 
@@ -541,6 +550,15 @@ export const updatePackage = async (
     }
   })
 
+    await logActivity({
+      adminId: req.admin!.id,
+      adminName: req.admin!.email,
+      action: 'update',
+      targetType: 'Package',
+      targetId: pkg.id,
+      description: `Updated package "${pkg.name}"`,
+    })
+
   res.status(200).json({ message: 'Package updated successfully', package: pkg })
 }
 
@@ -561,6 +579,15 @@ export const togglePackageAvailability = async (
     where: { id },
     data: { isAvailable: !pkg.isAvailable },
     select: { id: true, name: true, isAvailable: true }
+  })
+
+  await logActivity({
+    adminId: req.admin!.id,
+    adminName: req.admin!.email,
+    action: 'toggle',
+    targetType: 'Package',
+    targetId: updated.id,
+    description: `${updated.name} is now ${updated.isAvailable ? 'available' : 'unavailable'}`,
   })
 
   res.status(200).json({
@@ -585,6 +612,15 @@ export const deletePackage = async (
   await prisma.package.update({
     where: { id },
     data: { deletedAt: new Date(), isAvailable: false }
+  })
+
+  await logActivity({
+    adminId: req.admin!.id,
+    adminName: req.admin!.email,
+    action: 'delete',
+    targetType: 'Package',
+    targetId: pkg.id,
+    description: `Deleted package "${pkg.name}"`,
   })
 
   res.status(200).json({ message: 'Package deleted successfully' })
