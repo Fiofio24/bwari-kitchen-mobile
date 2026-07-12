@@ -138,7 +138,7 @@ export default function Analytics() {
                     <CartesianGrid strokeDasharray="3 3" stroke="#f1f1f1" />
                     <XAxis dataKey="date" tickFormatter={formatDateShort} fontSize={12} />
                     <YAxis fontSize={12} tickFormatter={(v) => `₦${v / 1000}k`} />
-                    <Tooltip formatter={(v: number) => formatCurrency(v)} labelFormatter={formatDateShort} />
+                    <Tooltip formatter={(v: any) => formatCurrency(v)} labelFormatter={(l: any) => formatDateShort(l)} />
                     <Line type="monotone" dataKey="revenue" stroke="#ea580c" strokeWidth={2} dot={false} />
                   </LineChart>
                 </ResponsiveContainer>
@@ -167,7 +167,7 @@ export default function Analytics() {
                     <CartesianGrid strokeDasharray="3 3" stroke="#f1f1f1" />
                     <XAxis dataKey="date" tickFormatter={formatDateShort} fontSize={12} />
                     <YAxis fontSize={12} />
-                    <Tooltip labelFormatter={formatDateShort} />
+                    <Tooltip formatter={(v: any) => formatCurrency(v)} labelFormatter={(l: any) => formatDateShort(l)} />
                     <Legend />
                     <Bar dataKey="completed" fill="#10b981" name="Completed" radius={[4, 4, 0, 0]} />
                     <Bar dataKey="cancelled" fill="#ef4444" name="Cancelled" radius={[4, 4, 0, 0]} />
@@ -230,14 +230,14 @@ export default function Analytics() {
                         cx="50%"
                         cy="50%"
                         outerRadius={75}
-                        label={({ method }) => method.replace('_', ' ')}
+                        label={({ method }) => method ? method.replace('_', ' ') : ''}
                         fontSize={11}
                       >
                         {paymentBreakdown.map((_, i) => (
                           <Cell key={i} fill={COLORS[i % COLORS.length]} />
                         ))}
                       </Pie>
-                      <Tooltip formatter={(v: number) => formatCurrency(v)} />
+                      <Tooltip formatter={(v: any) => formatCurrency(v)} labelFormatter={(l: any) => formatDateShort(l)} />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
