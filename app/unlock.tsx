@@ -5,8 +5,7 @@ import {
   StyleSheet, 
   TouchableOpacity, 
   Image,
-  Animated,
-  Dimensions
+  Animated
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -23,7 +22,7 @@ const VALID_PIN = '123456';
 
 export default function UnlockScreen() {
   const router = useRouter();
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const { userData } = useUser();
 
@@ -31,7 +30,6 @@ export default function UnlockScreen() {
   const [isBiometricSupported, setIsBiometricSupported] = useState(false);
   const [isError, setIsError] = useState(false);
   
-  // Animation for the shake effect
   const shakeAnim = useRef(new Animated.Value(0)).current;
 
   const handleSuccess = useCallback(() => {
@@ -49,8 +47,7 @@ export default function UnlockScreen() {
     }
   }, [handleSuccess]);
 
-  // Shake animation trigger
-  const triggerShake = () => {
+  const triggerShake = useCallback(() => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     setIsError(true);
     Animated.sequence([
@@ -59,10 +56,10 @@ export default function UnlockScreen() {
       Animated.timing(shakeAnim, { toValue: 10, duration: 50, useNativeDriver: true }),
       Animated.timing(shakeAnim, { toValue: 0, duration: 50, useNativeDriver: true })
     ]).start(() => {
-      setPin(''); // Clear the input field after shake
-      setIsError(false); // Reset to white borders
+      setPin(''); 
+      setIsError(false);
     });
-  };
+  }, [shakeAnim]);
 
   useEffect(() => {
     (async () => {
@@ -77,13 +74,12 @@ export default function UnlockScreen() {
   }, [handleBiometricAuth]);
 
   const handleKeyPress = (num: string) => {
-    if (isError) return; // Prevent input during animation
+    if (isError) return; 
     if (pin.length < 6) {
       setPin(prev => prev + num);
     }
   };
 
-  // Monitor PIN entry
   useEffect(() => {
     if (pin.length === 6) {
       if (pin === VALID_PIN) {
@@ -92,7 +88,7 @@ export default function UnlockScreen() {
         triggerShake();
       }
     }
-  }, [pin, handleSuccess]);
+  }, [pin, handleSuccess, triggerShake]); 
 
   const handleDelete = () => {
     if (isError) return;
@@ -125,7 +121,6 @@ export default function UnlockScreen() {
           {isError ? "Incorrect PIN" : "Enter your 6-digit PIN"}
         </Text>
         
-        {/* Animated PIN Indicators */}
         <Animated.View style={[styles.pinContainer, { transform: [{ translateX: shakeAnim }] }]}>
           {[0, 1, 2, 3, 4, 5].map((index) => (
             <View 
@@ -133,7 +128,7 @@ export default function UnlockScreen() {
               style={[
                 styles.pinDot, 
                 { 
-                  borderColor: isError ? '#D32F2F' : '#FFF', // Default White, Red on Error
+                  borderColor: isError ? '#D32F2F' : '#FFF',
                   backgroundColor: pin.length > index ? Colors.primary : 'transparent'
                 }
               ]} 
@@ -141,7 +136,6 @@ export default function UnlockScreen() {
           ))}
         </Animated.View>
 
-        {/* Number Pad */}
         <View style={styles.numpadContainer}>
           {[['1', '2', '3'], ['4', '5', '6'], ['7', '8', '9']].map((row, rowIndex) => (
             <View key={rowIndex} style={styles.numpadRow}>
