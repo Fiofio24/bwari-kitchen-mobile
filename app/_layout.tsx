@@ -1,4 +1,3 @@
-// Note: This file requires an Expo/React Native environment to compile correctly.
 import { useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
@@ -8,7 +7,6 @@ import { ThemeProvider } from '../context/ThemeContext';
 import * as SplashScreen from 'expo-splash-screen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Context Providers
 import { CartProvider } from '../context/CartContext';
 import { FavoriteProvider } from '../context/FavoriteContext';
 import { UserProvider } from '../context/UserContext'; 
@@ -17,7 +15,6 @@ import { AddressProvider } from '../context/AddressContext';
 
 SplashScreen.preventAutoHideAsync();
 
-// BULLETPROOF STORAGE WRAPPER
 const safeStorage = {
   getItem: async (key: string) => {
     try {
@@ -48,7 +45,8 @@ function RootContent() {
         if (!savedUser) {
           setInitialRoute('/welcome');
         } else {
-          setInitialRoute('/(tabs)');
+          // ROUTE RETURNING USERS TO THE UNLOCK SCREEN!
+          setInitialRoute('/unlock');
         }
 
         // Simulate minimum loading time for the native splash screen
@@ -66,18 +64,11 @@ function RootContent() {
     if (appIsReady && initialRoute) {
       SplashScreen.hideAsync();
       
-      // Smart routing: Only force the redirect if the app is booting from the root.
-      if ((segments.length as number) === 0) {
-        
-        // 🚨 FIX: Delay the routing command just enough so Android has time 
-        // to finish mounting the base Stack first. This prevents the native crash.
-        setTimeout(() => {
-          router.replace(initialRoute as any);
-        }, 50); 
-        
+      if (segments.length === 0) {
+        router.replace(initialRoute as any);
       }
     }
-  }, [appIsReady, initialRoute, segments, router]);
+  }, [appIsReady, initialRoute, segments]);
 
   if (!appIsReady) {
     return null; 
@@ -95,6 +86,7 @@ function RootContent() {
         <Stack.Screen name="welcome" options={{ animation: 'fade' }} />
         <Stack.Screen name="login" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="signup" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="unlock" options={{ animation: 'fade' }} />
         
         {/* Role-Based App Environments */}
         <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
@@ -106,6 +98,10 @@ function RootContent() {
         />
         <Stack.Screen 
           name="checkout" 
+          options={{ animation: 'slide_from_right' }} 
+        />
+        <Stack.Screen 
+          name="test-notifications" 
           options={{ animation: 'slide_from_right' }} 
         />
       </Stack>

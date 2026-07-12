@@ -7,7 +7,6 @@ import {
   ScrollView, 
   Alert,
   LayoutAnimation,
-  Switch
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -43,7 +42,6 @@ export default function PaymentMethodsScreen() {
   const insets = useSafeAreaInsets();
   
   const [cards, setCards] = useState(INITIAL_CARDS);
-  const [cashOnDelivery, setCashOnDelivery] = useState(false);
 
   const handleSetDefault = (id: string) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -51,20 +49,6 @@ export default function PaymentMethodsScreen() {
       ...card,
       isDefault: card.id === id
     })));
-    // If they set a card as default, turn off COD
-    if (cashOnDelivery) setCashOnDelivery(false);
-  };
-
-  const handleToggleCOD = (value: boolean) => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setCashOnDelivery(value);
-    // If they turn ON Cash on Delivery, remove default status from cards
-    if (value) {
-      setCards(prev => prev.map(card => ({ ...card, isDefault: false })));
-    } else if (cards.length > 0) {
-      // If they turn it off, default back to the first card
-      setCards(prev => prev.map((card, index) => ({ ...card, isDefault: index === 0 })));
-    }
   };
 
   const handleDelete = (id: string, type: string, last4: string) => {
@@ -171,37 +155,6 @@ export default function PaymentMethodsScreen() {
             </Text>
           </View>
         )}
-
-        <Text style={[styles.sectionTitle, { color: colors.textMuted, marginTop: 25 }]}>
-          OTHER METHODS
-        </Text>
-
-        {/* CASH ON DELIVERY CARD */}
-        <TouchableOpacity 
-          style={[
-            styles.codCard, 
-            { backgroundColor: colors.surface, borderColor: cashOnDelivery ? Colors.primary : colors.border },
-            cashOnDelivery && styles.defaultCardShadow
-          ]}
-          activeOpacity={0.8}
-          onPress={() => handleToggleCOD(!cashOnDelivery)}
-        >
-          <View style={styles.codRow}>
-            <View style={[styles.codIconBox, { backgroundColor: 'rgba(76, 175, 80, 0.1)' }]}>
-              <Ionicons name="cash-outline" size={24} color="#4CAF50" />
-            </View>
-            <View style={styles.codTextContainer}>
-              <Text style={[styles.codTitle, { color: colors.text }]}>Cash on Delivery</Text>
-              <Text style={[styles.codSub, { color: colors.textMuted }]}>Pay with cash or transfer to rider</Text>
-            </View>
-            <Switch 
-              value={cashOnDelivery} 
-              onValueChange={handleToggleCOD} 
-              trackColor={{ false: '#767577', true: 'rgba(211, 47, 47, 0.3)' }} 
-              thumbColor={cashOnDelivery ? Colors.primary : '#f4f3f4'} 
-            />
-          </View>
-        </TouchableOpacity>
 
         {/* SECURITY TRUST BADGE */}
         <View style={styles.securityBanner}>
@@ -333,44 +286,6 @@ const styles = StyleSheet.create({
   deleteBtn: {
     padding: 10,
     marginLeft: 5,
-  },
-  codCard: {
-    borderWidth: 1,
-    borderRadius: 20,
-    padding: 18,
-    marginBottom: 25,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { 
-      width: 0, 
-      height: 2 
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-  },
-  codRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  codIconBox: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 15,
-  },
-  codTextContainer: {
-    flex: 1,
-    paddingRight: 10,
-  },
-  codTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  codSub: {
-    fontSize: 12,
   },
   securityBanner: {
     flexDirection: 'row',

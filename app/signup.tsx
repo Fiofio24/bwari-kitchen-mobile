@@ -29,11 +29,16 @@ export default function SignupScreen() {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [agreed, setAgreed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const isValid = name.trim() && email.trim() && phone.trim() && password.length >= 6 && agreed;
+  // Validation now explicitly checks if passwords match
+  const passwordsMatch = password === confirmPassword;
+  const isValid = name.trim() && email.trim() && phone.trim() && password.length >= 6 && passwordsMatch && agreed;
 
   const handleSignup = () => {
     if (!isValid) return;
@@ -52,11 +57,11 @@ export default function SignupScreen() {
       style={styles.keyboardAvoid} 
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <View style={[styles.container, { backgroundColor: Colors.background }]}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
         <StatusBar style="light" />
         
         {/* REUSABLE HERO SECTION */}
-        <View style={[ { top: -90 }]}>
+        <View style={[{ top: -90 }]}>
           <HeroHeader 
             heightRatio={0.35}
             logoPaddingBottom={35} 
@@ -71,7 +76,7 @@ export default function SignupScreen() {
           >
 
             <Text style={[styles.header, { color: colors.text }]}>
-              Create <Text style={{ color: colors.primary }}>Account</Text> 
+              Create <Text style={{ color: Colors.primary }}>Account</Text> 
             </Text>
 
             {/* FORM FIELDS */}
@@ -141,6 +146,36 @@ export default function SignupScreen() {
                   <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={20} color={colors.textMuted} />
                 </TouchableOpacity>
               </View>
+            </View>
+
+            {/* CONFIRM PASSWORD */}
+            <View style={styles.inputGroup}>
+              <Text style={[styles.inputLabel, { color: colors.text }]}>
+                Confirm Password
+              </Text>
+              <View style={[
+                styles.inputWrapper, 
+                { 
+                  backgroundColor: isDark ? colors.surface : '#FFF', 
+                  borderColor: (confirmPassword.length > 0 && !passwordsMatch) ? '#D32F2F' : colors.border 
+                }
+              ]}>
+                <TextInput
+                  style={[styles.textInput, { color: colors.text }]}
+                  placeholder="Re-enter your password"
+                  placeholderTextColor={colors.textMuted}
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  secureTextEntry={!showConfirmPassword}
+                />
+                <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)} style={styles.eyeIcon}>
+                  <Ionicons name={showConfirmPassword ? "eye-off-outline" : "eye-outline"} size={20} color={colors.textMuted} />
+                </TouchableOpacity>
+              </View>
+              {/* Show error text if user started typing but it doesn't match */}
+              {confirmPassword.length > 0 && !passwordsMatch && (
+                <Text style={styles.errorText}>Passwords do not match</Text>
+              )}
             </View>
 
             {/* AGREEMENT CHECKBOX */}
@@ -278,6 +313,13 @@ const styles = StyleSheet.create({
   },
   eyeIcon: {
     padding: 5,
+  },
+  errorText: {
+    color: '#D32F2F',
+    fontSize: 12,
+    marginTop: 5,
+    marginLeft: 15,
+    fontWeight: '500',
   },
   agreementRow: {
     flexDirection: 'row',
