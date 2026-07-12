@@ -36,7 +36,7 @@ const PORT = process.env.PORT || 3000
 
 app.use(helmet())
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:8081', 'https://bwari-kitchen-admin-i83bg1noz-cybernaut-s.vercel.app',],
+  origin: ['http://localhost:5173', 'http://localhost:8081', 'https://bwari-kitchen-admin.vercel.app',],
   credentials: true,
 }))
 
