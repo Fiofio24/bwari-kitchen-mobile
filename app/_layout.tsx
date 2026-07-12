@@ -64,11 +64,12 @@ function RootContent() {
     if (appIsReady && initialRoute) {
       SplashScreen.hideAsync();
       
-      if (segments.length === 0) {
+      // Fix: Changed segments.length === 0 to !segments.length to bypass strict type overlap issues
+      if (!segments.length) {
         router.replace(initialRoute as any);
       }
     }
-  }, [appIsReady, initialRoute, segments]);
+  }, [appIsReady, initialRoute, segments, router]); // Fix: Added 'router' to dependency array
 
   if (!appIsReady) {
     return null; 
@@ -98,10 +99,6 @@ function RootContent() {
         />
         <Stack.Screen 
           name="checkout" 
-          options={{ animation: 'slide_from_right' }} 
-        />
-        <Stack.Screen 
-          name="test-notifications" 
           options={{ animation: 'slide_from_right' }} 
         />
       </Stack>
