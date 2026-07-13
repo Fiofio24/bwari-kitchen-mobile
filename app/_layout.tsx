@@ -64,12 +64,16 @@ function RootContent() {
     if (appIsReady && initialRoute) {
       SplashScreen.hideAsync();
       
-      // Fix: Changed segments.length === 0 to !segments.length to bypass strict type overlap issues
-      if (!segments.length) {
-        router.replace(initialRoute as any);
-      }
+      // FIX: Added a 100ms delay before replacing the route.
+      // This prevents the dreaded Android 'getChildDrawingOrder' crash 
+      // by giving the native UI thread enough time to mount the <Stack> first.
+      setTimeout(() => {
+        if (!segments.length) {
+          router.replace(initialRoute as any);
+        }
+      }, 100);
     }
-  }, [appIsReady, initialRoute, segments, router]); // Fix: Added 'router' to dependency array
+  }, [appIsReady, initialRoute, segments, router]);
 
   if (!appIsReady) {
     return null; 
