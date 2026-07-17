@@ -23,7 +23,11 @@
         "foregroundImage": "./assets/BK_logo1-w.png",
         "backgroundColor": "#d30000"
       },
-      "package": "com.fiotecz.bwarikitchen"
+      "package": "com.fiotecz.bwarikitchen",
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ]
     },
     "web": {
       "favicon": "./assets/BK_logo12-r.png"
@@ -44,8 +48,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "b43549ec-ac0e-47ad-b457-19de98b6237f"
+        "projectId": "a131349a-4d98-4c7d-a2d3-96d830f948a6"
       }
-    }
+    },
+    "owner": "cybernaut"
   }
 }
