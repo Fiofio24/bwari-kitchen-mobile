@@ -197,7 +197,7 @@ export default function LoginScreen() {
               <Text style={[styles.footerText, { color: colors.textMuted }]}>
                 Don&apos;t have an account?
               </Text>
-              <TouchableOpacity onPress={() => router.push('/unlock')} activeOpacity={0.7}>
+              <TouchableOpacity onPress={() => router.push('/signup')} activeOpacity={0.7}>
                 <Text style={[styles.footerLink, { color: Colors.primary }]}>
                   Sign Up
                 </Text>

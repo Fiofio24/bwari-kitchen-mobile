@@ -48,6 +48,7 @@ export default function SignupScreen() {
     
     setErrorMessage('');
     setIsLoading(true);
+<<<<<<< HEAD
 
     try {
       const res = await api.post('/api/auth/register', {
@@ -67,6 +68,21 @@ export default function SignupScreen() {
     } finally {
       setIsLoading(false);
     }
+=======
+    // Simulate Backend API Call for User Creation and Dispatching OTP via Supabase
+    setTimeout(() => {
+      setIsLoading(false);
+      // Temporarily store data in context before verification
+      updateUserData({ name, email });
+      
+      // FIX: Route to the OTP verification step instead of bypassing security to /(tabs)
+      // Passing the contact info as parameters so the next screen knows where the OTP was sent
+      router.push({
+        pathname: '/verify-otp',
+        params: { phone: phone, email: email }
+      });
+    }, 2000);
+>>>>>>> 3fc5be02b0728febc77c9960e204412ffceedf6d
   };
 
   return (
@@ -197,7 +213,6 @@ export default function SignupScreen() {
 
             {/* AGREEMENT CHECKBOX */}
             <View style={styles.agreementRow}>
-              {/* Only the checkbox is clickable now */}
               <TouchableOpacity 
                 style={[
                   styles.checkbox, 
