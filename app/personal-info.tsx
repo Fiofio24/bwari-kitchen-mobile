@@ -1,7 +1,4 @@
-// Note: This file requires an Expo/React Native environment to compile correctly.
-// Triggering a fresh build to resolve module resolution errors (cache bust).
-// System check bypassed for TopNav integration.
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -11,7 +8,8 @@ import {
   ScrollView, 
   Platform,
   KeyboardAvoidingView,
-  Alert
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -21,35 +19,70 @@ import { Colors } from '../constants/Colors';
 import { StatusBar } from 'expo-status-bar';
 import { useUser } from '../context/UserContext';
 import TopNav from '../components/TopNav';
+import api from './lib/api';
 
 export default function PersonalInfoScreen() {
   const router = useRouter();
   const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
-  const { userData, updateUserData } = useUser();
+  const { updateUserData } = useUser();
   
-  const [name, setName] = useState(userData.name);
-  const [email, setEmail] = useState(userData.email);
-  const [phone, setPhone] = useState('+234 800 000 0000'); // Mock initial phone number
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
-  const handleSave = () => {
-    if (!name.trim() || !email.trim()) {
-      Alert.alert('Error', 'Name and Email cannot be empty.');
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const res = await api.get('/api/auth/me');
+        const user = res.data.user;
+        setName(user.fullName);
+        setEmail(user.email || '');
+        setPhone(user.phoneNumber);
+      } catch (err) {
+        console.warn('Failed to load profile:', err);
+        Alert.alert('Error', 'Could not load your profile. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProfile();
+  }, []);
+
+  const handleSave = async () => {
+    if (!name.trim()) {
+      Alert.alert('Error', 'Name cannot be empty.');
       return;
     }
     
     setIsSaving(true);
-    
-    // Simulate API call to save data
-    setTimeout(() => {
-      updateUserData({ name, email });
-      setIsSaving(false);
+    try {
+      const res = await api.patch('/api/auth/profile', {
+        fullName: name,
+        email: email.trim() || undefined,
+      });
+      const updated = res.data.user;
+      updateUserData({ name: updated.fullName, email: updated.email });
       Alert.alert('Success', 'Your personal information has been updated successfully.', [
         { text: 'OK', onPress: () => router.back() }
       ]);
-    }, 1500);
+    } catch (err: any) {
+      Alert.alert('Error', err.response?.data?.message || 'Could not update your profile. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
   };
+
+  if (loading) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }]}>
+        <StatusBar style="light" />
+        <ActivityIndicator color={Colors.primary} size="large" />
+      </View>
+    );
+  }
 
   return (
     <KeyboardAvoidingView 
@@ -59,7 +92,6 @@ export default function PersonalInfoScreen() {
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <StatusBar style="light" />
 
-        {/* UNIVERSAL TOPNAV WITH SHADOW */}
         <TopNav 
           title="Personal Info"
           leftIcon="arrow-back"
@@ -82,7 +114,6 @@ export default function PersonalInfoScreen() {
 
           <View style={[styles.formContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             
-            {/* FULL NAME INPUT */}
             <View style={styles.inputGroup}>
               <Text style={[styles.inputLabel, { color: colors.textMuted }]}>
                 Full Name
@@ -99,7 +130,6 @@ export default function PersonalInfoScreen() {
               </View>
             </View>
 
-            {/* EMAIL INPUT */}
             <View style={styles.inputGroup}>
               <Text style={[styles.inputLabel, { color: colors.textMuted }]}>
                 Email Address
@@ -118,29 +148,29 @@ export default function PersonalInfoScreen() {
               </View>
             </View>
 
-            {/* PHONE INPUT */}
             <View style={styles.inputGroup}>
               <Text style={[styles.inputLabel, { color: colors.textMuted }]}>
                 Phone Number
               </Text>
-              <View style={[styles.inputWrapper, { backgroundColor: isDark ? colors.background : '#F9F9F9', borderColor: colors.border }]}>
+              <View style={[styles.inputWrapper, { backgroundColor: isDark ? colors.background : '#F9F9F9', borderColor: colors.border, opacity: 0.6 }]}>
                 <Ionicons name="call-outline" size={20} color={colors.textMuted} style={styles.inputIcon} />
                 <TextInput
                   style={[styles.textInput, { color: colors.text }]}
                   value={phone}
-                  onChangeText={setPhone}
-                  placeholder="Enter your phone number"
+                  editable={false}
                   placeholderTextColor={colors.textMuted}
-                  keyboardType="phone-pad"
                 />
+                <Ionicons name="lock-closed" size={16} color={colors.textMuted} />
               </View>
+              <Text style={[styles.helperText, { color: colors.textMuted }]}>
+                Phone number cannot be changed. Contact support if you need to update it.
+              </Text>
             </View>
 
           </View>
 
         </ScrollView>
 
-        {/* BOTTOM SAVE BUTTON */}
         <View style={[styles.bottomBar, { paddingBottom: insets.bottom + 20, backgroundColor: isDark ? colors.surface : '#FFF', borderTopColor: colors.border }]}>
           <TouchableOpacity 
             style={[styles.saveBtn, { backgroundColor: Colors.primary, opacity: isSaving ? 0.7 : 1 }]} 
@@ -159,105 +189,21 @@ export default function PersonalInfoScreen() {
   );
 }
 
-// PRO CSS COMPLIANCE: Every property strictly on its own line
+// styles unchanged — reuse exactly what you already have, plus this one addition:
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingTop: 20,
-    paddingHorizontal: 20,
-  },
-  headerSection: {
-    marginBottom: 25,
-    paddingHorizontal: 5,
-  },
-  titleText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 8,
-  },
-  subText: {
-    fontSize: 14,
-    lineHeight: 22,
-  },
-  formContainer: {
-    borderWidth: 1,
-    borderRadius: 25,
-    padding: 20,
-    marginBottom: 30,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { 
-      width: 0, 
-      height: 2 
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-  },
-  inputGroup: {
-    marginBottom: 20,
-  },
-  inputLabel: {
-    fontSize: 13,
-    fontWeight: 'bold',
-    marginBottom: 8,
-    marginLeft: 5,
-    letterSpacing: 0.5,
-  },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderRadius: 15,
-    paddingHorizontal: 15,
-    height: 54,
-  },
-  inputIcon: {
-    marginRight: 10,
-  },
-  textInput: {
-    flex: 1,
-    fontSize: 15,
-    fontWeight: '500',
-    height: '100%',
-  },
-  bottomBar: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    paddingHorizontal: 20,
-    paddingTop: 15,
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
-    borderTopWidth: 1,
-    elevation: 15,
-    shadowColor: '#000',
-    shadowOffset: { 
-      width: 0, 
-      height: -5 
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-  },
-  saveBtn: {
-    paddingVertical: 18,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { 
-      width: 0, 
-      height: 4 
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
-  },
-  saveBtnText: {
-    color: '#FFF',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
+  container: { flex: 1 },
+  scrollContent: { paddingTop: 20, paddingHorizontal: 20 },
+  headerSection: { marginBottom: 25, paddingHorizontal: 5 },
+  titleText: { fontSize: 24, fontWeight: 'bold', marginBottom: 8 },
+  subText: { fontSize: 14, lineHeight: 22 },
+  formContainer: { borderWidth: 1, borderRadius: 25, padding: 20, marginBottom: 30, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 5 },
+  inputGroup: { marginBottom: 20 },
+  inputLabel: { fontSize: 13, fontWeight: 'bold', marginBottom: 8, marginLeft: 5, letterSpacing: 0.5 },
+  inputWrapper: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: 15, paddingHorizontal: 15, height: 54 },
+  inputIcon: { marginRight: 10 },
+  textInput: { flex: 1, fontSize: 15, fontWeight: '500', height: '100%' },
+  helperText: { fontSize: 12, marginTop: 6, marginLeft: 5 },
+  bottomBar: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 20, paddingTop: 15, borderTopLeftRadius: 30, borderTopRightRadius: 30, borderTopWidth: 1, elevation: 15, shadowColor: '#000', shadowOffset: { width: 0, height: -5 }, shadowOpacity: 0.1, shadowRadius: 10 },
+  saveBtn: { paddingVertical: 18, borderRadius: 20, justifyContent: 'center', alignItems: 'center', elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 5 },
+  saveBtnText: { color: '#FFF', fontSize: 16, fontWeight: 'bold' },
 });

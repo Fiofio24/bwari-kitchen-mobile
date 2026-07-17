@@ -17,12 +17,13 @@ import { useTheme } from '../context/ThemeContext';
 import { Colors } from '../constants/Colors';
 import { StatusBar } from 'expo-status-bar';
 import { useCart } from '../context/CartContext';
-import { MENU_ITEMS } from '../constants/menuData';
+import { useMenu } from '../context/MenuContext';
 import QuickEditPackage from '../components/QuickEditPackage';
 import TopNav from '../components/TopNav';
 import HomeIcon from '../components/HomeIcon';
 
 const CartItemCard = ({ item, isSelected, onToggle, onIncrease, onDecrease, onRemove, onEdit, colors, isDark }: any) => {
+  const { findItem } = useMenu();
   const scaleAnim = useRef(new Animated.Value(isSelected ? 1 : 0)).current;
   
   const [isExpanded, setIsExpanded] = useState(false);
@@ -31,7 +32,7 @@ const CartItemCard = ({ item, isSelected, onToggle, onIncrease, onDecrease, onRe
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const unavailableSubItems = (item.subItems || []).filter((sub: any) => {
-    const dbItem = MENU_ITEMS.find((m: any) => m.id === sub.id);
+    const dbItem = findItem(sub.id);
     return dbItem?.isAvailable === false;
   });
   
@@ -220,6 +221,7 @@ export default function CartScreen() {
   const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const { cartItems, increaseQuantity, decreaseQuantity, removeFromCart } = useCart();
+  const { findItem } = useMenu();
   
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isSummaryExpanded, setIsSummaryExpanded] = useState(false); 
@@ -231,10 +233,10 @@ export default function CartScreen() {
   const isItemFullyAvailable = useCallback((item: any) => {
     if (!item.subItems || item.subItems.length === 0) return true;
     return !item.subItems.some((sub: any) => {
-      const dbItem = MENU_ITEMS.find((m: any) => m.id === sub.id);
+      const dbItem = findItem(sub.id);
       return dbItem?.isAvailable === false;
     });
-  }, []);
+  }, [findItem]);
 
   useEffect(() => {
     if (!isInitialized.current && cartItems.length > 0) {

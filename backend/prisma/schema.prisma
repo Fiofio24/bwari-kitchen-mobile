@@ -49,10 +49,7 @@ enum OrderStatus {
 }
 
 enum PaymentMethod {
-  card
-  bank_transfer
-  ussd
-  cash_on_delivery
+  paystack
   wallet
 }
 
@@ -133,6 +130,11 @@ model User {
   isVerified      Boolean   @default(false)
   isActive        Boolean   @default(true)
   deviceToken     String?
+  notifyOrderUpdates    Boolean @default(true)
+  notifyDeliveryAlerts  Boolean @default(true)
+  notifyPromotions      Boolean @default(false)
+  notifyNewMenu         Boolean @default(true)
+  notifyEmail            Boolean @default(true)
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   deletedAt       DateTime?
@@ -146,6 +148,7 @@ model User {
   notifications      Notification[]
   promoUsages        PromoUsage[]
   payments           Payment[]
+  favorites          Favorite[]
 
   @@map("users")
 }
@@ -207,8 +210,22 @@ model MenuItem {
   category          Category           @relation(fields: [categoryId], references: [id])
   packageItems      PackageItem[]
   orderPackageItems OrderPackageItem[]
+  variants          MenuItemVariant[]
+  favorites         Favorite[]
 
   @@map("menu_items")
+}
+
+model MenuItemVariant {
+  id         String  @id @default(uuid())
+  menuItemId String
+  label      String
+  price      Decimal @db.Decimal(10, 2)
+  sortOrder  Int     @default(0)
+
+  menuItem MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+
+  @@map("menu_item_variants")
 }
 
 // ─────────────────────────────────────────
@@ -232,6 +249,7 @@ model Package {
 
   items         PackageItem[]
   orderPackages OrderPackage[]
+  favorites     Favorite[]
 
   @@map("packages")
 }
@@ -247,6 +265,22 @@ model PackageItem {
   menuItem MenuItem @relation(fields: [menuItemId], references: [id])
 
   @@map("package_items")
+}
+
+model Favorite {
+  id         String   @id @default(uuid())
+  userId     String
+  menuItemId String?
+  packageId  String?
+  createdAt  DateTime @default(now())
+
+  user     User      @relation(fields: [userId], references: [id])
+  menuItem MenuItem? @relation(fields: [menuItemId], references: [id])
+  package  Package?  @relation(fields: [packageId], references: [id])
+
+  @@unique([userId, menuItemId])
+  @@unique([userId, packageId])
+  @@map("favorites")
 }
 
 // ─────────────────────────────────────────
@@ -311,9 +345,11 @@ model OrderPackageItem {
   id             String  @id @default(uuid())
   orderPackageId String
   menuItemId     String
-  itemName       String // snapshot
+  itemName       String
+  variantId      String?
+  variantLabel   String?
   quantity       Int
-  unitPrice      Decimal @db.Decimal(10, 2) // snapshot
+  unitPrice      Decimal @db.Decimal(10, 2)
   totalPrice     Decimal @db.Decimal(10, 2)
 
   orderPackage OrderPackage @relation(fields: [orderPackageId], references: [id])

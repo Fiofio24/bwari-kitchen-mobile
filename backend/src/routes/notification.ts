@@ -6,6 +6,8 @@ import {
   deleteNotification,
   deleteAllNotifications,
   getUnreadCount,
+  getPreferences,
+  updatePreferences,
 } from '../controllers/notification.controller'
 import { authenticate } from '../middleware/auth'
 
@@ -15,6 +17,8 @@ router.use(authenticate)
 
 router.get('/', getNotifications)
 router.get('/unread-count', getUnreadCount)
+router.get('/preferences', getPreferences)
+router.patch('/preferences', updatePreferences)
 router.patch('/read-all', markAllAsRead)
 router.patch('/:id/read', markAsRead)
 router.delete('/', deleteAllNotifications)

@@ -14,6 +14,7 @@ import notificationRoutes from './routes/notification'
 import reviewRoutes from './routes/review'
 import promotionRoutes from './routes/promotion'
 import uploadRoutes from './routes/upload'
+import favoriteRoutes from './routes/favorite'
 
 // Rider routes
 import riderRoutes from './routes/rider'
@@ -72,6 +73,7 @@ app.use('/api/notifications', notificationRoutes)
 app.use('/api/reviews', reviewRoutes)
 app.use('/api/promotions', promotionRoutes)
 app.use('/api/upload', uploadRoutes)
+app.use('/api/favorites', favoriteRoutes)
 
 // ─── Rider routes ─────────────────────────
 app.use('/api/rider', riderRoutes)

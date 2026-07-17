@@ -28,6 +28,7 @@ interface MenuItem {
   isAvailable: boolean
   isFeatured: boolean
   category: { id: string; name: string }
+  variants?: { id: string; label: string; price: number; sortOrder: number }[]
 }
 
 interface Package {
@@ -275,6 +276,7 @@ function ItemsTab() {
     categoryId: '', name: '', description: '', basePrice: '',
     discountPrice: '', isFeatured: false,
   })
+  const [variants, setVariants] = useState<{ label: string; price: string }[]>([])
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<MenuItem | null>(null)
 
@@ -310,6 +312,7 @@ function ItemsTab() {
   const openCreate = () => {
     setEditing(null)
     setForm({ categoryId: categories[0]?.id || '', name: '', description: '', basePrice: '', discountPrice: '', isFeatured: false })
+    setVariants([])
     setImageFile(null)
     setModalOpen(true)
   }
@@ -324,20 +327,43 @@ function ItemsTab() {
       discountPrice: item.discountPrice ? String(item.discountPrice) : '',
       isFeatured: item.isFeatured,
     })
+    setVariants((item.variants || []).map(v => ({ label: v.label, price: String(v.price) })))
     setImageFile(null)
     setModalOpen(true)
   }
 
+  const addVariantRow = () => {
+    setVariants([...variants, { label: '', price: '' }])
+  }
+  
+  const updateVariantRow = (index: number, field: 'label' | 'price', value: string) => {
+    const updated = [...variants]
+    updated[index] = { ...updated[index], [field]: value }
+    setVariants(updated)
+  }
+  
+  const removeVariantRow = (index: number) => {
+    setVariants(variants.filter((_, i) => i !== index))
+  }
+
   const handleSave = async () => {
     if (!form.name.trim() || !form.basePrice) return showError('Name and price are required')
+
+    const invalidVariant = variants.find(v => !v.label.trim() || !v.price || isNaN(parseFloat(v.price)))
+    if (invalidVariant) return showError('Each variant needs a label and a valid price')
+
     setSaving(true)
     try {
       let itemId = editing?.id
+      const payload = {
+        ...form,
+        variants: variants.map((v, i) => ({ label: v.label, price: parseFloat(v.price), sortOrder: i })),
+      }
 
       if (editing) {
-        await api.patch(`/api/admin/menu/items/${editing.id}`, form)
+        await api.patch(`/api/admin/menu/items/${editing.id}`, payload)
       } else {
-        const res = await api.post('/api/admin/menu/items', form)
+        const res = await api.post('/api/admin/menu/items', payload)
         itemId = res.data.item.id
       }
 
@@ -509,7 +535,35 @@ function ItemsTab() {
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
               />
             </div>
-          </div>
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                  <label className="block text-sm font-medium">Portion Variants (optional)</label>
+                  <button onClick={addVariantRow} className="text-sm text-brand-600 font-medium">+ Add variant</button>
+                </div>
+                {variants.length > 0 && (
+                  <div className="space-y-2">
+                    {variants.map((v, i) => (
+                      <div key={i} className="flex gap-2 items-center">
+                        <input
+                          placeholder="Label (e.g. Full Portion)"
+                          value={v.label}
+                          onChange={(e) => updateVariantRow(i, 'label', e.target.value)}
+                          className="flex-1 border border-gray-300 rounded-lg px-2 py-1.5 text-sm"
+                        />
+                        <input
+                          type="number"
+                          placeholder="Price"
+                          value={v.price}
+                          onChange={(e) => updateVariantRow(i, 'price', e.target.value)}
+                          className="w-24 border border-gray-300 rounded-lg px-2 py-1.5 text-sm"
+                        />
+                        <button onClick={() => removeVariantRow(i)} className="text-red-500 px-1">&times;</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
           <div>
             <label className="block text-sm font-medium mb-1">Image</label>
             <input

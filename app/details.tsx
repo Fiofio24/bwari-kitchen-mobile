@@ -17,7 +17,7 @@ import { Colors } from '../constants/Colors';
 import { StatusBar } from 'expo-status-bar';
 import { useCart } from '../context/CartContext';
 import { useFavorites } from '../context/FavoriteContext';
-import { MENU_ITEMS, COMBO_PACKAGES } from '../constants/menuData';
+import { useMenu } from '../context/MenuContext';
 import { LinearGradient } from 'expo-linear-gradient';
 import QuickEditPackage from '../components/QuickEditPackage';
 import CartBadgeIcon from '../components/CartBadgeIcon'; 
@@ -37,8 +37,31 @@ export default function DetailsScreen() {
   const [isEditModalVisible, setIsEditModalVisible] = useState(false); 
   const toastAnim = useRef(new Animated.Value(-100)).current;
 
-  // Find the item in either Single Items or Combo Packages
-  const item: any = COMBO_PACKAGES.find(p => p.id === id) || MENU_ITEMS.find(m => m.id === id);
+  const { findItem, findPackage, loading } = useMenu();
+  const rawItem = findPackage(id as string) || findItem(id as string);
+
+  const item: any = rawItem ? {
+    id: rawItem.id,
+    name: rawItem.name,
+    category: 'category' in rawItem ? rawItem.category.name : rawItem.category,
+    price: 'totalPrice' in rawItem ? rawItem.totalPrice : (rawItem as any).basePrice,
+    image: 'imageUrl' in rawItem ? rawItem.imageUrl : undefined,
+    isAvailable: (rawItem as any).isAvailable !== false,
+    rating: '4.8', // no rating field in schema yet — using static placeholder
+    subItems: 'items' in rawItem ? rawItem.items.map((i: any) => ({
+      id: i.menuItem.id,
+      qty: i.quantity,
+      name: i.menuItem.name,
+    })) : [],
+  } : null;
+
+  if (loading) {
+    return (
+      <View style={[styles.errorContainer, { backgroundColor: colors.background }]}>
+        <Text style={[styles.errorText, { color: colors.text }]}>Loading...</Text>
+      </View>
+    );
+  }
 
   if (!item) {
     return (
@@ -57,7 +80,7 @@ export default function DetailsScreen() {
   const isComboAvailable = () => {
     if (!item.subItems || item.subItems.length === 0) return item.isAvailable !== false;
     return !item.subItems.some((sub: any) => {
-      const dbItem = MENU_ITEMS.find((m: any) => m.id === sub.id);
+      const dbItem = findItem(sub.id);
       return dbItem?.isAvailable === false;
     });
   };
@@ -202,7 +225,7 @@ export default function DetailsScreen() {
               </View>
 
               {item.subItems.map((sub: any, idx: number) => {
-                const dbItem = MENU_ITEMS.find((m: any) => m.id === sub.id);
+                const dbItem = findItem(sub.id);
                 const isSubSoldOut = dbItem?.isAvailable === false;
 
                 return (

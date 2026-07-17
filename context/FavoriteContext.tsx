@@ -1,107 +1,101 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
-import { Platform } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
-// BULLETPROOF STORAGE WRAPPER
-const safeStorage = {
-  getItem: async (key: string) => {
-    try {
-      if (AsyncStorage && typeof AsyncStorage.getItem === 'function') {
-        return await AsyncStorage.getItem(key);
-      } else if (Platform.OS === 'web' && typeof window !== 'undefined') {
-        return window.localStorage.getItem(key);
-      }
-    } catch (e) { console.warn("Storage Error:", e); }
-    return null;
-  },
-  setItem: async (key: string, value: string) => {
-    try {
-      if (AsyncStorage && typeof AsyncStorage.setItem === 'function') {
-        await AsyncStorage.setItem(key, value);
-      } else if (Platform.OS === 'web' && typeof window !== 'undefined') {
-        window.localStorage.setItem(key, value);
-      }
-    } catch (e) { console.warn("Storage Error:", e); }
-  },
-  removeItem: async (key: string) => {
-    try {
-      if (AsyncStorage && typeof AsyncStorage.removeItem === 'function') {
-        await AsyncStorage.removeItem(key);
-      } else if (Platform.OS === 'web' && typeof window !== 'undefined') {
-        window.localStorage.removeItem(key);
-      }
-    } catch (e) { console.warn("Storage Error:", e); }
-  }
-};
+import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
+import api from '../app/lib/api';
+import { useMenu } from './MenuContext';
 
 export interface FavoriteItem {
   id: string;
   name: string;
-  category: string;
+  category?: string;
   price: number;
-  rating: string;
+  rating?: string;
   image: string;
   subItems?: any[];
 }
 
 interface FavoriteContextType {
   favorites: FavoriteItem[];
-  addFavorite: (item: FavoriteItem) => void;
-  removeFavorite: (id: string) => void;
-  toggleFavorite: (item: FavoriteItem) => void;
+  loading: boolean;
+  refresh: () => Promise<void>;
+  toggleFavorite: (item: FavoriteItem) => Promise<void>;
   isFavorite: (id: string) => boolean;
 }
 
 const FavoriteContext = createContext<FavoriteContextType | undefined>(undefined);
-const FAVORITE_STORAGE_KEY = '@bwari_kitchen_favorites';
 
 export function FavoriteProvider({ children }: { children: React.ReactNode }) {
+  const { findItem, findPackage } = useMenu();
   const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const loadFavorites = async () => {
-      const savedFavorites = await safeStorage.getItem(FAVORITE_STORAGE_KEY);
-      if (savedFavorites) setFavorites(JSON.parse(savedFavorites));
-      setIsLoaded(true);
-    };
-    loadFavorites();
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await api.get('/api/favorites');
+      const mapped: FavoriteItem[] = res.data.favorites.map((fav: any) => {
+        if (fav.menuItem) {
+          return {
+            id: fav.menuItem.id,
+            name: fav.menuItem.name,
+            category: fav.menuItem.category?.name,
+            price: fav.menuItem.discountPrice || fav.menuItem.basePrice,
+            image: fav.menuItem.imageUrl,
+          };
+        }
+        return {
+          id: fav.package.id,
+          name: fav.package.name,
+          price: fav.package.totalPrice,
+          image: fav.package.imageUrl,
+        };
+      });
+      setFavorites(mapped);
+    } catch (err) {
+      console.warn('Failed to load favorites:', err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
-    if (!isLoaded) return;
-    const saveAndSync = async () => {
-      await safeStorage.setItem(FAVORITE_STORAGE_KEY, JSON.stringify(favorites));
-    };
-    saveAndSync();
-  }, [favorites, isLoaded]);
+    refresh();
+  }, [refresh]);
 
-  const addFavorite = (item: FavoriteItem) => {
-    setFavorites(prev => {
-      if (prev.some(fav => fav.id === item.id)) return prev; 
-      return [...prev, item];
-    });
-  };
+  const isFavorite = (id: string) => favorites.some(fav => fav.id === id);
 
-  const removeFavorite = (id: string) => {
-    setFavorites(prev => prev.filter(fav => fav.id !== id));
-  };
+  const toggleFavorite = async (item: FavoriteItem) => {
+    const currentlyFavorited = isFavorite(item.id);
 
-  const toggleFavorite = (item: FavoriteItem) => {
-    setFavorites(prev => {
-      if (prev.some(fav => fav.id === item.id)) {
-        return prev.filter(fav => fav.id !== item.id); 
+    // Optimistic update
+    if (currentlyFavorited) {
+      setFavorites(prev => prev.filter(fav => fav.id !== item.id));
+    } else {
+      setFavorites(prev => [...prev, item]);
+    }
+
+    try {
+      if (currentlyFavorited) {
+        // Determine whether it's a menu item or package to send the right query param
+        const isPackage = !!findPackage(item.id);
+        await api.delete('/api/favorites', {
+          params: isPackage ? { packageId: item.id } : { menuItemId: item.id }
+        });
+      } else {
+        const isPackage = !!findPackage(item.id);
+        const isMenuItem = !!findItem(item.id);
+        await api.post('/api/favorites', {
+          menuItemId: isMenuItem ? item.id : undefined,
+          packageId: isPackage ? item.id : undefined,
+        });
       }
-      return [...prev, item]; 
-    });
-  };
-
-  const isFavorite = (id: string) => {
-    return favorites.some(fav => fav.id === id);
+    } catch (err) {
+      console.warn('Failed to sync favorite:', err);
+      // Revert optimistic update on failure
+      await refresh();
+    }
   };
 
   return (
-    <FavoriteContext.Provider value={{ favorites, addFavorite, removeFavorite, toggleFavorite, isFavorite }}>
+    <FavoriteContext.Provider value={{ favorites, loading, refresh, toggleFavorite, isFavorite }}>
       {children}
     </FavoriteContext.Provider>
   );

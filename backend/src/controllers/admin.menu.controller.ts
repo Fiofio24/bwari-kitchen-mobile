@@ -237,8 +237,8 @@ export const createMenuItem = async (
     categoryId, branchId, name, description,
     basePrice, discountPrice, imageUrl,
     preparationTime, isFeatured, tags, sortOrder,
+    variants,
   } = req.body
-
   if (!categoryId || !name || !basePrice) {
     res.status(400).json({ message: 'Category, name and base price are required' })
     return
@@ -281,12 +281,20 @@ export const createMenuItem = async (
       isFeatured: isFeatured || false,
       tags: tags || [],
       sortOrder: sortOrder || 0,
+      variants: variants && variants.length > 0 ? {
+        create: variants.map((v: { label: string; price: number; sortOrder?: number }) => ({
+          label: v.label,
+          price: parseFloat(v.price as any),
+          sortOrder: v.sortOrder || 0,
+        }))
+      } : undefined,
     },
     select: {
       id: true, name: true, description: true, basePrice: true,
       discountPrice: true, imageUrl: true, isAvailable: true,
       isFeatured: true, preparationTime: true, tags: true, sortOrder: true,
       category: { select: { id: true, name: true } },
+      variants: { select: { id: true, label: true, price: true, sortOrder: true }, orderBy: { sortOrder: 'asc' } },
     }
   })
 
@@ -301,6 +309,7 @@ export const updateMenuItem = async (
   const {
     categoryId, name, description, basePrice, discountPrice,
     imageUrl, preparationTime, isFeatured, tags, sortOrder,
+    variants,
   } = req.body
 
   const existing = await prisma.menuItem.findFirst({ where: { id, deletedAt: null } })
@@ -343,12 +352,23 @@ export const updateMenuItem = async (
       ...(isFeatured !== undefined && { isFeatured }),
       ...(tags !== undefined && { tags }),
       ...(sortOrder !== undefined && { sortOrder }),
+      ...(variants !== undefined && {
+        variants: {
+          deleteMany: {},
+          create: variants.map((v: { label: string; price: number; sortOrder?: number }) => ({
+            label: v.label,
+            price: parseFloat(v.price as any),
+            sortOrder: v.sortOrder || 0,
+          }))
+        }
+      }),
     },
     select: {
       id: true, name: true, description: true, basePrice: true,
       discountPrice: true, imageUrl: true, isAvailable: true,
       isFeatured: true, preparationTime: true, tags: true, sortOrder: true,
       category: { select: { id: true, name: true } },
+      variants: { select: { id: true, label: true, price: true, sortOrder: true }, orderBy: { sortOrder: 'asc' } },
     }
   })
 

@@ -7,9 +7,10 @@ interface SearchBarProps {
   onPress?: () => void;
   autoFocus?: boolean;
   onSubmit?: (text: string) => void; 
+  onChangeText?: (text: string) => void;
 }
 
-export default function SearchBar({ onPress, autoFocus, onSubmit }: SearchBarProps) {
+export default function SearchBar({ onPress, autoFocus, onSubmit, onChangeText }: SearchBarProps) {
   const { colors, isDark } = useTheme();
   
   const [searchText, setSearchText] = useState('');
@@ -31,12 +32,14 @@ export default function SearchBar({ onPress, autoFocus, onSubmit }: SearchBarPro
         editable={!onPress} 
         pointerEvents={onPress ? "none" : "auto"}
         value={searchText}
-        onChangeText={setSearchText}
+        onChangeText={(text) => {
+          setSearchText(text);
+          onChangeText?.(text);
+        }}
         returnKeyType="search" 
         onSubmitEditing={() => {
           if (onSubmit && searchText.trim().length > 0) {
             onSubmit(searchText);
-            setSearchText(''); 
           }
         }}
         style={[

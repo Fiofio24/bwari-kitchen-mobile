@@ -1,5 +1,3 @@
-// Note: This file requires an Expo/React Native environment to compile correctly.
-// Triggering a fresh build to resolve ESLint unused variable warning.
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   View, 
@@ -12,7 +10,9 @@ import {
   Animated, 
   Easing, 
   Keyboard, 
-  ScrollView 
+  ScrollView,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/Colors';
@@ -30,14 +30,14 @@ interface AddressSelectorModalProps {
 }
 
 export default function AddressSelectorModal({ visible, onClose }: AddressSelectorModalProps) {
-  // LINT FIX: Removed the unused 'isDark' variable from destructuring
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { addresses, setTemporaryActiveAddress } = useAddresses();
+  const { addresses, setDefaultAddress, addCurrentLocationAddress } = useAddresses();
 
   const [inputText, setInputText] = useState(''); 
   const [isRendering, setIsRendering] = useState(visible);
+  const [isCapturingLocation, setIsCapturingLocation] = useState(false);
   
   const fadeAnim = useRef(new Animated.Value(0)).current; 
   const slideAnim = useRef(new Animated.Value(500)).current; 
@@ -47,45 +47,39 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
       setIsRendering(true);
       setInputText('');
       Animated.parallel([
-        Animated.timing(fadeAnim, { 
-          toValue: 1, 
-          duration: 300, 
-          useNativeDriver: true 
-        }),
-        Animated.timing(slideAnim, { 
-          toValue: 0, 
-          duration: 350, 
-          easing: Easing.out(Easing.poly(4)), 
-          useNativeDriver: true 
-        })
+        Animated.timing(fadeAnim, { toValue: 1, duration: 300, useNativeDriver: true }),
+        Animated.timing(slideAnim, { toValue: 0, duration: 350, easing: Easing.out(Easing.poly(4)), useNativeDriver: true })
       ]).start();
     } else if (!visible && isRendering) {
       Keyboard.dismiss();
       Animated.parallel([
-        Animated.timing(fadeAnim, { 
-          toValue: 0, 
-          duration: 250, 
-          useNativeDriver: true 
-        }),
-        Animated.timing(slideAnim, { 
-          toValue: 500, 
-          duration: 250, 
-          useNativeDriver: true 
-        })
+        Animated.timing(fadeAnim, { toValue: 0, duration: 250, useNativeDriver: true }),
+        Animated.timing(slideAnim, { toValue: 500, duration: 250, useNativeDriver: true })
       ]).start(() => setIsRendering(false));
     }
   }, [visible, fadeAnim, slideAnim, isRendering]);
 
-  const handleSaveCustomAddress = () => { 
-    if (inputText.trim().length > 0) { 
-      setTemporaryActiveAddress(inputText); 
-      onClose(); 
-    } 
-  };
-  
-  const handleSelectAddress = (fullAddressText: string) => { 
-    setTemporaryActiveAddress(fullAddressText); 
+  const handleSelectAddress = (id: string) => { 
+    setDefaultAddress(id); 
     onClose(); 
+  };
+
+  const handleUseCurrentLocation = async () => {
+    setIsCapturingLocation(true);
+    try {
+      const result = await addCurrentLocationAddress({
+        label: 'Current Location',
+        streetAddress: inputText.trim() || 'My current location',
+        isDefault: true,
+      });
+      if (result.success) {
+        onClose();
+      } else {
+        Alert.alert('Location Error', result.error || 'Could not get your location.');
+      }
+    } finally {
+      setIsCapturingLocation(false);
+    }
   };
   
   const handleManageAddresses = () => { 
@@ -95,9 +89,12 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
     }, 300);
   };
 
+  const getAddressLine = (item: typeof addresses[number]) =>
+    [item.streetAddress, item.landmark, item.area].filter(Boolean).join(', ');
+
   const filteredAddresses = addresses.filter(item => 
-    item.title.toLowerCase().includes(inputText.toLowerCase()) || 
-    item.address.toLowerCase().includes(inputText.toLowerCase())
+    (item.label || '').toLowerCase().includes(inputText.toLowerCase()) || 
+    getAddressLine(item).toLowerCase().includes(inputText.toLowerCase())
   );
 
   if (!isRendering) return null;
@@ -115,13 +112,7 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
           intensity={20} 
           tint="dark" 
           experimentalBlurMethod="dimezisBlurView" 
-          style={[
-            StyleSheet.absoluteFill, 
-            { 
-              opacity: fadeAnim, 
-              backgroundColor: 'rgba(0,0,0,0.2)' 
-            }
-          ]} 
+          style={[StyleSheet.absoluteFill, { opacity: fadeAnim, backgroundColor: 'rgba(0,0,0,0.2)' }]} 
         />
       </TouchableWithoutFeedback>
 
@@ -129,15 +120,11 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
         <Animated.View 
           style={[
             styles.modalSheet, 
-            { 
-              backgroundColor: colors.background, 
-              paddingBottom: Math.max(insets.bottom, 20), 
-              transform: [{ translateY: slideAnim }] 
-            }
+            { backgroundColor: colors.background, paddingBottom: Math.max(insets.bottom, 20), transform: [{ translateY: slideAnim }] }
           ]}
         >
           <View style={styles.modalHeader}>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>Quick Settings</Text>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>Select Address</Text>
             <TouchableOpacity onPress={onClose}>
               <Ionicons name="close-circle" size={28} color={colors.textMuted} />
             </TouchableOpacity>
@@ -153,20 +140,19 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
               placeholderTextColor={colors.textMuted} 
               autoCorrect={false} 
             />
-            {inputText.length > 0 && filteredAddresses.length === 0 && (
-              <TouchableOpacity onPress={handleSaveCustomAddress} style={styles.miniSaveBtn}>
-                <Text style={styles.miniSaveText}>Save Custom</Text>
-              </TouchableOpacity>
-            )}
           </View>
           
           <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 300 }}>
-            {inputText.length === 0 && (
-              <TouchableOpacity style={styles.currentLocationBtn} onPress={() => handleSelectAddress('Current GPS Location')} activeOpacity={0.7}>
+            <TouchableOpacity style={styles.currentLocationBtn} onPress={handleUseCurrentLocation} activeOpacity={0.7} disabled={isCapturingLocation}>
+              {isCapturingLocation ? (
+                <ActivityIndicator size="small" color={Colors.primary} />
+              ) : (
                 <Ionicons name="locate" size={22} color={Colors.primary} />
-                <Text style={[styles.currentLocationText, { color: Colors.primary }]}>Use Current Location</Text>
-              </TouchableOpacity>
-            )}
+              )}
+              <Text style={[styles.currentLocationText, { color: Colors.primary }]}>
+                {isCapturingLocation ? 'Getting your location...' : 'Use Current Location'}
+              </Text>
+            </TouchableOpacity>
             
             {inputText.length === 0 && <Text style={[styles.savedTitle, { color: colors.textMuted }]}>Saved Addresses</Text>}
             
@@ -174,17 +160,17 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
               <TouchableOpacity 
                 key={item.id} 
                 style={[styles.quickAddressRow, { borderBottomColor: colors.border }]} 
-                onPress={() => handleSelectAddress(`${item.address}`)}
+                onPress={() => handleSelectAddress(item.id)}
               >
                 <View style={[styles.iconBox, { backgroundColor: 'rgba(150,150,150,0.1)' }]}>
-                  <Ionicons name={item.icon as any} size={20} color={colors.textMuted} />
+                  <Ionicons name={item.label?.toLowerCase() === 'home' ? 'home' : 'location'} size={20} color={colors.textMuted} />
                 </View>
                 <View style={styles.addressTextStack}>
                   <Text style={[styles.quickAddressTitle, { color: colors.text }]}>
-                    {item.title} {item.isDefault && <Text style={{ color: Colors.primary, fontSize: 12 }}>(Default)</Text>}
+                    {item.label || 'Address'} {item.isDefault && <Text style={{ color: Colors.primary, fontSize: 12 }}>(Default)</Text>}
                   </Text>
                   <Text style={[styles.quickAddressDetail, { color: colors.textMuted }]}>
-                    {item.address}
+                    {getAddressLine(item)}
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -207,111 +193,22 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
   );
 }
 
-// PRO CSS COMPLIANCE: Every property strictly on its own line!
 const styles = StyleSheet.create({
-  modalContentWrapper: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  modalSheet: {
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
-    paddingHorizontal: 20,
-    paddingTop: 25,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderRadius: 15,
-    paddingHorizontal: 15,
-    height: 50,
-    marginBottom: 15,
-  },
-  input: {
-    flex: 1,
-    marginLeft: 10,
-    fontSize: 16,
-  },
-  miniSaveBtn: {
-    backgroundColor: Colors.primary,
-    paddingHorizontal: 15,
-    paddingVertical: 6,
-    borderRadius: 10,
-  },
-  miniSaveText: {
-    color: '#FFF',
-    fontWeight: 'bold',
-    fontSize: 12,
-  },
-  currentLocationBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 10,
-    marginBottom: 20,
-  },
-  currentLocationText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginLeft: 10,
-  },
-  savedTitle: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    marginBottom: 5,
-    letterSpacing: 0.5,
-  },
-  quickAddressRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  iconBox: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  addressTextStack: {
-    marginLeft: 15,
-    justifyContent: 'center',
-    flex: 1,
-  },
-  quickAddressTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  quickAddressDetail: {
-    fontSize: 12,
-    marginTop: 2,
-  },
-  noResultsText: {
-    textAlign: 'center',
-    marginTop: 20,
-    fontStyle: 'italic',
-  },
-  manageBtn: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 20,
-    marginTop: 5,
-    borderTopWidth: 1,
-  },
-  manageBtnText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
+  modalContentWrapper: { flex: 1, justifyContent: 'flex-end' },
+  modalSheet: { borderTopLeftRadius: 30, borderTopRightRadius: 30, paddingHorizontal: 20, paddingTop: 25 },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+  modalTitle: { fontSize: 20, fontWeight: 'bold' },
+  inputContainer: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: 15, paddingHorizontal: 15, height: 50, marginBottom: 15 },
+  input: { flex: 1, marginLeft: 10, fontSize: 16 },
+  currentLocationBtn: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, marginBottom: 20 },
+  currentLocationText: { fontSize: 16, fontWeight: 'bold', marginLeft: 10 },
+  savedTitle: { fontSize: 14, fontWeight: 'bold', marginBottom: 5, letterSpacing: 0.5 },
+  quickAddressRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1 },
+  iconBox: { width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
+  addressTextStack: { marginLeft: 15, justifyContent: 'center', flex: 1 },
+  quickAddressTitle: { fontSize: 16, fontWeight: 'bold' },
+  quickAddressDetail: { fontSize: 12, marginTop: 2 },
+  noResultsText: { textAlign: 'center', marginTop: 20, fontStyle: 'italic' },
+  manageBtn: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 20, marginTop: 5, borderTopWidth: 1 },
+  manageBtnText: { fontSize: 16, fontWeight: 'bold' },
 });

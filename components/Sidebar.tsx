@@ -96,7 +96,6 @@ export default function Sidebar({ visible, onClose, menuItems, profileOverride }
     { name: 'Account & Settings', icon: 'person-outline', route: '/profile' },
     { name: 'My Orders', icon: 'bag-handle-outline', route: '/my-orders', badge: '4' },
     { name: 'Saved Addresses', icon: 'location-outline', route: '/saved-addresses' },
-    { name: 'Payment Methods', icon: 'card-outline', route: '/payment-methods' },
     { name: 'Offers & Promo', icon: 'pricetag-outline', route: '/promo', badge: 'NEW' },
     { name: 'Help & Support', icon: 'chatbubbles-outline', route: '/help' },
   ];

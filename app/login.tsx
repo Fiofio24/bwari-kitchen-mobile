@@ -19,6 +19,8 @@ import { Colors } from '../constants/Colors';
 import { StatusBar } from 'expo-status-bar';
 import { useUser } from '../context/UserContext';
 import HeroHeader from '../components/HeroHeader';
+import api from './lib/api';
+import * as SecureStore from 'expo-secure-store';
 
 const { height } = Dimensions.get('window');
 
@@ -33,16 +35,30 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [agreed, setAgreed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!email || !password || !agreed) return;
-    
+
+    setErrorMessage('');
     setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      updateUserData({ email });
+
+    try {
+      const res = await api.post('/api/auth/login', {
+        email,
+        password,
+      });
+
+      const { token, user } = res.data;
+
+      await SecureStore.setItemAsync('authToken', token);
+      updateUserData({ name: user.fullName, email: user.email });
       router.replace('/(tabs)');
-    }, 1500);
+    } catch (err: any) {
+      setErrorMessage(err.response?.data?.message || 'Login failed. Please check your credentials.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -135,6 +151,10 @@ export default function LoginScreen() {
               </Text>
             </View>
 
+             {errorMessage ? (
+              <Text style={{ color: '#D32F2F', fontSize: 12, marginBottom: 15, textAlign: 'center', fontWeight: '500' }}>{errorMessage}</Text>
+            ) : null}
+            
             {/* SIGN IN BUTTON */}
             <TouchableOpacity 
               style={[

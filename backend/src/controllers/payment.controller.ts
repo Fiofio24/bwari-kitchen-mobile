@@ -33,13 +33,6 @@ export const initializePayment = async (
     return
   }
 
-  if (order.payment.paymentMethod === 'cash_on_delivery') {
-    res.status(400).json({
-      message: 'This order is set to cash on delivery and does not require online payment'
-    })
-    return
-  }
-
   if (order.payment.paymentStatus === 'successful') {
     res.status(400).json({ message: 'This order has already been paid for' })
     return

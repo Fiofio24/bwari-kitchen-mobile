@@ -25,7 +25,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../context/ThemeContext';
 import { useCart } from '../../context/CartContext';
 import { useFavorites } from '../../context/FavoriteContext'; 
-import { COMBO_PACKAGES, MENU_ITEMS } from '../../constants/menuData'; 
+import { useMenu } from '../../context/MenuContext'; 
 
 // Imported components for the TopNav slots
 import CartBadgeIcon from '../../components/CartBadgeIcon';
@@ -35,8 +35,6 @@ import { useAddresses } from '../../context/AddressContext';
 
 const USER_PROFILE = { name: "User" };
 
-const CATEGORIES = ['All', 'Rice', 'Pasta', 'Yam & Beans', 'Sides', 'Soup', 'Protein', 'Swallow', 'Snacks', 'Drinks'];
-
 export default function HomeScreen() {
   const router = useRouter(); 
   const { addToCart } = useCart(); 
@@ -44,6 +42,24 @@ export default function HomeScreen() {
   const { unreadCount } = useNotifications();
   const { activeAddress } = useAddresses();
   
+  const { packages, items, categories, findItem, loading, refresh } = useMenu();
+  const CATEGORIES = ['All', ...categories.map(c => c.name)];
+  
+  const normalizedPackages = packages.map(pkg => ({
+    id: pkg.id,
+    name: pkg.name,
+    category: pkg.items[0]?.menuItem.category.name || 'Combo',
+    price: pkg.totalPrice,
+    image: pkg.imageUrl || undefined,
+    rating: '4.8',
+    isAvailable: true,
+    subItems: pkg.items.map(i => ({
+      id: i.menuItem.id,
+      qty: i.quantity,
+      name: i.menuItem.name,
+    })),
+  }));
+
   const [activeCategory, setActiveCategory] = useState('All');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -65,20 +81,18 @@ export default function HomeScreen() {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    console.log("🔄 Global App Refresh Triggered from HOME...");
     try {
-      const fetchRealData = new Promise(resolve => setTimeout(resolve, 1500)); 
-      await fetchRealData;
+      await refresh();
     } catch (error) {
       console.error("Error refreshing data:", error);
     } finally {
       setRefreshing(false); 
     }
-  }, []);
+  }, [refresh]);
 
   const filteredDishes = activeCategory === 'All' 
-    ? COMBO_PACKAGES 
-    : COMBO_PACKAGES.filter(dish => dish.category === activeCategory);
+    ? normalizedPackages 
+    : normalizedPackages.filter(dish => dish.category === activeCategory);
 
   const handleScroll = (event: any) => setIsScrolled(event.nativeEvent.contentOffset.y > shadowTripwire);
 
@@ -105,10 +119,18 @@ export default function HomeScreen() {
   const isComboAvailable = (combo: any) => {
     if (!combo.subItems || combo.subItems.length === 0) return combo.isAvailable !== false;
     return !combo.subItems.some((sub: any) => {
-      const dbItem = MENU_ITEMS.find((m: any) => m.id === sub.id);
+      const dbItem = findItem(sub.id);
       return dbItem?.isAvailable === false;
     });
   };
+
+  if (loading && packages.length === 0) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }]}>
+        <Text style={{ color: colors.text }}>Loading...</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>

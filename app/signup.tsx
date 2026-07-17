@@ -18,6 +18,8 @@ import { Colors } from '../constants/Colors';
 import { StatusBar } from 'expo-status-bar';
 import { useUser } from '../context/UserContext';
 import HeroHeader from '../components/HeroHeader';
+import api from './lib/api';
+import * as SecureStore from 'expo-secure-store';
 
 export default function SignupScreen() {
   const router = useRouter();
@@ -35,21 +37,36 @@ export default function SignupScreen() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [agreed, setAgreed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   // Validation now explicitly checks if passwords match
   const passwordsMatch = password === confirmPassword;
   const isValid = name.trim() && email.trim() && phone.trim() && password.length >= 6 && passwordsMatch && agreed;
 
-  const handleSignup = () => {
+  const handleSignup = async () => {
     if (!isValid) return;
     
+    setErrorMessage('');
     setIsLoading(true);
-    // Simulate Backend API Call
-    setTimeout(() => {
-      setIsLoading(false);
-      updateUserData({ name, email });
+
+    try {
+      const res = await api.post('/api/auth/register', {
+        fullName: name,
+        phoneNumber: phone,
+        password,
+        email,
+      });
+
+      const { token, user } = res.data;
+
+      await SecureStore.setItemAsync('authToken', token);
+      updateUserData({ name: user.fullName, email: user.email });
       router.replace('/(tabs)');
-    }, 2000);
+    } catch (err: any) {
+      setErrorMessage(err.response?.data?.message || 'Signup failed. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -199,7 +216,10 @@ export default function SignupScreen() {
                 I&apos;ve read and agreed to <Text style={{ color: Colors.primary, fontWeight: 'bold' }}>User Agreement</Text> and <Text style={{ color: Colors.primary, fontWeight: 'bold' }}>Privacy Policy</Text>
               </Text>
             </View>
-
+             {errorMessage ? (
+              <Text style={[styles.errorText, { marginBottom: 15, textAlign: 'center' }]}>{errorMessage}</Text>
+            ) : null}
+    
             {/* SIGN UP BUTTON */}
             <TouchableOpacity 
               style={[

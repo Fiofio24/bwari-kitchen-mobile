@@ -95,6 +95,10 @@ export const getMenuItems = async (
             id: true,
             name: true,
           }
+        },
+        variants: {
+          select: { id: true, label: true, price: true, sortOrder: true },
+          orderBy: { sortOrder: 'asc' },
         }
       }
     }),
@@ -152,6 +156,10 @@ export const getMenuItem = async (
           id: true,
           name: true,
         }
+      },
+      variants: {
+        select: { id: true, label: true, price: true, sortOrder: true },
+        orderBy: { sortOrder: 'asc' },
       }
     }
   })
@@ -206,6 +214,10 @@ export const getPackages = async (
                   id: true,
                   name: true,
                 }
+              },
+              variants: {
+                select: { id: true, label: true, price: true, sortOrder: true },
+                orderBy: { sortOrder: 'asc' },
               }
             }
           }
@@ -256,6 +268,10 @@ export const getPackage = async (
                   id: true,
                   name: true,
                 }
+              },
+              variants: {
+                select: { id: true, label: true, price: true, sortOrder: true },
+                orderBy: { sortOrder: 'asc' },
               }
             }
           }
@@ -309,6 +325,10 @@ export const getFullMenu = async (
             isFeatured: true,
             preparationTime: true,
             tags: true,
+            variants: {
+              select: { id: true, label: true, price: true, sortOrder: true },
+              orderBy: { sortOrder: 'asc' },
+            }
           }
         }
       }

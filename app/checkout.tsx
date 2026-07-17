@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   View, 
   Text, 
@@ -10,11 +10,11 @@ import {
   TextInput,
   Switch,
   ActivityIndicator,
-  Animated
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context'; 
+import * as WebBrowser from 'expo-web-browser';
 import { useTheme } from '../context/ThemeContext';
 import { Colors } from '../constants/Colors';
 import { StatusBar } from 'expo-status-bar';
@@ -23,6 +23,35 @@ import { useAddresses } from '../context/AddressContext';
 import AddressSelectorModal from '../components/AddressSelectorModal'; 
 import TopNav from '../components/TopNav';
 import HomeIcon from '../components/HomeIcon';
+import api from './lib/api';
+
+// Every cart entry — real package, custom plate, or plain item — becomes
+// one "package" entry for the backend, matching its package-centric order model.
+const buildOrderPackagesPayload = (items: any[]) => {
+  return items.map((item: any) => {
+    if (item.subItems && item.subItems.length > 0) {
+      const isRealPackageId = !String(item.id).startsWith('custom_');
+      return {
+        packageId: isRealPackageId ? item.id : undefined,
+        name: item.name,
+        wasEdited: String(item.id).startsWith('custom_edit_'),
+        items: item.subItems.map((sub: any) => ({
+          menuItemId: sub.id,
+          variantLabel: sub.variantLabel || undefined,
+          quantity: sub.qty * (item.quantity || 1),
+        })),
+      };
+    } else {
+      return {
+        name: item.name,
+        items: [{
+          menuItemId: item.id,
+          quantity: item.quantity || 1,
+        }],
+      };
+    }
+  });
+};
 
 export default function CheckoutScreen() {
   const router = useRouter();
@@ -33,24 +62,15 @@ export default function CheckoutScreen() {
   const { cartItems, removeMultipleFromCart } = useCart();
   const { activeAddress } = useAddresses(); 
   
-  // States
   const [deliveryMethod, setDeliveryMethod] = useState<'delivery' | 'pickup'>('delivery'); 
-  const [selectedPayment, setSelectedPayment] = useState('card');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [showVerification, setShowVerification] = useState(false);
-  const [verificationStatus, setVerificationStatus] = useState<'pending' | 'verifying' | 'success'>('pending');
-  const [timer, setTimer] = useState(600); // 10 minutes in seconds
-
   const [orderNote, setOrderNote] = useState('');
   const [noCutlery, setNoCutlery] = useState(true);
-  
   const [isAddressModalVisible, setIsAddressModalVisible] = useState(false); 
+  const [promoCode, setPromoCode] = useState('');
+  const [promoResult, setPromoResult] = useState<{ discountAmount: number; message: string } | null>(null);
+  const [applyingPromo, setApplyingPromo] = useState(false);
 
-  // Animations
-  const pulseAnim = useRef(new Animated.Value(1)).current;
-
-  // Layout calculations
-  const paddingTop = Platform.OS === 'web' ? 50 : insets.top + 10;
   const bottomNavHeight = 70 + Math.max(insets.bottom, 15);
 
   const checkoutItems = useMemo(() => {
@@ -67,150 +87,106 @@ export default function CheckoutScreen() {
 
   const subtotal = checkoutItems.reduce((sum, item) => sum + (item.price * (item.quantity || 1)), 0);
   
-  const deliveryFee = (deliveryMethod === 'delivery' && subtotal > 0) ? 500 : 0;
-  const total = subtotal + deliveryFee; 
+  // Delivery fee is calculated server-side by the backend once the order is placed;
+  // this is just an estimate shown before checkout so the UI isn't blank.
+  const [estimatedDeliveryFee, setEstimatedDeliveryFee] = useState(0);
 
-  // Timer Effect for Bank Transfer
-  useEffect(() => {
-    let interval: any;
-    if (showVerification && timer > 0 && verificationStatus === 'pending') {
-      interval = setInterval(() => {
-        setTimer((prev) => prev - 1);
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [showVerification, timer, verificationStatus]);
+  React.useEffect(() => {
+    const fetchFee = async () => {
+      if (deliveryMethod !== 'delivery' || !activeAddress?.id) {
+        setEstimatedDeliveryFee(0);
+        return;
+      }
+      try {
+        const res = await api.post('/api/addresses/delivery-fee', { addressId: activeAddress.id });
+        setEstimatedDeliveryFee(res.data.deliveryFee);
+      } catch (err) {
+        setEstimatedDeliveryFee(0);
+      }
+    };
+    fetchFee();
+  }, [deliveryMethod, activeAddress?.id]);
 
-  // Pulse Effect for Loading
-  useEffect(() => {
-    if (verificationStatus === 'verifying') {
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulseAnim, { toValue: 1.2, duration: 800, useNativeDriver: true }),
-          Animated.timing(pulseAnim, { toValue: 1, duration: 800, useNativeDriver: true })
-        ])
-      ).start();
-    } else {
-      pulseAnim.setValue(1);
-    }
-  }, [verificationStatus, pulseAnim]);
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
-  };
-
-  const handlePlaceOrder = () => {
-    if (selectedPayment === 'bank') {
-      setShowVerification(true);
-    } else {
-      setIsProcessing(true);
-      setTimeout(() => {
-        setIsProcessing(false);
-        finalizeOrder();
-      }, 2000);
+  const handleApplyPromo = async () => {
+    if (!promoCode.trim()) return;
+    setApplyingPromo(true);
+    try {
+      const res = await api.post('/api/promotions/validate', {
+        code: promoCode.trim(),
+        orderAmount: subtotal,
+      });
+      setPromoResult({ discountAmount: res.data.discountAmount, message: res.data.message });
+    } catch (err: any) {
+      Alert.alert('Promo Code', err.response?.data?.message || 'Invalid promo code');
+      setPromoResult(null);
+    } finally {
+      setApplyingPromo(false);
     }
   };
 
-  const handleVerifyPayment = () => {
-    setVerificationStatus('verifying');
-    setTimeout(() => {
-      setVerificationStatus('success');
-      setTimeout(() => {
-        finalizeOrder();
-      }, 1500);
-    }, 3000);
+  const total = subtotal + estimatedDeliveryFee - (promoResult?.discountAmount || 0); 
+
+  const handlePlaceOrder = async () => {
+    if (checkoutItems.length === 0) return;
+
+    if (deliveryMethod === 'delivery' && !activeAddress) {
+      Alert.alert('Address Required', 'Please select a delivery address before placing your order.');
+      return;
+    }
+
+    setIsProcessing(true);
+
+    try {
+      // 1. Create the order
+      const orderPayload: any = {
+        orderType: deliveryMethod,
+        paymentMethod: 'paystack',
+        packages: buildOrderPackagesPayload(checkoutItems),
+        specialInstructions: orderNote || undefined,
+      };
+
+      if (deliveryMethod === 'delivery' && activeAddress) {
+        orderPayload.deliveryAddressId = activeAddress.id;
+      }
+
+      if (promoResult && promoCode.trim()) {
+        orderPayload.promoCode = promoCode.trim();
+      }
+
+      const orderRes = await api.post('/api/orders', orderPayload);
+      const order = orderRes.data.order;
+
+      // 2. Initialize payment for that order
+      const paymentRes = await api.post('/api/payments/initialize', { orderId: order.id });
+      const { paymentUrl, reference } = paymentRes.data;
+
+      // 3. Open Paystack in an in-app browser session
+      const result = await WebBrowser.openBrowserAsync(paymentUrl);
+
+      // 4. Once the browser closes, verify payment status with the backend
+      if (result.type === 'dismiss' || result.type === 'cancel') {
+        const verifyRes = await api.get(`/api/payments/verify/${reference}`);
+        
+        if (verifyRes.data.status === 'successful') {
+          removeMultipleFromCart(checkoutItems.map((item: any) => item.id));
+          if (Platform.OS === 'web') window.alert('Payment Successful! Order Placed.');
+          else Alert.alert('Order Placed!', 'Your food is on the way.');
+          router.replace('/my-orders');
+        } else {
+          Alert.alert('Payment Not Confirmed', 'We could not confirm your payment. Check My Orders for status, or try again.');
+        }
+      }
+    } catch (err: any) {
+      Alert.alert('Order Failed', err.response?.data?.message || 'Something went wrong. Please try again.');
+    } finally {
+      setIsProcessing(false);
+    }
   };
-
-  const finalizeOrder = () => {
-    const purchasedIds = checkoutItems.map((item: any) => item.id);
-    removeMultipleFromCart(purchasedIds);
-
-    if (Platform.OS === 'web') window.alert('Payment Successful! Order Placed.');
-    else Alert.alert('Order Placed!', 'Your food is on the way.');
-    
-    router.replace('/(tabs)');
-  };
-
-  if (showVerification) {
-    return (
-      <View style={[styles.container, { backgroundColor: colors.background, paddingTop }]}>
-        <View style={styles.verifyHeader}>
-          <TouchableOpacity onPress={() => setShowVerification(false)}>
-            <Ionicons name="close" size={28} color={colors.text} />
-          </TouchableOpacity>
-          <Text style={[styles.verifyTitle, { color: colors.text }]}>Payment Verification</Text>
-          <View style={{ width: 28 }} />
-        </View>
-
-        <ScrollView contentContainerStyle={styles.verifyContent}>
-          {verificationStatus !== 'success' ? (
-            <>
-              <View style={[styles.timerBox, { backgroundColor: timer < 60 ? '#FFEBEE' : colors.surface }]}>
-                <Text style={[styles.timerLabel, { color: colors.textMuted }]}>Account expires in</Text>
-                <Text style={[styles.timerText, { color: timer < 60 ? '#D32F2F' : Colors.primary }]}>{formatTime(timer)}</Text>
-              </View>
-
-              <View style={[styles.accountCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                <Text style={[styles.bankInfoLabel, { color: colors.textMuted }]}>TRANSFER EXACTLY</Text>
-                <Text style={[styles.transferAmount, { color: colors.text }]}>₦{total.toLocaleString()}</Text>
-                
-                <View style={[styles.divider, { backgroundColor: colors.border, marginVertical: 20 }]} />
-                
-                <View style={styles.bankDetailRow}>
-                  <Text style={[styles.detailLabel, { color: colors.textMuted }]}>Bank Name</Text>
-                  <Text style={[styles.detailValue, { color: colors.text }]}>Wema Bank / Bwari Kitchen</Text>
-                </View>
-                <View style={styles.bankDetailRow}>
-                  <Text style={[styles.detailLabel, { color: colors.textMuted }]}>Account Number</Text>
-                  <View style={styles.copyRow}>
-                    <Text style={[styles.accountNumber, { color: Colors.primary }]}>7820119344</Text>
-                    <Ionicons name="copy-outline" size={18} color={Colors.primary} />
-                  </View>
-                </View>
-              </View>
-
-              <View style={styles.instructionBox}>
-                <Ionicons name="information-circle" size={20} color={colors.textMuted} />
-                <Text style={[styles.instructionText, { color: colors.textMuted }]}>
-                  Please stay on this screen after making your transfer. Confirmation is automatic.
-                </Text>
-              </View>
-
-              <TouchableOpacity 
-                style={[styles.verifyBtn, { backgroundColor: Colors.primary }]} 
-                onPress={handleVerifyPayment}
-                disabled={verificationStatus === 'verifying'}
-              >
-                {verificationStatus === 'verifying' ? (
-                  <ActivityIndicator color="#FFF" />
-                ) : (
-                  <Text style={styles.verifyBtnText}>I have transferred the money</Text>
-                )}
-              </TouchableOpacity>
-            </>
-          ) : (
-            <View style={styles.successContainer}>
-              <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
-                <Ionicons name="checkmark-circle" size={100} color="#4CAF50" />
-              </Animated.View>
-              <Text style={[styles.successTitle, { color: colors.text }]}>Payment Confirmed!</Text>
-              <Text style={[styles.successSub, { color: colors.textMuted }]}>
-                We&apos;ve received your transfer. Preparing your meal now.
-              </Text>
-            </View>
-          )}
-        </ScrollView>
-      </View>
-    );
-  }
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar style="light" />
 
-      {/* USING THE NEW UNIVERSAL TOPNAV */}
       <TopNav 
         title="Checkout"
         leftIcon="arrow-back"
@@ -227,14 +203,6 @@ export default function CheckoutScreen() {
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomNavHeight + 60 }]}>
         
-        {/* <View style={[styles.etaBanner, { backgroundColor: isDark ? colors.surface : '#E8F5E9', borderColor: '#81C784' }]}>
-          <Ionicons name="time" size={24} color="#388E3C" />
-          <View style={styles.etaTextContainer}>
-            <Text style={[styles.etaTitle, { color: colors.text }]}>Estimated {deliveryMethod === 'delivery' ? 'Delivery' : 'Pickup'} Time</Text>
-            <Text style={[styles.etaValue, { color: '#388E3C' }]}>{deliveryMethod === 'delivery' ? '30 - 45' : '15 - 20'} Minutes</Text>
-          </View>
-        </View> */}
-
         <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>ORDER FULFILLMENT</Text>
         
         <View style={[styles.methodToggleContainer, { backgroundColor: isDark ? colors.surface : '#F5F5F5' }]}>
@@ -273,10 +241,10 @@ export default function CheckoutScreen() {
                 </View>
                 <View style={styles.addressTextContainer}>
                   <Text style={[styles.addressTitle, { color: colors.text }]} numberOfLines={1}>
-                    {activeAddress?.title || "Custom Location"}
+                    {activeAddress?.label || "No address selected"}
                   </Text>
                   <Text style={[styles.addressDetail, { color: colors.textMuted }]} numberOfLines={1}>
-                    {activeAddress?.address || "No location selected"}
+                    {activeAddress ? [activeAddress.streetAddress, activeAddress.area].filter(Boolean).join(', ') : "Please add a delivery address"}
                   </Text>
                 </View>
                 <TouchableOpacity onPress={() => setIsAddressModalVisible(true)}>
@@ -324,33 +292,42 @@ export default function CheckoutScreen() {
 
         <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>PAYMENT METHOD</Text>
         <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <TouchableOpacity style={[styles.paymentOption, { borderBottomWidth: 1, borderBottomColor: colors.border }]} onPress={() => setSelectedPayment('card')}>
+          <View style={styles.paymentOption}>
             <View style={[styles.paymentIconBox, { backgroundColor: '#F3E5F5' }]}>
               <Ionicons name="card" size={20} color="#9C27B0" />
             </View>
             <View style={styles.paymentTextContainer}>
-              <Text style={[styles.paymentTitle, { color: colors.text }]}>Credit/Debit Card</Text>
-              <Text style={[styles.paymentSub, { color: colors.textMuted }]}>Visa or Mastercard</Text>
+              <Text style={[styles.paymentTitle, { color: colors.text }]}>Card, Bank Transfer or USSD</Text>
+              <Text style={[styles.paymentSub, { color: colors.textMuted }]}>Choose your preferred option on the next screen — secured by Paystack</Text>
             </View>
-            <Ionicons name={selectedPayment === 'card' ? "radio-button-on" : "radio-button-off"} size={24} color={selectedPayment === 'card' ? Colors.primary : colors.textMuted} />
-          </TouchableOpacity>
+            <Ionicons name="radio-button-on" size={24} color={Colors.primary} />
+          </View>
+        </View>
 
-          <TouchableOpacity style={styles.paymentOption} onPress={() => setSelectedPayment('bank')}>
-            <View style={[styles.paymentIconBox, { backgroundColor: '#E3F2FD' }]}>
-              <Ionicons name="business" size={20} color="#1976D2" />
-            </View>
-            <View style={styles.paymentTextContainer}>
-              <Text style={[styles.paymentTitle, { color: colors.text }]}>Bank Transfer</Text>
-              <Text style={[styles.paymentSub, { color: colors.textMuted }]}>Instant live verification</Text>
-            </View>
-            <Ionicons name={selectedPayment === 'bank' ? "radio-button-on" : "radio-button-off"} size={24} color={selectedPayment === 'bank' ? Colors.primary : colors.textMuted} />
+        <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>PROMO CODE</Text>
+        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border, flexDirection: 'row', alignItems: 'center', gap: 10 }]}>
+          <TextInput
+            style={[styles.noteInput, { flex: 1, backgroundColor: isDark ? colors.background : '#F5F5F5', color: colors.text, borderColor: colors.border }]}
+            placeholder="Enter promo code"
+            placeholderTextColor={colors.textMuted}
+            value={promoCode}
+            onChangeText={(text) => { setPromoCode(text); setPromoResult(null); }}
+            autoCapitalize="characters"
+          />
+          <TouchableOpacity onPress={handleApplyPromo} disabled={applyingPromo || !promoCode.trim()} style={{ backgroundColor: Colors.primary, paddingHorizontal: 18, paddingVertical: 12, borderRadius: 12, opacity: applyingPromo || !promoCode.trim() ? 0.5 : 1 }}>
+            {applyingPromo ? <ActivityIndicator color="#FFF" size="small" /> : <Text style={{ color: '#FFF', fontWeight: 'bold' }}>Apply</Text>}
           </TouchableOpacity>
         </View>
+        {promoResult && (
+          <Text style={{ color: '#4CAF50', fontSize: 13, marginTop: -18, marginBottom: 20, marginLeft: 5, fontWeight: '600' }}>
+            ✓ {promoResult.message} — ₦{promoResult.discountAmount.toLocaleString()} off
+          </Text>
+        )}
 
         <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>ORDER SUMMARY</Text>
         <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           
-          {checkoutItems.map((item: any, idx: number) => (
+          {checkoutItems.map((item: any) => (
             <View key={item.id} style={[styles.summaryItemRow, { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
               <View style={styles.summaryItemLeft}>
                 <Text style={[styles.snText, { color: Colors.primary }]}>
@@ -373,8 +350,14 @@ export default function CheckoutScreen() {
             </View>
             <View style={styles.summaryRow}>
               <Text style={[styles.summaryLabel, { color: colors.textMuted }]}>Delivery Fee</Text>
-              <Text style={[styles.summaryValue, { color: colors.text }]}>₦{deliveryFee.toLocaleString()}</Text>
+              <Text style={[styles.summaryValue, { color: colors.text }]}>₦{estimatedDeliveryFee.toLocaleString()}</Text>
             </View>
+            {promoResult && (
+              <View style={styles.summaryRow}>
+                <Text style={[styles.summaryLabel, { color: '#4CAF50' }]}>Discount</Text>
+                <Text style={[styles.summaryValue, { color: '#4CAF50' }]}>-₦{promoResult.discountAmount.toLocaleString()}</Text>
+              </View>
+            )}
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
             <View style={styles.summaryRow}>
               <Text style={[styles.totalLabel, { color: colors.text }]}>Total</Text>
@@ -398,7 +381,11 @@ export default function CheckoutScreen() {
             <Text style={[styles.footerTotalValue, { color: colors.text }]}>₦{total.toLocaleString()}</Text>
           </View>
           <TouchableOpacity style={[styles.placeOrderBtn, { opacity: isProcessing ? 0.7 : 1 }]} onPress={handlePlaceOrder} disabled={isProcessing}>
-            <Text style={styles.placeOrderText}>{isProcessing ? "Processing..." : (selectedPayment === 'bank' ? "Generate Account" : "Place Order")}</Text>
+            {isProcessing ? (
+              <ActivityIndicator color="#FFF" />
+            ) : (
+              <Text style={styles.placeOrderText}>Place Order</Text>
+            )}
           </TouchableOpacity>
         </View>
       </View>
@@ -412,373 +399,49 @@ export default function CheckoutScreen() {
   );
 }
 
-// PRO CSS COMPLIANCE: Every property strictly on its own line
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  headerRight: { 
-    flexDirection: 'row', 
-    gap: 10, 
-    alignItems: 'center',
-  },
-  scrollContent: {
-    paddingTop: 20,
-    paddingHorizontal: 20,
-  },
-  etaBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 15,
-    borderRadius: 15,
-    borderWidth: 1,
-    marginBottom: 25,
-  },
-  etaTextContainer: {
-    marginLeft: 15,
-  },
-  etaTitle: {
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  etaValue: {
-    fontSize: 16,
-    fontWeight: '900',
-    marginTop: 2,
-  },
-  methodToggleContainer: {
-    flexDirection: 'row',
-    borderRadius: 15,
-    padding: 5,
-    marginBottom: 15,
-  },
-  methodToggleBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    borderRadius: 12,
-  },
-  methodToggleBtnActive: {
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  methodToggleText: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    marginLeft: 8,
-  },
-  sectionTitle: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    marginLeft: 5,
-    letterSpacing: 1,
-  },
-  card: {
-    borderRadius: 20,
-    borderWidth: 1,
-    padding: 15,
-    marginBottom: 25,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-  },
-  addressRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  iconBox: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 15,
-  },
-  addressTextContainer: {
-    flex: 1,
-    paddingRight: 10,
-  },
-  addressTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 2,
-  },
-  addressDetail: {
-    fontSize: 13,
-  },
-  editText: {
-    color: Colors.primary,
-    fontWeight: 'bold',
-    fontSize: 14,
-    padding: 5,
-  },
-  noteInput: {
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: 12,
-    fontSize: 14,
-    minHeight: 45,
-  },
-  ecoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  ecoTextWrap: {
-    flex: 1,
-  },
-  ecoTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  ecoSub: {
-    fontSize: 12,
-    marginTop: 2,
-  },
-  paymentOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 15,
-  },
-  paymentIconBox: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 15,
-  },
-  paymentTextContainer: {
-    flex: 1,
-  },
-  paymentTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 2,
-  },
-  paymentSub: {
-    fontSize: 12,
-  },
-  summaryItemRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
-  },
-  summaryItemLeft: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  snText: {
-    fontSize: 14,
-    fontWeight: '900',
-    marginRight: 8,
-  },
-  summaryItemName: {
-    flex: 1,
-    fontSize: 15,
-    fontWeight: '500',
-    paddingRight: 10,
-  },
-  summaryItemPrice: {
-    fontSize: 15,
-    fontWeight: 'bold',
-  },
-  totalsContainer: {
-    marginTop: 15,
-  },
-  summaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
-  summaryLabel: {
-    fontSize: 15,
-  },
-  summaryValue: {
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  divider: {
-    height: 1,
-    marginVertical: 10,
-  },
-  totalLabel: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  totalValue: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  stickyFooter: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
-    borderTopWidth: 1,
-    paddingTop: 20,
-    paddingHorizontal: 20,
-    elevation: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -6 },
-    shadowOpacity: 0.15,
-    shadowRadius: 15,
-  },
-  footerContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  footerTextContainer: {
-    flex: 1,
-  },
-  footerTotalLabel: {
-    fontSize: 13,
-    marginBottom: 2,
-  },
-  footerTotalValue: {
-    fontSize: 22,
-    fontWeight: 'bold',
-  },
-  placeOrderBtn: {
-    backgroundColor: Colors.primary,
-    paddingVertical: 15,
-    paddingHorizontal: 30,
-    borderRadius: 20,
-    elevation: 4,
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
-  },
-  placeOrderText: {
-    color: '#FFF',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  verifyHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    marginBottom: 20,
-  },
-  verifyTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  verifyContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 40,
-    alignItems: 'center',
-  },
-  timerBox: {
-    paddingVertical: 15,
-    paddingHorizontal: 30,
-    borderRadius: 15,
-    alignItems: 'center',
-    marginBottom: 25,
-  },
-  timerLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    marginBottom: 5,
-  },
-  timerText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
-  accountCard: {
-    width: '100%',
-    borderRadius: 25,
-    borderWidth: 1,
-    padding: 25,
-    marginBottom: 25,
-    alignItems: 'center',
-  },
-  bankInfoLabel: {
-    fontSize: 11,
-    fontWeight: 'bold',
-    letterSpacing: 1,
-  },
-  transferAmount: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    marginTop: 5,
-  },
-  bankDetailRow: {
-    width: '100%',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  detailLabel: {
-    fontSize: 14,
-  },
-  detailValue: {
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  copyRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  accountNumber: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginRight: 8,
-  },
-  instructionBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    marginBottom: 30,
-  },
-  instructionText: {
-    fontSize: 13,
-    marginLeft: 10,
-    lineHeight: 18,
-  },
-  verifyBtn: {
-    width: '100%',
-    paddingVertical: 18,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  verifyBtnText: {
-    color: '#FFF',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  successContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 100,
-  },
-  successTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginTop: 20,
-  },
-  successSub: {
-    fontSize: 16,
-    textAlign: 'center',
-    marginTop: 10,
-    paddingHorizontal: 30,
-  }
+  container: { flex: 1 },
+  headerRight: { flexDirection: 'row', gap: 10, alignItems: 'center' },
+  scrollContent: { paddingTop: 20, paddingHorizontal: 20 },
+  sectionTitle: { fontSize: 12, fontWeight: 'bold', marginBottom: 10, marginLeft: 5, letterSpacing: 1 },
+  methodToggleContainer: { flexDirection: 'row', borderRadius: 15, padding: 5, marginBottom: 15 },
+  methodToggleBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderRadius: 12 },
+  methodToggleBtnActive: { elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4 },
+  methodToggleText: { fontSize: 14, fontWeight: 'bold', marginLeft: 8 },
+  card: { borderRadius: 20, borderWidth: 1, padding: 15, marginBottom: 25, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 5 },
+  addressRow: { flexDirection: 'row', alignItems: 'center' },
+  iconBox: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center', marginRight: 15 },
+  addressTextContainer: { flex: 1, paddingRight: 10 },
+  addressTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 2 },
+  addressDetail: { fontSize: 13 },
+  editText: { color: Colors.primary, fontWeight: 'bold', fontSize: 14, padding: 5 },
+  noteInput: { borderWidth: 1, borderRadius: 12, padding: 12, fontSize: 14, minHeight: 45 },
+  ecoRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  ecoTextWrap: { flex: 1 },
+  ecoTitle: { fontSize: 15, fontWeight: '600' },
+  ecoSub: { fontSize: 12, marginTop: 2 },
+  paymentOption: { flexDirection: 'row', alignItems: 'center', paddingVertical: 15 },
+  paymentIconBox: { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginRight: 15 },
+  paymentTextContainer: { flex: 1 },
+  paymentTitle: { fontSize: 16, fontWeight: '600', marginBottom: 2 },
+  paymentSub: { fontSize: 12 },
+  summaryItemRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12 },
+  summaryItemLeft: { flex: 1, flexDirection: 'row', alignItems: 'center' },
+  snText: { fontSize: 14, fontWeight: '900', marginRight: 8 },
+  summaryItemName: { flex: 1, fontSize: 15, fontWeight: '500', paddingRight: 10 },
+  summaryItemPrice: { fontSize: 15, fontWeight: 'bold' },
+  totalsContainer: { marginTop: 15 },
+  summaryRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
+  summaryLabel: { fontSize: 15 },
+  summaryValue: { fontSize: 15, fontWeight: '600' },
+  divider: { height: 1, marginVertical: 10 },
+  totalLabel: { fontSize: 16, fontWeight: 'bold' },
+  totalValue: { fontSize: 18, fontWeight: 'bold' },
+  stickyFooter: { position: 'absolute', bottom: 0, left: 0, right: 0, borderTopLeftRadius: 30, borderTopRightRadius: 30, borderTopWidth: 1, paddingTop: 20, paddingHorizontal: 20, elevation: 20, shadowColor: '#000', shadowOffset: { width: 0, height: -6 }, shadowOpacity: 0.15, shadowRadius: 15 },
+  footerContent: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  footerTextContainer: { flex: 1 },
+  footerTotalLabel: { fontSize: 13, marginBottom: 2 },
+  footerTotalValue: { fontSize: 22, fontWeight: 'bold' },
+  placeOrderBtn: { backgroundColor: Colors.primary, paddingVertical: 15, paddingHorizontal: 30, borderRadius: 20, elevation: 4, shadowColor: Colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 5, minWidth: 140, alignItems: 'center' },
+  placeOrderText: { color: '#FFF', fontSize: 16, fontWeight: 'bold' },
 });

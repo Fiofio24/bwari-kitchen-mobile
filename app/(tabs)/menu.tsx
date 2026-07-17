@@ -21,13 +21,12 @@ import Sidebar from '../../components/Sidebar';
 import SearchBar from '../../components/SearchBar';
 import CategoryFilter from '../../components/CategoryFilter';
 import ForYouCard from '../../components/ForYouCard';
-import { MENU_ITEMS, parseCompositeKey } from '../../constants/menuData';
+import { useMenu } from '../../context/MenuContext';
+import { parseCompositeKey } from '../../constants/menuData';
 import CartBadgeIcon from '../../components/CartBadgeIcon';
 import GridDishCard from '../../components/GridDishCard';
 import TopNav from '../../components/TopNav';
 import ItemVariantModal from '../../components/ItemVariantModal';
-
-const MENU_CATEGORIES = ['All', 'Drinks', 'Snacks','Swallow', 'Soup', 'Protein', 'Sides', 'Yam & Beans', 'Pasta', 'Rice'];
 
 export const CUSTOM_PACKAGE_IMAGE = require('../../assets/images/custom-plate.png');
 
@@ -35,6 +34,8 @@ export default function MenuScreen() {
   const router = useRouter();
   const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
+  const { items, categories, loading, refresh, findItem } = useMenu();
+  const MENU_CATEGORIES = ['All', ...categories.map(c => c.name)];
   
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { addToCart } = useCart();
@@ -59,20 +60,19 @@ export default function MenuScreen() {
   const NUM_COLUMNS = Math.max(3, Math.floor((AVAILABLE_WIDTH + GRID_GAP) / (MIN_CARD_WIDTH + GRID_GAP)));
   const CARD_WIDTH = Math.floor((AVAILABLE_WIDTH - (GRID_GAP * (NUM_COLUMNS - 1))) / NUM_COLUMNS);
 
-  const filteredItems = MENU_ITEMS.filter(item => item.category === activeCategory || activeCategory === 'All');
+  const filteredItems = items.filter(item => item.category.name === activeCategory || activeCategory === 'All');
   const bottomNavHeight = 70 + Math.max(insets.bottom, 15);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      const fetchRealData = new Promise(resolve => setTimeout(resolve, 1500)); 
-      await fetchRealData;
+      await refresh();
     } catch (error) {
       console.error("Error refreshing data:", error);
     } finally {
       setRefreshing(false); 
     }
-  }, []);
+  }, [refresh]);
 
   const handleCardPress = (item: any) => {
     if (item.variants && item.variants.length > 0) {
@@ -108,10 +108,9 @@ export default function MenuScreen() {
 
   const selectedItemsList = Object.keys(customPlate).map(compositeKey => {
     const { id, variantLabel, variantPrice } = parseCompositeKey(compositeKey);
-    const dbItem = MENU_ITEMS.find(m => m.id === id);
+    const dbItem = findItem(id);
     
-    // NEW CODE: It just takes the exact manual price from the key, or falls back to the base price
-    const finalPrice = variantPrice !== null ? variantPrice : (dbItem?.price || 0);
+    const finalPrice = variantPrice !== null ? variantPrice : (dbItem?.basePrice || 0);
     
     const finalName = variantLabel && variantLabel !== 'Base' 
       ? `${dbItem?.name} (${variantLabel})` 
@@ -121,6 +120,7 @@ export default function MenuScreen() {
       compositeKey,
       id,
       name: finalName,
+      variantLabel: variantLabel && variantLabel !== 'Base' ? variantLabel : null,
       price: finalPrice,
       qty: customPlate[compositeKey],
       isAvailable: dbItem?.isAvailable !== false,
@@ -146,6 +146,7 @@ export default function MenuScreen() {
       compositeKey: item.compositeKey,
       id: item.id,
       name: item.name,
+      variantLabel: item.variantLabel,
       qty: item.qty, 
       price: item.price
     }));
@@ -192,6 +193,15 @@ export default function MenuScreen() {
       Animated.delay(2000),
       Animated.timing(toastAnim, { toValue: -100, duration: 300, useNativeDriver: true })
     ]).start();
+  }
+
+  if (loading && items.length === 0) {
+    return (
+      <View style={[menuStyles.container, { backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }]}>
+        <StatusBar style="light" />
+        <Text style={{ color: colors.text }}>Loading menu...</Text>
+      </View>
+    );
   }
 
   return (
@@ -311,14 +321,13 @@ export default function MenuScreen() {
 
         <View style={[menuStyles.gridContainer, { gap: GRID_GAP }]}>
           {filteredItems.map(item => {
-            // Check if any variant of this base item is in the cart
             const isSelected = Object.keys(customPlate).some(key => key.startsWith(item.id + '::'));
             return (
               <View key={item.id} style={{ width: CARD_WIDTH }}>
                 <GridDishCard 
                   name={item.name} 
-                  price={`₦${item.price.toLocaleString()}`}
-                  image={item.image}
+                  price={`₦${item.basePrice.toLocaleString()}`}
+                  image={item.imageUrl || undefined}
                   isSelected={isSelected}
                   isAvailable={item.isAvailable !== false} 
                   onPress={item.isAvailable !== false ? () => handleCardPress(item) : undefined}

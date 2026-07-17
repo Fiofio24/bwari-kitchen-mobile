@@ -49,6 +49,62 @@ export const getNotifications = async (
   })
 }
 
+export const getPreferences = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  const user = await prisma.user.findUnique({
+    where: { id: req.user!.id },
+    select: {
+      notifyOrderUpdates: true,
+      notifyDeliveryAlerts: true,
+      notifyPromotions: true,
+      notifyNewMenu: true,
+      notifyEmail: true,
+    }
+  })
+
+  if (!user) {
+    res.status(404).json({ message: 'User not found' })
+    return
+  }
+
+  res.status(200).json({ preferences: user })
+}
+
+export const updatePreferences = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  const {
+    notifyOrderUpdates,
+    notifyDeliveryAlerts,
+    notifyPromotions,
+    notifyNewMenu,
+    notifyEmail,
+  } = req.body
+
+  const user = await prisma.user.update({
+    where: { id: req.user!.id },
+    data: {
+      ...(notifyOrderUpdates !== undefined && { notifyOrderUpdates }),
+      ...(notifyDeliveryAlerts !== undefined && { notifyDeliveryAlerts }),
+      ...(notifyPromotions !== undefined && { notifyPromotions }),
+      ...(notifyNewMenu !== undefined && { notifyNewMenu }),
+      ...(notifyEmail !== undefined && { notifyEmail }),
+    },
+    select: {
+      notifyOrderUpdates: true,
+      notifyDeliveryAlerts: true,
+      notifyPromotions: true,
+      notifyNewMenu: true,
+      notifyEmail: true,
+    }
+  })
+
+  res.status(200).json({ message: 'Preferences updated successfully', preferences: user })
+}
+
 export const markAsRead = async (
   req: Request,
   res: Response

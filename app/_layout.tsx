@@ -1,32 +1,19 @@
 import { useEffect, useState } from 'react';
-import { Platform } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context'; 
 import { ThemeProvider } from '../context/ThemeContext'; 
 import * as SplashScreen from 'expo-splash-screen';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 
 import { CartProvider } from '../context/CartContext';
 import { FavoriteProvider } from '../context/FavoriteContext';
 import { UserProvider } from '../context/UserContext'; 
 import { NotificationProvider } from '../context/NotificationContext'; 
 import { AddressProvider } from '../context/AddressContext'; 
+import { MenuProvider } from '../context/MenuContext';
 
 SplashScreen.preventAutoHideAsync();
-
-const safeStorage = {
-  getItem: async (key: string) => {
-    try {
-      if (AsyncStorage && typeof AsyncStorage.getItem === 'function') {
-        return await AsyncStorage.getItem(key);
-      } else if (Platform.OS === 'web' && typeof window !== 'undefined') {
-        return window.localStorage.getItem(key);
-      }
-    } catch (e) { console.warn("Storage Error:", e); }
-    return null;
-  }
-};
 
 function RootContent() {
   const [appIsReady, setAppIsReady] = useState(false);
@@ -38,14 +25,14 @@ function RootContent() {
   useEffect(() => {
     async function prepareApp() {
       try {
-        // 1. Check if a user session is currently saved in local storage
-        const savedUser = await safeStorage.getItem('@bwari_kitchen_user_v2');
+        // 1. Check if a session token is currently saved
+        const token = await SecureStore.getItemAsync('authToken');
         
         // 2. Decide the initial route based on auth status
-        if (!savedUser) {
+        if (!token) {
           setInitialRoute('/welcome');
         } else {
-          // ROUTE RETURNING USERS TO THE UNLOCK SCREEN!
+          // ROUTE RETURNING USERS TO THE UNLOCK SCREEN — unlock.tsx re-validates the token
           setInitialRoute('/unlock');
         }
 
@@ -112,13 +99,15 @@ export default function RootLayout() {
       <ThemeProvider>
         <UserProvider>
           <AddressProvider>
-            <CartProvider> 
-              <FavoriteProvider>
-                <NotificationProvider>
-                  <RootContent />
-                </NotificationProvider>
-              </FavoriteProvider>
-            </CartProvider>
+            <MenuProvider>
+              <CartProvider> 
+                <FavoriteProvider>
+                  <NotificationProvider>
+                    <RootContent />
+                  </NotificationProvider>
+                </FavoriteProvider>
+              </CartProvider>
+            </MenuProvider>
           </AddressProvider>
         </UserProvider>
       </ThemeProvider>

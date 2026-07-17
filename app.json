@@ -31,7 +31,14 @@
     "plugins": [
       "expo-router",
       "expo-font",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow Bwari Kitchen to use your location to find your delivery address."
+        }
+      ],
+      "expo-web-browser"
     ],
     "scheme": "bwarikitchen",
     "extra": {

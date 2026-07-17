@@ -15,7 +15,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { Colors } from '../constants/Colors';
-import { MENU_ITEMS, parseCompositeKey } from '../constants/menuData';
+import { parseCompositeKey } from '../constants/menuData';
+import { useMenu } from '../context/MenuContext';
 import { useCart } from '../context/CartContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router'; 
@@ -28,8 +29,6 @@ import ItemVariantModal from './ItemVariantModal';
 const CUSTOM_PACKAGE_IMAGE = { uri: 'https://cdn-icons-png.flaticon.com/512/684/684045.png' };
 
 const { height, width } = Dimensions.get('window');
-
-const MENU_CATEGORIES = ['Main', 'Protein', 'Swallow', 'Snacks', 'Drinks', 'Rice'];
 
 interface QuickEditPackageProps {
   visible: boolean;
@@ -48,6 +47,9 @@ export default function QuickEditPackage({
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { cartItems, addToCart, removeFromCart } = useCart();
+
+  const { items: MENU_ITEMS, categories, findItem } = useMenu();
+  const MENU_CATEGORIES = ['Main', ...categories.map(c => c.name)];
 
   const slideAnim = useRef(new Animated.Value(height)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -152,10 +154,9 @@ export default function QuickEditPackage({
 
   const selectedItemsList = Object.keys(customPlate).map(compositeKey => {
     const { id, variantLabel, variantPrice } = parseCompositeKey(compositeKey);
-    const dbItem = MENU_ITEMS.find(m => m.id === id);
+    const dbItem = findItem(id);
     
-    // NEW CODE: It just takes the exact manual price from the key, or falls back to the base price
-    const finalPrice = variantPrice !== null ? variantPrice : (dbItem?.price || 0);
+    const finalPrice = variantPrice !== null ? variantPrice : (dbItem?.basePrice || 0);
     
     const finalName = variantLabel && variantLabel !== 'Base' 
       ? `${dbItem?.name} (${variantLabel})` 
@@ -165,6 +166,7 @@ export default function QuickEditPackage({
       compositeKey,
       id,
       name: finalName,
+      variantLabel: variantLabel && variantLabel !== 'Base' ? variantLabel : null,
       price: finalPrice,
       qty: customPlate[compositeKey],
       isAvailable: dbItem?.isAvailable !== false,
@@ -176,7 +178,7 @@ export default function QuickEditPackage({
   const hasSoldOutSelected = selectedItemsList.some(item => !item.isAvailable);
 
   const filteredItems = MENU_ITEMS.filter(item => {
-    const matchesCategory = activeCategory === 'Main' || item.category === activeCategory;
+    const matchesCategory = activeCategory === 'Main' || item.category.name === activeCategory;
     const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
   });
@@ -357,8 +359,8 @@ export default function QuickEditPackage({
                     <View key={item.id} style={{ width: CARD_WIDTH }}>
                       <GridDishCard 
                         name={item.name} 
-                        price={`₦${item.price.toLocaleString()}`}
-                        image={item.image}
+                        price={`₦${item.basePrice.toLocaleString()}`}
+                        image={item.imageUrl || undefined}
                         isSelected={isSelected}
                         isAvailable={item.isAvailable !== false} 
                         onPress={item.isAvailable !== false ? () => handleCardPress(item) : undefined}

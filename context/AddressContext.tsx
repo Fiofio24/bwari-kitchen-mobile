@@ -1,115 +1,151 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
-import { Platform } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
-// BULLETPROOF STORAGE WRAPPER
-const safeStorage = {
-  getItem: async (key: string) => {
-    try {
-      if (AsyncStorage && typeof AsyncStorage.getItem === 'function') {
-        return await AsyncStorage.getItem(key);
-      } else if (Platform.OS === 'web' && typeof window !== 'undefined') {
-        return window.localStorage.getItem(key);
-      }
-    } catch (e) { console.warn("Storage Error:", e); }
-    return null;
-  },
-  setItem: async (key: string, value: string) => {
-    try {
-      if (AsyncStorage && typeof AsyncStorage.setItem === 'function') {
-        await AsyncStorage.setItem(key, value);
-      } else if (Platform.OS === 'web' && typeof window !== 'undefined') {
-        window.localStorage.setItem(key, value);
-      }
-    } catch (e) { console.warn("Storage Error:", e); }
-  }
-};
+import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
+import * as Location from 'expo-location';
+import api from '../app/lib/api';
 
 export interface Address {
   id: string;
-  title: string;
-  address: string;
-  icon: string;
+  label: string | null;
+  streetAddress: string;
+  landmark: string | null;
+  area: string | null;
+  city: string;
+  latitude: number | null;
+  longitude: number | null;
   isDefault: boolean;
 }
 
 interface AddressContextType {
   addresses: Address[];
   activeAddress: Address | null;
-  addAddress: (address: Address) => void;
-  removeAddress: (id: string) => void;
-  setDefaultAddress: (id: string) => void;
-  setTemporaryActiveAddress: (addressText: string) => void; 
+  loading: boolean;
+  refresh: () => Promise<void>;
+  addAddress: (address: {
+    label?: string;
+    streetAddress: string;
+    landmark?: string;
+    area?: string;
+    latitude: number;
+    longitude: number;
+    isDefault?: boolean;
+  }) => Promise<void>;
+  updateAddress: (id: string, updates: {
+    label?: string;
+    streetAddress?: string;
+    landmark?: string;
+    area?: string;
+  }) => Promise<void>;
+  addCurrentLocationAddress: (details: {
+    label?: string;
+    streetAddress: string;
+    landmark?: string;
+    area?: string;
+    isDefault?: boolean;
+  }) => Promise<{ success: boolean; error?: string }>;
+  removeAddress: (id: string) => Promise<void>;
+  setDefaultAddress: (id: string) => Promise<void>;
 }
 
 const AddressContext = createContext<AddressContextType | undefined>(undefined);
-const ADDRESS_STORAGE_KEY = '@bwari_kitchen_addresses';
-
-const INITIAL_ADDRESSES: Address[] = [
-  { id: '1', title: 'Home', address: 'No 6 Kuje Street, FCT Abuja', icon: 'home', isDefault: true },
-  { id: '2', title: 'Work', address: 'Central Business District, Zone 4', icon: 'briefcase', isDefault: false },
-  { id: '3', title: 'Friend', address: 'Gwarinpa Estate, Phase 2, House 44', icon: 'people', isDefault: false },
-];
 
 export function AddressProvider({ children }: { children: React.ReactNode }) {
-  const [addresses, setAddresses] = useState<Address[]>(INITIAL_ADDRESSES);
-  const [activeAddressText, setActiveAddressText] = useState<string | null>(null);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [addresses, setAddresses] = useState<Address[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const loadAddresses = async () => {
-      const savedData = await safeStorage.getItem(ADDRESS_STORAGE_KEY);
-      if (savedData) {
-        setAddresses(JSON.parse(savedData));
-      }
-      setIsLoaded(true);
-    };
-    loadAddresses();
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await api.get('/api/addresses');
+      setAddresses(res.data.addresses);
+    } catch (err) {
+      console.warn('Failed to load addresses:', err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
-    if (!isLoaded) return;
-    const saveAndSync = async () => {
-      await safeStorage.setItem(ADDRESS_STORAGE_KEY, JSON.stringify(addresses));
-    };
-    saveAndSync();
-  }, [addresses, isLoaded]);
+    refresh();
+  }, [refresh]);
 
-  const addAddress = (newAddress: Address) => {
-    setAddresses(prev => [...prev, newAddress]);
+  const addAddress = async (address: {
+    label?: string;
+    streetAddress: string;
+    landmark?: string;
+    area?: string;
+    latitude: number;
+    longitude: number;
+    isDefault?: boolean;
+  }) => {
+    await api.post('/api/addresses', address);
+    await refresh();
   };
 
-  const removeAddress = (id: string) => {
-    setAddresses(prev => prev.filter(addr => addr.id !== id));
+  const updateAddress = async (id: string, updates: {
+    label?: string;
+    streetAddress?: string;
+    landmark?: string;
+    area?: string;
+  }) => {
+    await api.patch(`/api/addresses/${id}`, updates);
+    await refresh();
   };
 
-  const setDefaultAddress = (id: string) => {
-    setAddresses(prev => prev.map(addr => ({
-      ...addr,
-      isDefault: addr.id === id
-    })));
-    setActiveAddressText(null); // Clear temp override when a new default is set
+  // Captures device GPS coordinates, then saves an address with them attached.
+  // Returns a result object instead of throwing, so calling screens can show
+  // a friendly message without needing their own try/catch for location errors.
+  const addCurrentLocationAddress = async (details: {
+    label?: string;
+    streetAddress: string;
+    landmark?: string;
+    area?: string;
+    isDefault?: boolean;
+  }): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        return { success: false, error: 'Location permission was denied. Please enable it in settings.' };
+      }
+
+      const position = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High,
+      });
+
+      await addAddress({
+        ...details,
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+      });
+
+      return { success: true };
+    } catch (err) {
+      console.warn('Failed to get current location:', err);
+      return { success: false, error: 'Could not get your location. Please try again.' };
+    }
   };
 
-  const setTemporaryActiveAddress = (addressText: string) => {
-    setActiveAddressText(addressText);
+  const removeAddress = async (id: string) => {
+    await api.delete(`/api/addresses/${id}`);
+    await refresh();
   };
 
-  const defaultAddress = addresses.find(a => a.isDefault) || addresses[0] || null;
-  
-  // If user selected a temp address from TopNav, use that, otherwise use Default
-  const activeAddress = activeAddressText 
-    ? { id: 'temp', title: 'Custom Location', address: activeAddressText, icon: 'location', isDefault: true } 
-    : defaultAddress;
+  const setDefaultAddress = async (id: string) => {
+    await api.patch(`/api/addresses/${id}/default`);
+    await refresh();
+  };
+
+  const activeAddress = addresses.find(a => a.isDefault) || addresses[0] || null;
 
   return (
-    <AddressContext.Provider value={{ 
-      addresses, 
-      activeAddress, 
-      addAddress, 
-      removeAddress, 
+    <AddressContext.Provider value={{
+      addresses,
+      activeAddress,
+      loading,
+      refresh,
+      addAddress,
+      addCurrentLocationAddress,
+      updateAddress,
+      removeAddress,
       setDefaultAddress,
-      setTemporaryActiveAddress
     }}>
       {children}
     </AddressContext.Provider>

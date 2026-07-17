@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   View, 
   Text, 
   StyleSheet, 
   TouchableOpacity, 
   Image,
-  Animated
+  ActivityIndicator
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,10 +13,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import * as LocalAuthentication from 'expo-local-authentication';
 import * as SecureStore from 'expo-secure-store';
-import * as Haptics from 'expo-haptics';
 import { useTheme } from '../context/ThemeContext';
 import { Colors } from '../constants/Colors';
 import { useUser } from '../context/UserContext';
+import api from './lib/api';
 
 const VALID_PIN = '123456'; 
 
@@ -26,79 +26,64 @@ export default function UnlockScreen() {
   const insets = useSafeAreaInsets();
   const { userData } = useUser();
 
-  const [pin, setPin] = useState<string>('');
   const [isBiometricSupported, setIsBiometricSupported] = useState(false);
-  const [isError, setIsError] = useState(false);
-  
-  const shakeAnim = useRef(new Animated.Value(0)).current;
+  const [isChecking, setIsChecking] = useState(true);
 
-  const handleSuccess = useCallback(() => {
+  const goToApp = useCallback(() => {
     router.replace('/(tabs)');
   }, [router]);
+
+  const goToLogin = useCallback(async () => {
+    await SecureStore.deleteItemAsync('authToken');
+    router.replace('/login');
+  }, [router]);
+
+  // Confirm the stored token is still valid against the real backend
+  const validateSession = useCallback(async () => {
+    try {
+      const token = await SecureStore.getItemAsync('authToken');
+      if (!token) {
+        goToLogin();
+        return;
+      }
+      await api.get('/api/auth/me');
+      setIsChecking(false);
+    } catch (err) {
+      goToLogin();
+    }
+  }, [goToLogin]);
 
   const handleBiometricAuth = useCallback(async () => {
     const result = await LocalAuthentication.authenticateAsync({
       promptMessage: 'Unlock Bwari Kitchen',
-      fallbackLabel: 'Use PIN',
     });
-
     if (result.success) {
-      handleSuccess();
+      goToApp();
     }
-  }, [handleSuccess]);
-
-  const triggerShake = useCallback(() => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-    setIsError(true);
-    Animated.sequence([
-      Animated.timing(shakeAnim, { toValue: 10, duration: 50, useNativeDriver: true }),
-      Animated.timing(shakeAnim, { toValue: -10, duration: 50, useNativeDriver: true }),
-      Animated.timing(shakeAnim, { toValue: 10, duration: 50, useNativeDriver: true }),
-      Animated.timing(shakeAnim, { toValue: 0, duration: 50, useNativeDriver: true })
-    ]).start(() => {
-      setPin(''); 
-      setIsError(false);
-    });
-  }, [shakeAnim]);
+  }, [goToApp]);
 
   useEffect(() => {
     (async () => {
       const compatible = await LocalAuthentication.hasHardwareAsync();
       const enrolled = await LocalAuthentication.isEnrolledAsync();
       setIsBiometricSupported(compatible && enrolled);
-      
-      if (compatible && enrolled) {
-        handleBiometricAuth();
-      }
+      await validateSession();
     })();
-  }, [handleBiometricAuth]);
-
-  const handleKeyPress = (num: string) => {
-    if (isError) return; 
-    if (pin.length < 6) {
-      setPin(prev => prev + num);
-    }
-  };
-
-  useEffect(() => {
-    if (pin.length === 6) {
-      if (pin === VALID_PIN) {
-        handleSuccess();
-      } else {
-        triggerShake();
-      }
-    }
-  }, [pin, handleSuccess, triggerShake]); 
-
-  const handleDelete = () => {
-    if (isError) return;
-    setPin(prev => prev.slice(0, -1));
-  };
+  }, [validateSession]);
 
   const handleLogout = async () => {
-    await SecureStore.deleteItemAsync('user_token');
+    await SecureStore.deleteItemAsync('authToken');
     router.replace('/welcome');
   };
+
+  if (isChecking) {
+    return (
+      <View style={[styles.container, { backgroundColor: Colors.primary, justifyContent: 'center', alignItems: 'center' }]}>
+        <StatusBar style="light" />
+        <ActivityIndicator color="#FFF" size="large" />
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.container, { backgroundColor: Colors.primary, paddingTop: insets.top }]}>
@@ -117,67 +102,28 @@ export default function UnlockScreen() {
       </View>
 
       <View style={[styles.bottomSection, { backgroundColor: colors.background, paddingBottom: insets.bottom + 20 }]}>
-        <Text style={[styles.instructionText, { color: isError ? '#D32F2F' : colors.text }]}>
-          {isError ? "Incorrect PIN" : "Enter your 6-digit PIN"}
-        </Text>
-        
-        <Animated.View style={[styles.pinContainer, { transform: [{ translateX: shakeAnim }] }]}>
-          {[0, 1, 2, 3, 4, 5].map((index) => (
-            <View 
-              key={index} 
-              style={[
-                styles.pinDot, 
-                { 
-                  borderColor: isError ? '#D32F2F' : '#FFF',
-                  backgroundColor: pin.length > index ? Colors.primary : 'transparent'
-                }
-              ]} 
-            />
-          ))}
-        </Animated.View>
-
-        <View style={styles.numpadContainer}>
-          {[['1', '2', '3'], ['4', '5', '6'], ['7', '8', '9']].map((row, rowIndex) => (
-            <View key={rowIndex} style={styles.numpadRow}>
-              {row.map((num) => (
-                <TouchableOpacity 
-                  key={num} 
-                  style={[styles.numButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
-                  onPress={() => handleKeyPress(num)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.numText, { color: colors.text }]}>{num}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          ))}
-          
-          <View style={styles.numpadRow}>
+        {isBiometricSupported ? (
+          <>
+            <Text style={[styles.instructionText, { color: colors.text }]}>
+              Use biometrics to continue
+            </Text>
             <TouchableOpacity 
-              style={styles.actionButton}
+              style={[styles.numButton, { backgroundColor: colors.surface, borderColor: colors.border, alignSelf: 'center', marginBottom: 30 }]}
               onPress={handleBiometricAuth}
-              disabled={!isBiometricSupported}
-            >
-              {isBiometricSupported && <Ionicons name="finger-print" size={32} color={colors.text} />}
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={[styles.numButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
-              onPress={() => handleKeyPress('0')}
               activeOpacity={0.7}
             >
-              <Text style={[styles.numText, { color: colors.text }]}>0</Text>
+              <Ionicons name="finger-print" size={40} color={colors.text} />
             </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={styles.actionButton}
-              onPress={handleDelete}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="backspace-outline" size={28} color={colors.text} />
-            </TouchableOpacity>
-          </View>
-        </View>
+          </>
+        ) : (
+          <TouchableOpacity 
+            style={[styles.primaryBtn, { backgroundColor: Colors.primary, marginBottom: 20 }]}
+            onPress={goToApp}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.primaryBtnText}>Continue</Text>
+          </TouchableOpacity>
+        )}
 
         <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
           <Text style={styles.logoutText}>Not you? Sign Out</Text>
@@ -296,5 +242,17 @@ const styles = StyleSheet.create({
     color: Colors.primary,
     fontWeight: 'bold',
     fontSize: 15,
+  },
+  primaryBtn: {
+    height: 56,
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+  },
+  primaryBtnText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });

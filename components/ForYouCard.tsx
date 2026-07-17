@@ -6,7 +6,7 @@ import GridDishCard from './GridDishCard';
 import { Colors } from '../constants/Colors';
 import { useTheme } from '../context/ThemeContext';
 import { useFavorites } from '../context/FavoriteContext'; 
-import { getBreakfastDishes, getLunchDishes, getDinnerDishes, MENU_ITEMS } from '../constants/menuData'; 
+import { useMenu } from '../context/MenuContext';
 
 interface ForYouCardProps { onAddToCart: (dish: any) => void; }
 
@@ -18,6 +18,22 @@ export default function ForYouCard({ onAddToCart }: ForYouCardProps) {
   const { toggleFavorite, isFavorite } = useFavorites(); 
   const router = useRouter(); 
   
+  const { packages, findItem } = useMenu();
+
+  const normalizedPackages = packages.map(pkg => ({
+    id: pkg.id,
+    name: pkg.name,
+    category: pkg.items[0]?.menuItem.category.name || 'Combo',
+    price: pkg.totalPrice,
+    image: pkg.imageUrl || undefined,
+    isAvailable: true,
+    subItems: pkg.items.map(i => ({
+      id: i.menuItem.id,
+      qty: i.quantity,
+      name: i.menuItem.name,
+    })),
+  }));
+
   const getMealTime = () => {
     const currentHour = new Date().getHours();
     if (currentHour >= 5 && currentHour < 12) return 'Breakfast';
@@ -34,16 +50,20 @@ export default function ForYouCard({ onAddToCart }: ForYouCardProps) {
     return () => clearInterval(interval);
   }, []);
 
+  const getBreakfastDishes = () => normalizedPackages.filter(item => ['Rice', 'Swallow', 'Snacks'].includes(item.category)).slice(0, 3);
+  const getLunchDishes = () => normalizedPackages.filter(item => ['Rice', 'Swallow', 'Drinks'].includes(item.category)).reverse().slice(0, 3);
+  const getDinnerDishes = () => normalizedPackages.filter(item => ['Rice', 'Swallow'].includes(item.category)).slice(1, 4);
+
   let currentDishes = getBreakfastDishes();
   if (mealTime === 'Lunch') currentDishes = getLunchDishes();
   else if (mealTime === 'Dinner') currentDishes = getDinnerDishes();
-  
+
   const SLIDER_CARD_WIDTH = Math.min(width * 0.75, MAX_SLIDER_WIDTH);
 
   const isComboAvailable = (combo: any) => {
     if (!combo.subItems || combo.subItems.length === 0) return combo.isAvailable !== false;
     return !combo.subItems.some((sub: any) => {
-      const dbItem = MENU_ITEMS.find((m: any) => m.id === sub.id);
+      const dbItem = findItem(sub.id);
       return dbItem?.isAvailable === false;
     });
   };

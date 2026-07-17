@@ -180,12 +180,6 @@ export default function ProfileScreen() {
             label="Saved Addresses" 
             onPress={() => router.push('/saved-addresses')} 
           />
-          <ProfileMenuItem 
-            icon="card-outline" 
-            label="Payment Methods" 
-            subLabel="Manage cards" 
-            onPress={() => router.push('/payment-methods')} 
-          />
         </View>
 
         <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>SECURITY & APP</Text>

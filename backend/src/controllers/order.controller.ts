@@ -39,7 +39,7 @@ export const placeOrder = async (
     return
   }
 
-  if (!['card', 'bank_transfer', 'ussd', 'cash_on_delivery'].includes(paymentMethod)) {
+  if (!['paystack', 'wallet'].includes(paymentMethod)) {
     res.status(400).json({ message: 'Invalid payment method' })
     return
   }
@@ -191,7 +191,8 @@ export const placeOrder = async (
           isAvailable: true,
           deletedAt: null,
           category: { isActive: true },
-        }
+        },
+        include: { variants: true }
       })
 
       if (!menuItem) {
@@ -199,22 +200,41 @@ export const placeOrder = async (
         return
       }
 
-      const unitPrice = menuItem.discountPrice
-        ? Number(menuItem.discountPrice)
-        : Number(menuItem.basePrice)
+      let unitPrice: number
+      let matchedVariantId: string | null = null
+      let matchedVariantLabel: string | null = null
+
+      if (item.variantLabel) {
+        const variant = menuItem.variants.find(v => v.label === item.variantLabel)
+        if (!variant) {
+          res.status(400).json({
+            message: `Variant "${item.variantLabel}" not found for ${menuItem.name}`
+          })
+          return
+        }
+        unitPrice = Number(variant.price)
+        matchedVariantId = variant.id
+        matchedVariantLabel = variant.label
+      } else {
+        unitPrice = menuItem.discountPrice
+          ? Number(menuItem.discountPrice)
+          : Number(menuItem.basePrice)
+      }
 
       const itemTotal = unitPrice * item.quantity
       packageTotal += itemTotal
 
       validatedItems.push({
         menuItemId: menuItem.id,
-        itemName: menuItem.name,
+        itemName: matchedVariantLabel ? `${menuItem.name} (${matchedVariantLabel})` : menuItem.name,
+        variantId: matchedVariantId,
+        variantLabel: matchedVariantLabel,
         quantity: item.quantity,
         unitPrice,
         totalPrice: itemTotal,
       })
     }
-
+    
     let packagePrice = packageTotal
     let sourcePackageId = null
     let originalPackageId = null
@@ -374,6 +394,8 @@ export const placeOrder = async (
             orderPackageId: orderPackage.id,
             menuItemId: item.menuItemId,
             itemName: item.itemName,
+            variantId: item.variantId,
+            variantLabel: item.variantLabel,
             quantity: item.quantity,
             unitPrice: item.unitPrice,
             totalPrice: item.totalPrice,
@@ -419,9 +441,7 @@ export const placeOrder = async (
         currency: 'NGN',
         paymentMethod: paymentMethod as any,
         paymentStatus: 'pending',
-        provider: ['card', 'bank_transfer', 'ussd'].includes(paymentMethod)
-          ? 'Paystack'
-          : null,
+        provider: paymentMethod === 'paystack' ? 'Paystack' : null,
       }
     })
 
@@ -437,7 +457,7 @@ export const placeOrder = async (
     })
 
     return newOrder
-  })
+  }, { timeout: 15000, maxWait: 10000 })
 
   // ── Fetch full order to return ────────────
   const fullOrder = await prisma.order.findUnique({

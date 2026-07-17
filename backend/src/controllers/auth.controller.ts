@@ -276,18 +276,18 @@ export const createStaff = async (
 // POST /api/auth/login
 // ─────────────────────────────────────────
 export const login = async (req: Request, res: Response): Promise<void> => {
-  const { phoneNumber, password } = req.body
+  const { email, phoneNumber, password } = req.body
 
-  if (!phoneNumber || !password) {
+  if ((!email && !phoneNumber) || !password) {
     res.status(400).json({
-      message: 'Phone number and password are required'
+      message: 'Email or phone number, and password, are required'
     })
     return
   }
 
-  // Find user by phone number
+  // Find user by email or phone number, whichever was provided
   const user = await prisma.user.findUnique({
-    where: { phoneNumber },
+    where: email ? { email } : { phoneNumber },
     select: {
       id: true,
       fullName: true,
@@ -303,7 +303,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
   // Use a generic error message to prevent phone number enumeration
   if (!user || !user.passwordHash) {
     res.status(401).json({
-      message: 'Invalid phone number or password'
+      message: 'Invalid email or password'
     })
     return
   }
@@ -321,7 +321,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 
   if (!isPasswordValid) {
     res.status(401).json({
-      message: 'Invalid phone number or password'
+      message: 'Invalid email or password'
     })
     return
   }

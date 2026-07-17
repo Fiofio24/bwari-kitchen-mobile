@@ -20,7 +20,7 @@ import { useFavorites } from '../../context/FavoriteContext';
 import GridDishCard from '../../components/GridDishCard';
 import Sidebar from '../../components/Sidebar';
 import CartBadgeIcon from '../../components/CartBadgeIcon';
-import { MENU_ITEMS } from '../../constants/menuData'; 
+import { useMenu } from '../../context/MenuContext';
 import TopNav from '../../components/TopNav';
 
 export default function FavoriteScreen() {
@@ -29,7 +29,8 @@ export default function FavoriteScreen() {
   const insets = useSafeAreaInsets();
   const { addToCart } = useCart();
   
-  const { favorites, toggleFavorite, isFavorite } = useFavorites();
+  const { favorites, toggleFavorite, isFavorite, refresh, loading } = useFavorites();
+  const { findItem } = useMenu();
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false); 
@@ -48,17 +49,14 @@ export default function FavoriteScreen() {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    console.log("🔄 Global App Refresh Triggered from FAVORITES: Verifying availability...");
     try {
-      const fetchRealData = new Promise(resolve => setTimeout(resolve, 1500)); 
-      await fetchRealData;
+      await refresh();
     } catch (error) {
-      console.error("Error refreshing data:", error);
+      console.error("Error refreshing favorites:", error);
     } finally {
       setRefreshing(false); 
-      console.log("✅ Favorites Refresh Complete.");
     }
-  }, []);
+  }, [refresh]);
 
   const handleAddToCart = (dish: any) => {
     const newItem: any = {
@@ -83,11 +81,11 @@ export default function FavoriteScreen() {
   const checkAvailability = (dish: any) => {
     if (dish.subItems && dish.subItems.length > 0) {
       return !dish.subItems.some((sub: any) => {
-        const dbItem = MENU_ITEMS.find((m: any) => m.id === sub.id);
+        const dbItem = findItem(sub.id);
         return dbItem?.isAvailable === false;
       });
     }
-    const dbItem = MENU_ITEMS.find((m: any) => m.id === dish.id);
+    const dbItem = findItem(dish.id);
     return dbItem ? dbItem.isAvailable !== false : true;
   };
 
@@ -96,6 +94,14 @@ export default function FavoriteScreen() {
       <CartBadgeIcon onPress={() => router.push('/cart')} />
     </View>
   );
+
+  if (loading && favorites.length === 0) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }]}>
+        <StatusBar style="light" />
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -163,7 +169,7 @@ export default function FavoriteScreen() {
             </View>
             <Text style={[styles.emptyTitle, { color: colors.text }]}>No Favorites Yet</Text>
             <Text style={[styles.emptySubtitle, { color: colors.textMuted }]}>
-              You haven&aps;t added any meals to your favorites. Tap the heart icon on any meal to save it for later!
+              You haven&apos;t added any meals to your favorites. Tap the heart icon on any meal to save it for later!
             </Text>
             <TouchableOpacity style={styles.browseBtn} onPress={() => router.push('/menu')} activeOpacity={0.8}>
               <Text style={styles.browseBtnText}>Browse Menu</Text>
