@@ -17,6 +17,9 @@ import { useTheme } from '../context/ThemeContext';
 import { Colors } from '../constants/Colors';
 import { useUser } from '../context/UserContext';
 import api from './lib/api';
+import { useNotifications } from '../context/NotificationContext';
+import { useAddresses } from '../context/AddressContext';
+import { useFavorites } from '../context/FavoriteContext';
 
 const VALID_PIN = '123456'; 
 
@@ -28,6 +31,10 @@ export default function UnlockScreen() {
 
   const [isBiometricSupported, setIsBiometricSupported] = useState(false);
   const [isChecking, setIsChecking] = useState(true);
+
+  const { refresh: refreshNotifications } = useNotifications();
+  const { refresh: refreshAddresses } = useAddresses();
+  const { refresh: refreshFavorites } = useFavorites();
 
   const goToApp = useCallback(() => {
     router.replace('/(tabs)');
@@ -47,17 +54,19 @@ export default function UnlockScreen() {
         return;
       }
       await api.get('/api/auth/me');
+      await Promise.all([refreshNotifications(), refreshAddresses(), refreshFavorites()]);
       setIsChecking(false);
     } catch (err) {
       goToLogin();
     }
-  }, [goToLogin]);
+  }, [goToLogin, refreshNotifications, refreshAddresses, refreshFavorites]);
 
   const handleBiometricAuth = useCallback(async () => {
     const result = await LocalAuthentication.authenticateAsync({
       promptMessage: 'Unlock Bwari Kitchen',
     });
     if (result.success) {
+      await Promise.all([refreshNotifications(), refreshAddresses(), refreshFavorites()]);
       goToApp();
     }
   }, [goToApp]);

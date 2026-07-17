@@ -18,6 +18,9 @@ import { Colors } from '../constants/Colors';
 import { StatusBar } from 'expo-status-bar';
 import { useUser } from '../context/UserContext';
 import HeroHeader from '../components/HeroHeader';
+import { useNotifications } from '../context/NotificationContext';
+import { useAddresses } from '../context/AddressContext';
+import { useFavorites } from '../context/FavoriteContext';
 import api from './lib/api';
 import * as SecureStore from 'expo-secure-store';
 
@@ -38,6 +41,10 @@ export default function SignupScreen() {
   const [agreed, setAgreed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+
+  const { refresh: refreshNotifications } = useNotifications();
+  const { refresh: refreshAddresses } = useAddresses();
+  const { refresh: refreshFavorites } = useFavorites();
 
   // Validation now explicitly checks if passwords match
   const passwordsMatch = password === confirmPassword;
@@ -61,6 +68,7 @@ export default function SignupScreen() {
 
       await SecureStore.setItemAsync('authToken', token);
       updateUserData({ name: user.fullName, email: user.email });
+      await Promise.all([refreshNotifications(), refreshAddresses(), refreshFavorites()]);
       router.replace('/(tabs)');
     } catch (err: any) {
       setErrorMessage(err.response?.data?.message || 'Signup failed. Please try again.');

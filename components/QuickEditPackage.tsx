@@ -120,7 +120,7 @@ export default function QuickEditPackage({
     if (item.variants && item.variants.length > 0) {
       setVariantModalItem(item);
     } else {
-      const compositeKey = `${item.id}::Base::1`;
+      const compositeKey = `${item.id}::Base::${item.basePrice}`;
       setCustomPlate(prev => ({ ...prev, [compositeKey]: (prev[compositeKey] || 0) + 1 }));
     }
   };

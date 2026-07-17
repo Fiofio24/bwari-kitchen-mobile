@@ -160,21 +160,21 @@ export default function CheckoutScreen() {
       const paymentRes = await api.post('/api/payments/initialize', { orderId: order.id });
       const { paymentUrl, reference } = paymentRes.data;
 
-      // 3. Open Paystack in an in-app browser session
-      const result = await WebBrowser.openBrowserAsync(paymentUrl);
+      // 3. Open Paystack, waiting for redirect back to our app's custom scheme
+      const redirectUrl = 'bwarikitchen://payment-complete';
+      const result = await WebBrowser.openAuthSessionAsync(paymentUrl, redirectUrl);
 
-      // 4. Once the browser closes, verify payment status with the backend
-      if (result.type === 'dismiss' || result.type === 'cancel') {
-        const verifyRes = await api.get(`/api/payments/verify/${reference}`);
-        
-        if (verifyRes.data.status === 'successful') {
-          removeMultipleFromCart(checkoutItems.map((item: any) => item.id));
-          if (Platform.OS === 'web') window.alert('Payment Successful! Order Placed.');
-          else Alert.alert('Order Placed!', 'Your food is on the way.');
-          router.replace('/my-orders');
-        } else {
-          Alert.alert('Payment Not Confirmed', 'We could not confirm your payment. Check My Orders for status, or try again.');
-        }
+      // 4. Regardless of how the session ended, verify with the backend directly —
+      // this is the source of truth, not the browser session result itself.
+      const verifyRes = await api.get(`/api/payments/verify/${reference}`);
+
+      if (verifyRes.data.status === 'successful') {
+        removeMultipleFromCart(checkoutItems.map((item: any) => item.id));
+        if (Platform.OS === 'web') window.alert('Payment Successful! Order Placed.');
+        else Alert.alert('Order Placed!', 'Your food is on the way.');
+        router.replace('/my-orders');
+      } else {
+        Alert.alert('Payment Not Confirmed', 'We could not confirm your payment. Check My Orders for status, or try again.');
       }
     } catch (err: any) {
       Alert.alert('Order Failed', err.response?.data?.message || 'Something went wrong. Please try again.');

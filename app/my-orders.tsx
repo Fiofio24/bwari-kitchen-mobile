@@ -85,7 +85,7 @@ export default function MyOrdersScreen() {
 
   const fetchOrders = useCallback(async () => {
     try {
-      const res = await api.get('/api/orders/me?limit=50');
+      const res = await api.get('/api/orders?limit=50');
       setOrders(res.data.orders);
     } catch (err) {
       console.warn('Failed to load orders:', err);

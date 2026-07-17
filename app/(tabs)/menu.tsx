@@ -79,7 +79,7 @@ export default function MenuScreen() {
       setVariantModalItem(item);
     } else {
       // If it doesn't have variants, just add it directly using a standard base key
-      const compositeKey = `${item.id}::Base::1`;
+      const compositeKey = `${item.id}::Base::${item.basePrice}`;
       setCustomPlate(prev => ({ ...prev, [compositeKey]: (prev[compositeKey] || 0) + 1 }));
     }
   };
