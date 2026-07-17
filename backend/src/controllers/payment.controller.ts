@@ -258,3 +258,32 @@ export const getPaymentStatus = async (
 
   res.status(200).json({ payment })
 }
+
+export const paymentCallbackRedirect = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  const reference = req.query.reference as string
+
+  res.status(200).send(`
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Payment Complete</title>
+        <style>
+          body { font-family: -apple-system, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #f5f5f5; text-align: center; }
+          .box { padding: 30px; }
+          h2 { color: #2e7d32; }
+          p { color: #555; }
+        </style>
+      </head>
+      <body>
+        <div class="box">
+          <h2>Payment Received</h2>
+          <p>You can close this window and return to the Bwari Kitchen app.</p>
+        </div>
+      </body>
+    </html>
+  `)
+}

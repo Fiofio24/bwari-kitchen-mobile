@@ -5,6 +5,7 @@ import {
   verifyPaymentPublic,
   paystackWebhook,
   getPaymentStatus,
+  paymentCallbackRedirect,
 } from '../controllers/payment.controller'
 import { authenticate } from '../middleware/auth'
 
@@ -16,6 +17,7 @@ router.post(
   paystackWebhook
 )
 
+router.get('/verify', paymentCallbackRedirect)
 router.get('/verify/:reference', verifyPaymentPublic)
 router.post('/initialize', authenticate, initializePayment)
 router.get('/order/:orderId', authenticate, getPaymentStatus)
