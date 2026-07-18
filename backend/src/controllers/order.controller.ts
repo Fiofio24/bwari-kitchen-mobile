@@ -531,7 +531,7 @@ export const getMyOrders = async (
           select: {
             packageName: true,
             totalPrice: true,
-            items: { select: { itemName: true, quantity: true } }
+            items: { select: { itemName: true, quantity: true, unitPrice: true, totalPrice: true } }
           }
         },
         payment: { select: { paymentMethod: true, paymentStatus: true } }
