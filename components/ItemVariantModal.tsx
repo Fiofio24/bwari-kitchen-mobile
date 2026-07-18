@@ -76,7 +76,9 @@ export default function ItemVariantModal({ item, visible, onClose, onAddVariant 
             <Image source={typeof item.image === 'string' ? { uri: item.image } : item.image} style={styles.itemImage} resizeMode="cover" />
             <View style={styles.itemInfo}>
               <Text style={[styles.itemName, { color: colors.text }]} numberOfLines={1}>{item.name}</Text>
-              <Text style={[styles.itemCat, { color: colors.textMuted }]}>{item.category}</Text>
+              <Text style={[styles.itemCat, { color: colors.textMuted }]}>
+                {typeof item.category === 'string' ? item.category : item.category?.name}
+              </Text>
             </View>
           </View>
 

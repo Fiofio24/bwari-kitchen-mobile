@@ -164,17 +164,33 @@ export default function CheckoutScreen() {
       const redirectUrl = 'bwarikitchen://payment-complete';
       const result = await WebBrowser.openAuthSessionAsync(paymentUrl, redirectUrl);
 
-      // 4. Regardless of how the session ended, verify with the backend directly —
-      // this is the source of truth, not the browser session result itself.
-      const verifyRes = await api.get(`/api/payments/verify/${reference}`);
+      // 4. Regardless of how the session ended, verify with the backend directly.
+      // Retry a few times with a short delay, since Paystack's own confirmation
+      // can lag slightly behind the redirect completing.
+      const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+      let verified = false;
 
-      if (verifyRes.data.status === 'successful') {
+      for (let attempt = 0; attempt < 4; attempt++) {
+        try {
+          const verifyRes = await api.get(`/api/payments/verify/${reference}`);
+          if (verifyRes.data.status === 'successful') {
+            verified = true;
+            break;
+          }
+        } catch (verifyErr) {
+          // keep retrying — a failed verify attempt isn't necessarily final
+        }
+        if (attempt < 3) await wait(2000);
+      }
+
+      if (verified) {
         removeMultipleFromCart(checkoutItems.map((item: any) => item.id));
         if (Platform.OS === 'web') window.alert('Payment Successful! Order Placed.');
         else Alert.alert('Order Placed!', 'Your food is on the way.');
         router.replace('/my-orders');
       } else {
-        Alert.alert('Payment Not Confirmed', 'We could not confirm your payment. Check My Orders for status, or try again.');
+        Alert.alert('Payment Processing', 'Your payment is being confirmed. Check My Orders shortly for the latest status.');
+        router.replace('/my-orders');
       }
     } catch (err: any) {
       Alert.alert('Order Failed', err.response?.data?.message || 'Something went wrong. Please try again.');
