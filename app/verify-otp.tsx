@@ -178,7 +178,7 @@ export default function VerifyOTPScreen() {
           {/* Resend Logic */}
           <View style={styles.resendContainer}>
             <Text style={[styles.resendText, { color: colors.textMuted }]}>
-              Didn't receive the code?{' '}
+              Didn&apos;t receive the code?{' '}
             </Text>
             <TouchableOpacity onPress={handleResend} disabled={resendTimer > 0}>
               <Text style={[
