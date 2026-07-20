@@ -246,11 +246,24 @@ export default function GridDishCard({
           <View style={styles.titleRow}>
             <Text 
               style={[styles.dishName, { color: colors.text }]} 
+              numberOfLines={2}
+            >
+              {name}
+            </Text>
+            
+            
+          </View>
+        )}
+        
+        {((category && name) || isCompact) && (
+          <View style={styles.titleRow}>
+            <Text 
+              style={[styles.subText, { color: colors.textMuted }]}
               numberOfLines={1}
             >
               {category || name}
             </Text>
-            
+
             {rating && (
               <View style={styles.ratingRow}>
                 <Text style={[styles.ratingText, { color: colors.text }]}>
@@ -260,15 +273,6 @@ export default function GridDishCard({
               </View>
             )}
           </View>
-        )}
-        
-        {((category && name) || isCompact) && (
-          <Text 
-            style={[styles.subText, { color: colors.textMuted }]} 
-            numberOfLines={2}
-          >
-            {name}
-          </Text>
         )}
         
         <View style={[

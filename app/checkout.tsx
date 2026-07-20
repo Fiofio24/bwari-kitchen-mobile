@@ -10,6 +10,7 @@ import {
   TextInput,
   Switch,
   ActivityIndicator,
+  DeviceEventEmitter // <-- Added for instant button updates
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -65,11 +66,26 @@ export default function CheckoutScreen() {
   const [deliveryMethod, setDeliveryMethod] = useState<'delivery' | 'pickup'>('delivery'); 
   const [isProcessing, setIsProcessing] = useState(false);
   const [orderNote, setOrderNote] = useState('');
-  const [noCutlery, setNoCutlery] = useState(true);
+  const [noCutlery, setNoCutlery] = useState(false); // <-- Changed default to false
   const [isAddressModalVisible, setIsAddressModalVisible] = useState(false); 
   const [promoCode, setPromoCode] = useState('');
   const [promoResult, setPromoResult] = useState<{ discountAmount: number; message: string } | null>(null);
   const [applyingPromo, setApplyingPromo] = useState(false);
+
+  // <-- Added Smart Toggle Handler
+  const handleCutleryToggle = (newValue: boolean) => {
+    setNoCutlery(newValue);
+    const CUTLERY_NOTE = "No cutlery required.";
+    
+    if (newValue) {
+      setOrderNote(prev => {
+        if (prev.includes(CUTLERY_NOTE)) return prev;
+        return prev.trim() ? `${prev.trim()} - ${CUTLERY_NOTE}` : CUTLERY_NOTE;
+      });
+    } else {
+      setOrderNote(prev => prev.replace(` - ${CUTLERY_NOTE}`, '').replace(CUTLERY_NOTE, '').trim());
+    }
+  };
 
   const bottomNavHeight = 70 + Math.max(insets.bottom, 15);
 
@@ -185,10 +201,18 @@ export default function CheckoutScreen() {
 
       if (verified) {
         removeMultipleFromCart(checkoutItems.map((item: any) => item.id));
+        
+        // INSTANT GLOW TRIGGER: This tells the floating bag to light up immediately!
+        DeviceEventEmitter.emit('ORDER_PLACED');
+        
         if (Platform.OS === 'web') window.alert('Payment Successful! Order Placed.');
         else Alert.alert('Order Placed!', 'Your food is on the way.');
         router.replace('/my-orders');
       } else {
+        
+        // INSTANT GLOW TRIGGER: Triggers even if payment is delayed to reassure the user
+        DeviceEventEmitter.emit('ORDER_PLACED');
+        
         Alert.alert('Payment Processing', 'Your payment is being confirmed. Check My Orders shortly for the latest status.');
         router.replace('/my-orders');
       }
@@ -299,7 +323,7 @@ export default function CheckoutScreen() {
             </View>
             <Switch 
               value={noCutlery} 
-              onValueChange={setNoCutlery} 
+              onValueChange={handleCutleryToggle} // <-- Attached the new handler here
               trackColor={{ false: '#767577', true: '#81C784' }} 
               thumbColor={noCutlery ? '#388E3C' : '#f4f3f4'} 
             />

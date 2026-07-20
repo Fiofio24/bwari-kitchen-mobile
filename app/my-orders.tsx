@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { 
   View, 
   Text, 
@@ -10,7 +10,7 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router'; // <-- Added useFocusEffect
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { Colors } from '../constants/Colors';
@@ -83,6 +83,7 @@ export default function MyOrdersScreen() {
   const [reviewStatus, setReviewStatus] = useState<Record<string, { reviewed: boolean; rating: number }>>({});
   const [submittingReview, setSubmittingReview] = useState<string | null>(null);
 
+  // Notice we don't handle loading=true here anymore. The FocusEffect handles it.
   const fetchOrders = useCallback(async () => {
     try {
       const res = await api.get('/api/orders?limit=50');
@@ -92,10 +93,27 @@ export default function MyOrdersScreen() {
     }
   }, []);
 
-  useEffect(() => {
-    setLoading(true);
-    fetchOrders().finally(() => setLoading(false));
-  }, [fetchOrders]);
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+
+      // 1. When the screen opens, fetch orders. Once done, turn off the loading spinner.
+      fetchOrders().finally(() => {
+        if (isActive) setLoading(false);
+      });
+
+      // 2. Set up a silent polling interval (every 15 seconds) ONLY while this screen is open
+      const intervalId = setInterval(() => {
+        fetchOrders();
+      }, 15000);
+
+      // 3. Clean up and stop polling when the user leaves this screen
+      return () => {
+        isActive = false;
+        clearInterval(intervalId);
+      };
+    }, [fetchOrders])
+  );
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -385,7 +403,6 @@ export default function MyOrdersScreen() {
   );
 }
 
-// styles object unchanged — reuse exactly what you already have
 const styles = StyleSheet.create({
   container: { flex: 1 },
   iconButton: { padding: 5, justifyContent: 'center', alignItems: 'center' },

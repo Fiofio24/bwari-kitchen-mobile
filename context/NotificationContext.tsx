@@ -15,7 +15,7 @@ interface NotificationContextType {
   notifications: AppNotification[];
   unreadCount: number;
   loading: boolean;
-  refresh: () => Promise<void>;
+  refresh: (silent?: boolean) => Promise<void>;
   markAsRead: (id: string) => Promise<void>;
   markAllAsRead: () => Promise<void>;
   deleteNotification: (id: string) => Promise<void>;
@@ -28,8 +28,9 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  const refresh = useCallback(async () => {
-    setLoading(true);
+  // We added a 'silent' parameter. If true, it won't trigger the loading spinner!
+  const refresh = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const res = await api.get('/api/notifications?limit=50');
       setNotifications(res.data.notifications);
@@ -37,12 +38,21 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     } catch (err) {
       console.warn('Failed to load notifications:', err);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, []);
 
   useEffect(() => {
+    // 1. Do a normal refresh on app launch
     refresh();
+
+    // 2. Set up a silent background poll every 30 seconds
+    const intervalId = setInterval(() => {
+      refresh(true); // true = silent, no loading spinner!
+    }, 30000);
+
+    // 3. Clean up the interval if the context unmounts
+    return () => clearInterval(intervalId);
   }, [refresh]);
 
   const markAsRead = async (id: string) => {
