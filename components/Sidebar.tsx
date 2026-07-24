@@ -19,9 +19,11 @@ import { useTheme } from '../context/ThemeContext';
 import { useUser } from '../context/UserContext'; 
 import { useSafeAreaInsets } from 'react-native-safe-area-context'; 
 import { useRouter } from 'expo-router'; 
+import api from '../app/lib/api'; // <-- Imported API
 
 const { width } = Dimensions.get('window');
 const SIDEBAR_WIDTH = width * 0.75; 
+const ACTIVE_STATUSES = ['pending', 'confirmed', 'preparing', 'ready', 'picked_up', 'on_the_way'];
 
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 
@@ -48,6 +50,9 @@ export default function Sidebar({ visible, onClose, menuItems, profileOverride }
   const fadeAnim = useRef(new Animated.Value(0)).current; 
   const [isRendering, setIsRendering] = useState(visible);
   
+  // NEW: State to hold the dynamic order count
+  const [activeOrderCount, setActiveOrderCount] = useState(0);
+  
   const { colors, mode, setThemeMode, isDark } = useTheme();
   const { userData, resetToDefault } = useUser(); 
   const insets = useSafeAreaInsets();
@@ -56,6 +61,23 @@ export default function Sidebar({ visible, onClose, menuItems, profileOverride }
   const safeTop = Platform.OS === 'web' ? 50 : insets.top + 20;
 
   const profileToDisplay = profileOverride || userData;
+
+  // NEW: Fetch active orders silently every time the sidebar opens
+  useEffect(() => {
+    if (visible) {
+      const fetchActiveOrders = async () => {
+        try {
+          const res = await api.get('/api/orders?limit=20');
+          const orders = res.data.orders || [];
+          const count = orders.filter((o: any) => ACTIVE_STATUSES.includes(o.status)).length;
+          setActiveOrderCount(count);
+        } catch (err) {
+          // Silent fail to preserve UX
+        }
+      };
+      fetchActiveOrders();
+    }
+  }, [visible]);
 
   useEffect(() => {
     if (visible) {
@@ -92,9 +114,10 @@ export default function Sidebar({ visible, onClose, menuItems, profileOverride }
     }
   }, [visible, slideAnim, fadeAnim]);
 
+  // NEW: Replaced the hardcoded '4' with our dynamic state
   const defaultMenuItems: SidebarMenuItem[] = [
     { name: 'Account & Settings', icon: 'person-outline', route: '/profile' },
-    { name: 'My Orders', icon: 'bag-handle-outline', route: '/my-orders', badge: '4' },
+    { name: 'My Orders', icon: 'bag-handle-outline', route: '/my-orders', badge: activeOrderCount > 0 ? activeOrderCount.toString() : undefined },
     { name: 'Saved Addresses', icon: 'location-outline', route: '/saved-addresses' },
     { name: 'Offers & Promo', icon: 'pricetag-outline', route: '/promo', badge: 'NEW' },
     { name: 'Help & Support', icon: 'chatbubbles-outline', route: '/help' },

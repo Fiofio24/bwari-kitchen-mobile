@@ -72,15 +72,28 @@ export default function MenuScreen() {
     } finally {
       setRefreshing(false); 
     }
-  }, [refresh]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleCardPress = (item: any) => {
-    if (item.variants && item.variants.length > 0) {
-      setVariantModalItem(item);
+    // 1. Check if ANY variant of this item is already in the custom plate
+    const existingKeys = Object.keys(customPlate).filter(key => key.startsWith(item.id + '::'));
+
+    if (existingKeys.length > 0) {
+      // 2. If it is already selected, DESELECT IT by completely removing it
+      setCustomPlate(prev => {
+        const newState = { ...prev };
+        existingKeys.forEach(key => delete newState[key]);
+        return newState;
+      });
     } else {
-      // If it doesn't have variants, just add it directly using a standard base key
-      const compositeKey = `${item.id}::Base::${item.basePrice}`;
-      setCustomPlate(prev => ({ ...prev, [compositeKey]: (prev[compositeKey] || 0) + 1 }));
+      // 3. If it is NOT selected, proceed to add it or open the portion modal
+      if (item.variants && item.variants.length > 0) {
+        setVariantModalItem(item);
+      } else {
+        const compositeKey = `${item.id}::Base::${item.basePrice}`;
+        setCustomPlate(prev => ({ ...prev, [compositeKey]: 1 }));
+      }
     }
   };
 
@@ -243,8 +256,6 @@ export default function MenuScreen() {
           <Text style={[menuStyles.mainTitle, { color: Colors.primary }]}>Made Just For You</Text>
         </View>
 
-        
-
         {isPackageEmpty ? (
           <View style={[menuStyles.emptyBox, { borderColor: isDark ? colors.border : '#FFCCCC', backgroundColor: isDark ? 'rgba(255,0,0,0.05)' : '#FFF0F0' }]}>
             <Image 
@@ -327,7 +338,7 @@ export default function MenuScreen() {
                 <GridDishCard 
                   name={item.name} 
                   price={`₦${item.basePrice.toLocaleString()}`}
-                  image={item.imageUrl || undefined}
+                  image={item.imageUrl || 'https://cdn-icons-png.flaticon.com/512/684/684045.png'}
                   isSelected={isSelected}
                   isAvailable={item.isAvailable !== false} 
                   onPress={item.isAvailable !== false ? () => handleCardPress(item) : undefined}

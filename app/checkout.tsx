@@ -10,7 +10,7 @@ import {
   TextInput,
   Switch,
   ActivityIndicator,
-  DeviceEventEmitter // <-- Added for instant button updates
+  DeviceEventEmitter
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -26,8 +26,6 @@ import TopNav from '../components/TopNav';
 import HomeIcon from '../components/HomeIcon';
 import api from './lib/api';
 
-// Every cart entry — real package, custom plate, or plain item — becomes
-// one "package" entry for the backend, matching its package-centric order model.
 const buildOrderPackagesPayload = (items: any[]) => {
   return items.map((item: any) => {
     if (item.subItems && item.subItems.length > 0) {
@@ -66,13 +64,12 @@ export default function CheckoutScreen() {
   const [deliveryMethod, setDeliveryMethod] = useState<'delivery' | 'pickup'>('delivery'); 
   const [isProcessing, setIsProcessing] = useState(false);
   const [orderNote, setOrderNote] = useState('');
-  const [noCutlery, setNoCutlery] = useState(false); // <-- Changed default to false
+  const [noCutlery, setNoCutlery] = useState(false); 
   const [isAddressModalVisible, setIsAddressModalVisible] = useState(false); 
   const [promoCode, setPromoCode] = useState('');
   const [promoResult, setPromoResult] = useState<{ discountAmount: number; message: string } | null>(null);
   const [applyingPromo, setApplyingPromo] = useState(false);
 
-  // <-- Added Smart Toggle Handler
   const handleCutleryToggle = (newValue: boolean) => {
     setNoCutlery(newValue);
     const CUTLERY_NOTE = "No cutlery required.";
@@ -90,6 +87,15 @@ export default function CheckoutScreen() {
   const bottomNavHeight = 70 + Math.max(insets.bottom, 15);
 
   const checkoutItems = useMemo(() => {
+    if (params.instantReorder) {
+      try {
+        const decoded = decodeURIComponent(params.instantReorder as string);
+        return JSON.parse(decoded);
+      } catch (e) {
+        console.warn("Failed to parse instant reorder items", e);
+      }
+    }
+
     if (params.selectedItems) {
       try {
         const selectedIds = JSON.parse(params.selectedItems as string);
@@ -99,12 +105,10 @@ export default function CheckoutScreen() {
       }
     }
     return cartItems;
-  }, [params.selectedItems, cartItems]);
+  }, [params.instantReorder, params.selectedItems, cartItems]);
 
-  const subtotal = checkoutItems.reduce((sum, item) => sum + (item.price * (item.quantity || 1)), 0);
+  const subtotal = checkoutItems.reduce((sum: number, item: any) => sum + (item.price * (item.quantity || 1)), 0);
   
-  // Delivery fee is calculated server-side by the backend once the order is placed;
-  // this is just an estimate shown before checkout so the UI isn't blank.
   const [estimatedDeliveryFee, setEstimatedDeliveryFee] = useState(0);
 
   React.useEffect(() => {
@@ -116,7 +120,7 @@ export default function CheckoutScreen() {
       try {
         const res = await api.post('/api/addresses/delivery-fee', { addressId: activeAddress.id });
         setEstimatedDeliveryFee(res.data.deliveryFee);
-      } catch (err) {
+      } catch {
         setEstimatedDeliveryFee(0);
       }
     };
@@ -153,7 +157,6 @@ export default function CheckoutScreen() {
     setIsProcessing(true);
 
     try {
-      // 1. Create the order
       const orderPayload: any = {
         orderType: deliveryMethod,
         paymentMethod: 'paystack',
@@ -172,17 +175,12 @@ export default function CheckoutScreen() {
       const orderRes = await api.post('/api/orders', orderPayload);
       const order = orderRes.data.order;
 
-      // 2. Initialize payment for that order
       const paymentRes = await api.post('/api/payments/initialize', { orderId: order.id });
       const { paymentUrl, reference } = paymentRes.data;
 
-      // 3. Open Paystack, waiting for redirect back to our app's custom scheme
       const redirectUrl = 'bwarikitchen://payment-complete';
-      const result = await WebBrowser.openAuthSessionAsync(paymentUrl, redirectUrl);
+      await WebBrowser.openAuthSessionAsync(paymentUrl, redirectUrl);
 
-      // 4. Regardless of how the session ended, verify with the backend directly.
-      // Retry a few times with a short delay, since Paystack's own confirmation
-      // can lag slightly behind the redirect completing.
       const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
       let verified = false;
 
@@ -193,26 +191,24 @@ export default function CheckoutScreen() {
             verified = true;
             break;
           }
-        } catch (verifyErr) {
-          // keep retrying — a failed verify attempt isn't necessarily final
+        } catch {
+          // keep retrying
         }
         if (attempt < 3) await wait(2000);
       }
 
       if (verified) {
-        removeMultipleFromCart(checkoutItems.map((item: any) => item.id));
+        if (!params.instantReorder) {
+          removeMultipleFromCart(checkoutItems.map((item: any) => item.id));
+        }
         
-        // INSTANT GLOW TRIGGER: This tells the floating bag to light up immediately!
         DeviceEventEmitter.emit('ORDER_PLACED');
         
         if (Platform.OS === 'web') window.alert('Payment Successful! Order Placed.');
         else Alert.alert('Order Placed!', 'Your food is on the way.');
         router.replace('/my-orders');
       } else {
-        
-        // INSTANT GLOW TRIGGER: Triggers even if payment is delayed to reassure the user
         DeviceEventEmitter.emit('ORDER_PLACED');
-        
         Alert.alert('Payment Processing', 'Your payment is being confirmed. Check My Orders shortly for the latest status.');
         router.replace('/my-orders');
       }
@@ -281,10 +277,10 @@ export default function CheckoutScreen() {
                 </View>
                 <View style={styles.addressTextContainer}>
                   <Text style={[styles.addressTitle, { color: colors.text }]} numberOfLines={1}>
-                    {activeAddress?.label || "No address selected"}
+                    {(activeAddress as any)?.title || (activeAddress as any)?.label || "No address selected"}
                   </Text>
                   <Text style={[styles.addressDetail, { color: colors.textMuted }]} numberOfLines={1}>
-                    {activeAddress ? [activeAddress.streetAddress, activeAddress.area].filter(Boolean).join(', ') : "Please add a delivery address"}
+                    {activeAddress ? [(activeAddress as any)?.address || (activeAddress as any)?.streetAddress, (activeAddress as any)?.area].filter(Boolean).join(', ') : "Please add a delivery address"}
                   </Text>
                 </View>
                 <TouchableOpacity onPress={() => setIsAddressModalVisible(true)}>
@@ -323,7 +319,7 @@ export default function CheckoutScreen() {
             </View>
             <Switch 
               value={noCutlery} 
-              onValueChange={handleCutleryToggle} // <-- Attached the new handler here
+              onValueChange={handleCutleryToggle} 
               trackColor={{ false: '#767577', true: '#81C784' }} 
               thumbColor={noCutlery ? '#388E3C' : '#f4f3f4'} 
             />
@@ -472,7 +468,7 @@ const styles = StyleSheet.create({
   summaryItemPrice: { fontSize: 15, fontWeight: 'bold' },
   totalsContainer: { marginTop: 15 },
   summaryRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
-  summaryLabel: { fontSize: 15 },
+  summaryLabel: { fontSize: 15 }, 
   summaryValue: { fontSize: 15, fontWeight: '600' },
   divider: { height: 1, marginVertical: 10 },
   totalLabel: { fontSize: 16, fontWeight: 'bold' },

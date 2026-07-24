@@ -10,7 +10,7 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
-import { useRouter, useFocusEffect } from 'expo-router'; // <-- Added useFocusEffect
+import { useRouter, useFocusEffect } from 'expo-router'; 
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { Colors } from '../constants/Colors';
@@ -83,7 +83,6 @@ export default function MyOrdersScreen() {
   const [reviewStatus, setReviewStatus] = useState<Record<string, { reviewed: boolean; rating: number }>>({});
   const [submittingReview, setSubmittingReview] = useState<string | null>(null);
 
-  // Notice we don't handle loading=true here anymore. The FocusEffect handles it.
   const fetchOrders = useCallback(async () => {
     try {
       const res = await api.get('/api/orders?limit=50');
@@ -97,17 +96,14 @@ export default function MyOrdersScreen() {
     useCallback(() => {
       let isActive = true;
 
-      // 1. When the screen opens, fetch orders. Once done, turn off the loading spinner.
       fetchOrders().finally(() => {
         if (isActive) setLoading(false);
       });
 
-      // 2. Set up a silent polling interval (every 15 seconds) ONLY while this screen is open
       const intervalId = setInterval(() => {
         fetchOrders();
       }, 15000);
 
-      // 3. Clean up and stop polling when the user leaves this screen
       return () => {
         isActive = false;
         clearInterval(intervalId);
@@ -125,12 +121,33 @@ export default function MyOrdersScreen() {
     activeTab === 'active' ? ACTIVE_STATUSES.includes(order.status) : !ACTIVE_STATUSES.includes(order.status)
   );
 
+  const handleReorder = (order: Order) => {
+    const reorderPayload = order.orderPackages.map((pkg, index) => ({
+      id: `custom_reorder_${order.id}_${index}`,
+      name: pkg.packageName,
+      price: pkg.totalPrice,
+      quantity: 1,
+      subItems: pkg.items.map(item => ({
+        id: item.itemName,
+        name: item.itemName,
+        qty: item.quantity,
+        price: item.unitPrice
+      }))
+    }));
+
+    const encodedPayload = encodeURIComponent(JSON.stringify(reorderPayload));
+
+    router.push({
+      pathname: '/checkout',
+      params: { instantReorder: encodedPayload }
+    });
+  };
+
   const toggleExpand = async (id: string) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     const willExpand = expandedId !== id;
     setExpandedId(willExpand ? id : null);
 
-    // Lazily check review status the first time a delivered order is expanded
     if (willExpand && !reviewStatus[id]) {
       const order = orders.find(o => o.id === id);
       if (order?.status === 'delivered') {
@@ -275,7 +292,6 @@ export default function MyOrdersScreen() {
           {filteredOrders.length > 0 ? (
             filteredOrders.map(order => {
               const isExpanded = expandedId === order.id;
-              const allItems = order.orderPackages.flatMap(pkg => pkg.items);
               const isActive = ACTIVE_STATUSES.includes(order.status);
               const review = reviewStatus[order.id];
               
@@ -318,21 +334,45 @@ export default function MyOrdersScreen() {
 
                       <View style={[styles.receiptBox, { backgroundColor: isDark ? colors.background : '#F9F9F9' }]}>
                         <Text style={[styles.receiptTitle, { color: colors.textMuted }]}>ORDER DETAILS</Text>
-                        {allItems.map((item, idx) => (
-                          <View key={idx} style={styles.receiptItemRow}>
-                            <Text style={[styles.receiptItemQty, { color: colors.text }]}>{item.quantity}x</Text>
-                            <Text style={[styles.receiptItemName, { color: colors.text }]} numberOfLines={1}>{item.itemName}</Text>
-                            <Text style={[styles.receiptItemPrice, { color: colors.text }]}>₦{item.totalPrice.toLocaleString()}</Text>
+                        
+                        {order.orderPackages.map((pkg, pkgIndex) => (
+                          <View key={pkgIndex} style={styles.packageGroupContainer}>
+                            <Text style={[styles.packageGroupName, { color: colors.text }]}>
+                              {pkg.packageName}
+                            </Text>
+                            
+                            {pkg.items.map((item, itemIdx) => (
+                              <View key={itemIdx} style={styles.receiptItemRow}>
+                                <Text style={[styles.receiptItemName, { color: colors.textMuted }]} numberOfLines={1}>
+                                  {item.itemName} × {item.quantity}
+                                </Text>
+                                <Text style={[styles.receiptItemPrice, { color: colors.textMuted }]}>
+                                  ₦{item.totalPrice.toLocaleString()}
+                                </Text>
+                              </View>
+                            ))}
                           </View>
                         ))}
+
                         <View style={[styles.dashedDivider, { borderColor: colors.border }]} />
                         <View style={styles.receiptItemRow}>
                           <Text style={[styles.receiptSubText, { color: colors.textMuted }]}>Subtotal</Text>
-                          <Text style={[styles.receiptSubText, { color: colors.textMuted, textAlign: 'right' }]}>₦{order.subtotal.toLocaleString()}</Text>
+                          <Text style={[styles.receiptSubText, { color: colors.textMuted, textAlign: 'right', fontWeight: 'bold' }]}>
+                            ₦{order.subtotal.toLocaleString()}
+                          </Text>
                         </View>
                         <View style={styles.receiptItemRow}>
                           <Text style={[styles.receiptSubText, { color: colors.textMuted }]}>Delivery Fee</Text>
-                          <Text style={[styles.receiptSubText, { color: colors.textMuted, textAlign: 'right' }]}>₦{order.deliveryFee.toLocaleString()}</Text>
+                          <Text style={[styles.receiptSubText, { color: colors.textMuted, textAlign: 'right', fontWeight: 'bold' }]}>
+                            ₦{order.deliveryFee.toLocaleString()}
+                          </Text>
+                        </View>
+                        <View style={[styles.dashedDivider, { borderColor: colors.border }]} />
+                        <View style={styles.receiptItemRow}>
+                          <Text style={[styles.receiptTotalText, { color: colors.text }]}>Total</Text>
+                          <Text style={[styles.receiptTotalValue, { color: Colors.primary }]}>
+                            ₦{order.totalAmount.toLocaleString()}
+                          </Text>
                         </View>
                       </View>
 
@@ -378,7 +418,10 @@ export default function MyOrdersScreen() {
                             <Text style={styles.primaryActionText}>Track Order</Text>
                           </TouchableOpacity>
                         ) : (
-                          <TouchableOpacity style={[styles.primaryActionBtn, { backgroundColor: Colors.primary }]}>
+                          <TouchableOpacity 
+                            style={[styles.primaryActionBtn, { backgroundColor: Colors.primary }]}
+                            onPress={() => handleReorder(order)}
+                          >
                             <Text style={styles.primaryActionText}>Reorder</Text>
                           </TouchableOpacity>
                         )}
@@ -435,13 +478,18 @@ const styles = StyleSheet.create({
   stepText: { fontSize: 11, fontWeight: '600' },
   stepTextActive: { fontWeight: 'bold', color: Colors.primary },
   receiptBox: { padding: 15, borderRadius: 15, marginBottom: 20 },
-  receiptTitle: { fontSize: 11, fontWeight: 'bold', letterSpacing: 1, marginBottom: 12 },
-  receiptItemRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
-  receiptItemQty: { width: 25, fontSize: 13, fontWeight: 'bold' },
+  receiptTitle: { fontSize: 11, fontWeight: 'bold', letterSpacing: 1, marginBottom: 15 },
+  
+  packageGroupContainer: { marginBottom: 15 },
+  packageGroupName: { fontSize: 14, fontWeight: 'bold', marginBottom: 8 },
+  receiptItemRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
   receiptItemName: { flex: 1, fontSize: 13, paddingRight: 10 },
-  receiptItemPrice: { fontSize: 13, fontWeight: 'bold' },
+  receiptItemPrice: { fontSize: 13, fontWeight: '500' },
+  
   dashedDivider: { borderTopWidth: 1, borderStyle: 'dashed', marginVertical: 10 },
-  receiptSubText: { fontSize: 13, flex: 1 },
+  receiptSubText: { fontSize: 14, flex: 1 },
+  receiptTotalText: { fontSize: 16, fontWeight: 'bold', flex: 1 },
+  receiptTotalValue: { fontSize: 18, fontWeight: '900' },
   ratingSection: { alignItems: 'center', marginBottom: 20, paddingVertical: 10, borderRadius: 15 },
   ratingLabel: { fontSize: 14, fontWeight: 'bold', marginBottom: 8 },
   starsRow: { flexDirection: 'row', minHeight: 30, alignItems: 'center' },
