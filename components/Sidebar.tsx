@@ -20,6 +20,7 @@ import { useUser } from '../context/UserContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context'; 
 import { useRouter } from 'expo-router'; 
 import api from '../app/lib/api'; // <-- Imported API
+import * as SecureStore from 'expo-secure-store';
 
 const { width } = Dimensions.get('window');
 const SIDEBAR_WIDTH = width * 0.75; 
@@ -125,6 +126,29 @@ export default function Sidebar({ visible, onClose, menuItems, profileOverride }
 
   const itemsToRender = menuItems || defaultMenuItems;
 
+  // NEW: Dedicated, bulletproof navigation handlers that instantly kill the Modal
+  const executeNavigation = (route: string) => {
+    setIsRendering(false); // Instantly vaporize the Modal!
+    onClose(); // Update parent state
+    
+    // Wait just 50ms for React to clear the UI tree, then route safely
+    setTimeout(() => {
+      router.push(route as any);
+    }, 50);
+  };
+
+  const executeLogout = async () => {
+    setIsRendering(false); // Instantly vaporize the Modal!
+    onClose();
+    
+    await SecureStore.deleteItemAsync('authToken');
+    resetToDefault();
+    
+    setTimeout(() => {
+      router.replace('/welcome');
+    }, 50);
+  };
+
   if (!isRendering) return null;
 
   return (
@@ -188,8 +212,7 @@ export default function Sidebar({ visible, onClose, menuItems, profileOverride }
             <TouchableOpacity
               onPress={() => {
                 if (!profileOverride) {
-                  onClose(); 
-                  router.replace('/profile');
+                  executeNavigation('/profile');
                 }
               }}
               activeOpacity={profileOverride ? 1 : 0.7}
@@ -253,9 +276,10 @@ export default function Sidebar({ visible, onClose, menuItems, profileOverride }
                   style={[styles.menuItem, { borderBottomColor: colors.border }]} 
                   activeOpacity={0.7}
                   onPress={() => {
-                    onClose();
                     if (item.route) {
-                      router.push(item.route as any);
+                      executeNavigation(item.route);
+                    } else {
+                      onClose();
                     }
                   }}
                 >
@@ -285,11 +309,7 @@ export default function Sidebar({ visible, onClose, menuItems, profileOverride }
             <TouchableOpacity 
               style={styles.logoutBtn} 
               activeOpacity={0.8}
-              onPress={() => {
-                onClose(); 
-                resetToDefault(); 
-                router.replace('/welcome');
-              }} 
+              onPress={executeLogout} 
             >
               <Ionicons name="log-out-outline" size={22} color="#D32F2F" />
               <Text style={styles.logoutText}>

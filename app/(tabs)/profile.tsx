@@ -21,10 +21,11 @@ import Sidebar from '../../components/Sidebar';
 import { useRouter } from 'expo-router'; 
 import TopNav from '../../components/TopNav';
 import CartBadgeIcon from '../../components/CartBadgeIcon';
+import * as SecureStore from 'expo-secure-store';
 
 export default function ProfileScreen() {
   const { colors, isDark, setThemeMode } = useTheme();
-  const { userData, updateAvatar } = useUser(); 
+  const { userData, updateAvatar, resetToDefault } = useUser(); 
   const router = useRouter(); 
   
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -98,12 +99,11 @@ export default function ProfileScreen() {
         leftIcon="menu-outline"
         onLeftPress={() => setIsSidebarOpen(true)}
         rightComponent={
-          <View style={styles.headerRight}>
-            <CartBadgeIcon onPress={() => router.push('/cart')} />
-          </View>
+          <TouchableOpacity style={styles.iconButton} onPress={() => {}}>
+            <Ionicons name="settings-outline" size={24} color="#FFF" />
+          </TouchableOpacity>
         }
         isAbsolute={false} 
-        isScrolled={true}
       />
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.scrollContent, { paddingBottom: 140 }]}>
@@ -180,6 +180,12 @@ export default function ProfileScreen() {
             label="Saved Addresses" 
             onPress={() => router.push('/saved-addresses')} 
           />
+          <ProfileMenuItem 
+            icon="card-outline" 
+            label="Payment Methods" 
+            subLabel="Manage cards" 
+            onPress={() => router.push('/payment-methods')} 
+          />
         </View>
 
         <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>SECURITY & APP</Text>
@@ -197,7 +203,6 @@ export default function ProfileScreen() {
           <ProfileMenuItem 
             icon="notifications-outline" 
             label="Notification Preferences" 
-            onPress={() => router.push('/notification-preferences')}
           />
         </View>
 
@@ -221,7 +226,11 @@ export default function ProfileScreen() {
             icon="log-out-outline" 
             label="Sign Out" 
             isDestructive={true} 
-            onPress={() => router.push('/welcome')}
+            onPress={async () => {
+              await SecureStore.deleteItemAsync('authToken'); // NUKE THE TOKEN
+              resetToDefault(); // WIPE LOCAL CONTEXT
+              router.replace('/welcome'); // REPLACE so they can't go back
+            }}
           />
         </View>
 
@@ -246,11 +255,6 @@ const styles = StyleSheet.create({
   },
   iconButton: { 
     padding: 5,
-  },
-  headerRight: { 
-    flexDirection: 'row', 
-    alignItems: 'center',
-    justifyContent: 'flex-end',
   },
   scrollContent: { 
     paddingTop: 20,

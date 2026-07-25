@@ -104,6 +104,7 @@ export default function PromoScreen() {
         >
           <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>AVAILABLE OFFERS</Text>
 
+          {}
           {promos.length === 0 ? (
             <View style={styles.emptyState}>
               <Ionicons name="notifications-off-outline" size={40} color={colors.textMuted} style={{ opacity: 0.3 }} />
@@ -147,16 +148,19 @@ export default function PromoScreen() {
 
                     <View style={styles.bottomRow}>
                       <View style={[styles.codeBox, { backgroundColor: isDark ? '#333' : '#F0F0F0' }]}>
-                        <Text style={[styles.codeText, { color: colors.text }]}>{promo.code}</Text>
+                        <Text style={[styles.codeText, { color: colors.text }]} numberOfLines={1}>{promo.code}</Text>
                       </View>
                       
                       <TouchableOpacity 
-                        style={[styles.copyBtn, copiedId === promo.id && { backgroundColor: '#4CAF50' }]} 
+                        style={[styles.copyIconBtn, copiedId === promo.id && { backgroundColor: '#4CAF50' }]} 
                         onPress={() => handleCopyCode(promo.code, promo.id)}
+                        activeOpacity={0.8}
                       >
-                        <Text style={styles.copyBtnText}>
-                          {copiedId === promo.id ? 'Copied!' : 'Copy Code'}
-                        </Text>
+                        <Ionicons 
+                          name={copiedId === promo.id ? "checkmark" : "copy-outline"} 
+                          size={20} 
+                          color="#FFF" 
+                        />
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -186,10 +190,9 @@ const styles = StyleSheet.create({
   minOrderText: { fontSize: 12, fontWeight: '600', marginBottom: 10 },
   dashedLine: { borderBottomWidth: 1, borderStyle: 'dashed', marginBottom: 20 },
   bottomRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  codeBox: { paddingVertical: 8, paddingHorizontal: 15, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)' },
-  codeText: { fontSize: 14, fontWeight: '900', letterSpacing: 2 },
-  copyBtn: { backgroundColor: Colors.primary, paddingVertical: 10, paddingHorizontal: 20, borderRadius: 12 },
-  copyBtnText: { color: '#FFF', fontSize: 13, fontWeight: 'bold' },
+  codeBox: { flex: 1, marginRight: 15, paddingVertical: 12, paddingHorizontal: 15, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)' },
+  codeText: { fontSize: 15, fontWeight: '900', letterSpacing: 2 },
+  copyIconBtn: { width: 46, height: 46, backgroundColor: Colors.primary, justifyContent: 'center', alignItems: 'center', borderRadius: 12 },
   emptyState: { alignItems: 'center', justifyContent: 'center', paddingVertical: 40 },
   emptyText: { fontSize: 14, marginTop: 10, textAlign: 'center', paddingHorizontal: 30 },
 });
