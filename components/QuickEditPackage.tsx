@@ -1,4 +1,3 @@
-// Note: This file requires an Expo/React Native environment to compile correctly.
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   View, 

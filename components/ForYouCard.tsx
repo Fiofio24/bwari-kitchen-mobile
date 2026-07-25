@@ -1,4 +1,3 @@
-// Note: This file requires an Expo/React Native environment to compile correctly.
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router'; // <-- Added to allow routing to Details
