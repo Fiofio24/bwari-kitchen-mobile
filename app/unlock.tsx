@@ -5,9 +5,10 @@ import {
   StyleSheet, 
   TouchableOpacity, 
   Image,
-  ActivityIndicator
+  ActivityIndicator,
+  BackHandler
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -21,8 +22,6 @@ import { useNotifications } from '../context/NotificationContext';
 import { useAddresses } from '../context/AddressContext';
 import { useFavorites } from '../context/FavoriteContext';
 
-const VALID_PIN = '123456'; 
-
 export default function UnlockScreen() {
   const router = useRouter();
   const { colors } = useTheme();
@@ -35,6 +34,19 @@ export default function UnlockScreen() {
   const { refresh: refreshNotifications } = useNotifications();
   const { refresh: refreshAddresses } = useAddresses();
   const { refresh: refreshFavorites } = useFavorites();
+
+  // THE POINT OF NO RETURN: Force app exit if they press the hardware back button here
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => {
+        BackHandler.exitApp();
+        return true; // Prevents default back navigation
+      };
+
+      const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+      return () => subscription.remove();
+    }, [])
+  );
 
   const goToApp = useCallback(() => {
     router.replace('/(tabs)');
@@ -56,7 +68,7 @@ export default function UnlockScreen() {
       await api.get('/api/auth/me');
       await Promise.all([refreshNotifications(), refreshAddresses(), refreshFavorites()]);
       setIsChecking(false);
-    } catch (err) {
+    } catch (_err) {
       goToLogin();
     }
   }, [goToLogin, refreshNotifications, refreshAddresses, refreshFavorites]);
@@ -69,7 +81,7 @@ export default function UnlockScreen() {
       await Promise.all([refreshNotifications(), refreshAddresses(), refreshFavorites()]);
       goToApp();
     }
-  }, [goToApp]);
+  }, [goToApp, refreshNotifications, refreshAddresses, refreshFavorites]);
 
   useEffect(() => {
     (async () => {

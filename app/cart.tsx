@@ -286,7 +286,7 @@ export default function CartScreen() {
         onLeftPress={() => router.back()}
         rightComponent={
           <View style={styles.headerRight}>
-            <HomeIcon onPress={() => router.push('/')} />
+            <HomeIcon onPress={() => router.push('/(tabs)')} />
           </View>
         }
         isAbsolute={false} 

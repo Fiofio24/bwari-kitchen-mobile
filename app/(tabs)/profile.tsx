@@ -221,7 +221,7 @@ export default function ProfileScreen() {
             icon="log-out-outline" 
             label="Sign Out" 
             isDestructive={true} 
-            onPress={() => router.push('/login')}
+            onPress={() => router.push('/welcome')}
           />
         </View>
 
