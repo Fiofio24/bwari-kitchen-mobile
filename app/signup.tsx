@@ -10,7 +10,7 @@ import {
   ScrollView,
   ActivityIndicator
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useSafeRouter } from '../hooks/useSafeRouter';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
@@ -25,7 +25,7 @@ import api from './lib/api';
 import * as SecureStore from 'expo-secure-store';
 
 export default function SignupScreen() {
-  const router = useRouter();
+  const router = useSafeRouter();
   const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const { updateUserData } = useUser();

@@ -10,7 +10,8 @@ import {
   TextInput,
   Keyboard
 } from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
+import { useSafeRouter } from '../hooks/useSafeRouter';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
@@ -20,7 +21,7 @@ import { StatusBar } from 'expo-status-bar';
 const OTP_LENGTH = 6;
 
 export default function VerifyOTPScreen() {
-  const router = useRouter();
+  const router = useSafeRouter();
   const { phone, email } = useLocalSearchParams();
   const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();

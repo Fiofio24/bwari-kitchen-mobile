@@ -18,7 +18,7 @@ interface GridDishCardProps {
   price: string;
   rating?: string;
   category?: string;
-  image: string; 
+  image: string | any; 
   isRectangle?: boolean;
   isCompact?: boolean; 
   isFavorite?: boolean; 
@@ -52,6 +52,9 @@ export default function GridDishCard({
   
   const expandAnim = useRef(new Animated.Value(0)).current;
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // The Tap Bouncer to prevent double-tap routing
+  const isTapLocked = useRef(false);
 
   useEffect(() => {
     const subscription = DeviceEventEmitter.addListener('HIDE_WARNING_BADGE', (emittedId) => {
@@ -104,52 +107,29 @@ export default function GridDishCard({
     outputRange: [28, 140] 
   });
 
-  // PRO UX FIX: Sold-out items have ZERO shadow to sink them into the background!
   const shadowStyle = !isAvailable 
     ? Platform.select({
-        ios: { 
-          shadowOpacity: 0 
-        },
-        android: { 
-          elevation: 0 
-        },
-        web: { 
-          boxShadow: 'none' 
-        } as any 
+        ios: { shadowOpacity: 0 },
+        android: { elevation: 0 },
+        web: { boxShadow: 'none' } as any 
       })
     : isDark 
       ? Platform.select({ 
-          ios: { 
-            shadowOpacity: 0 
-          }, 
-          android: { 
-            elevation: 0 
-          }, 
-          web: { 
-            boxShadow: 'none' 
-          } as any 
+          ios: { shadowOpacity: 0 }, 
+          android: { elevation: 0 }, 
+          web: { boxShadow: 'none' } as any 
         })
       : Platform.select({
-          ios: { 
-            shadowColor: '#000', 
-            shadowOpacity: 0.1, 
-            shadowRadius: 5, 
-            shadowOffset: { 
-              width: 0, 
-              height: 2 
-            } 
-          },
-          android: { 
-            elevation: 4, 
-            shadowColor: '#000' 
-          },
-          web: { 
-            boxShadow: '0px 2px 5px rgba(0, 0, 0, 0.1)' 
-          } as any 
+          ios: { shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 5, shadowOffset: { width: 0, height: 2 } },
+          android: { elevation: 4, shadowColor: '#000' },
+          web: { boxShadow: '0px 2px 5px rgba(0, 0, 0, 0.1)' } as any 
         });
 
   const handleCardPress = () => {
     if (onPress) {
+      if (isTapLocked.current) return; 
+      isTapLocked.current = true;
+      setTimeout(() => { isTapLocked.current = false; }, 800); 
       onPress();
     } else if (!isAvailable && !isCompact) {
       toggleExpand();
@@ -163,6 +143,15 @@ export default function GridDishCard({
       onAdd();
     }
   };
+
+  // BACKEND PROTECTION: Sanitize bad data from the API
+  let imageSource = typeof image === 'string' ? { uri: image } : image;
+  if (typeof image === 'string') {
+    const cleanImage = image.trim().toLowerCase();
+    if (cleanImage === '' || cleanImage === 'null' || cleanImage === 'undefined' || !cleanImage.startsWith('http')) {
+      imageSource = require('../assets/images/custom-plate.png');
+    }
+  }
 
   const CardContainer: any = (onPress || onAdd) ? TouchableOpacity : View;
 
@@ -186,8 +175,9 @@ export default function GridDishCard({
           { backgroundColor: isDark ? colors.border : '#EAEAEC' }
         ]}
       >
+        {/* THIS IS THE FIX: Applying the safe imageSource variable! */}
         <Image 
-          source={{ uri: image }} 
+          source={imageSource} 
           style={StyleSheet.absoluteFill} 
           resizeMode="cover" 
         />
@@ -248,8 +238,6 @@ export default function GridDishCard({
             >
               {name}
             </Text>
-            
-            
           </View>
         )}
         

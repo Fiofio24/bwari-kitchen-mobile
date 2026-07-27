@@ -18,7 +18,7 @@ import { useUser } from '../../context/UserContext';
 import { Colors } from '../../constants/Colors';
 import { StatusBar } from 'expo-status-bar';
 import Sidebar from '../../components/Sidebar';
-import { useRouter } from 'expo-router'; 
+import { useSafeRouter } from '../../hooks/useSafeRouter'; 
 import TopNav from '../../components/TopNav';
 import CartBadgeIcon from '../../components/CartBadgeIcon';
 import * as SecureStore from 'expo-secure-store';
@@ -26,7 +26,7 @@ import * as SecureStore from 'expo-secure-store';
 export default function ProfileScreen() {
   const { colors, isDark, setThemeMode } = useTheme();
   const { userData, updateAvatar, resetToDefault } = useUser(); 
-  const router = useRouter(); 
+  const router = useSafeRouter(); 
   
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isBiometricEnabled, setIsBiometricEnabled] = useState(true);

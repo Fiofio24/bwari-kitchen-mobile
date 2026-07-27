@@ -8,7 +8,7 @@ To Do List:
 7. (Done ✅)the mini menu for editing is showing all prices as ₦1
 8. (victor)fixing the isAvailable logic for menu items "Hey Victor, when you toggle an item to 'off' in the Admin dashboard, the /api/menu/items endpoint completely removes the item from the JSON array. Can you update the endpoint so it still returns all items, but changes the isAvailable boolean to false for sold-out items? We need the items to still appear in the app UI, just visually greyed out and unclickable."
 9. (Done ✅)let the theme of the app be light mode by default 
-10. Stop buttons from activating more than once even if user clicks it several times before the button rout to the next page. this is because currently when user clicks a button more than once when the next page opens and user wants to go back they will go back to same page because they opened that same page repeatedly 
+10. (Partially Done ✅)Stop buttons from activating more than once even if user clicks it several times before the button rout to the next page. this is because currently when user clicks a button more than once when the next page opens and user wants to go back they will go back to same page because they opened that same page repeatedly 
 11. (Done ✅)why is it that when i click a package in the details page default price in the QuickEditPackage is ₦0 then when i deselect and select that item again then the actual price appears 
 12. change the default image that the a menu item has if admin forgot to add an item image from that basketball image to something food related probably the bwari kitchen logo 
 13. in the my-order.tsx make it that user can switch from active orders to past orders by just swipping the page left or right
@@ -21,6 +21,8 @@ To Do List:
 20. (Done ✅)in the promo page instead of the "copy code" button let it be copy icon so that there would be enough space in case of long promo code
 21. in the sidebar the sign out button does not have allowance for the phone's navigation bar 
 22. the location area in the home page at the very top should show the selected address not "Select Location"
+23. in the admin dashboard in menu page when creating a new package after adding a discription then saved the package, then in the main customer app the discription on the details page was shoeing a hardcoded discrition aside the perticular discription i just added to that new package
+24.  
 
 Future updates:
 1. 

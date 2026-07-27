@@ -11,7 +11,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/Colors';
 import { useTheme } from '../context/ThemeContext'; 
-import { useRouter } from 'expo-router'; 
+import { useSafeRouter } from '../hooks/useSafeRouter'; 
 import api from '../app/lib/api'; // <-- Import API to check orders
 
 const { width, height } = Dimensions.get('window');
@@ -21,7 +21,7 @@ const EDGE_PADDING = 20;
 const ACTIVE_STATUSES = ['pending', 'confirmed', 'preparing', 'ready', 'picked_up', 'on_the_way'];
 
 export default function DraggableOrderButton() {
-  const router = useRouter(); 
+  const router = useSafeRouter(); 
   const { isDark, colors } = useTheme(); 
   
   // NEW: State to track if the user has an ongoing order

@@ -18,7 +18,7 @@ import { parseCompositeKey } from '../constants/menuData';
 import { useMenu } from '../context/MenuContext';
 import { useCart } from '../context/CartContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router'; 
+import { useSafeRouter } from '../hooks/useSafeRouter'; 
 import SearchBar from './SearchBar';
 import CategoryFilter from './CategoryFilter';
 import GridDishCard from './GridDishCard';
@@ -44,7 +44,7 @@ export default function QuickEditPackage({
 }: QuickEditPackageProps) {
   const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
-  const router = useRouter();
+  const router = useSafeRouter();
   const { cartItems, addToCart, removeFromCart } = useCart();
 
   const { items: MENU_ITEMS, categories, findItem } = useMenu();
@@ -389,7 +389,7 @@ export default function QuickEditPackage({
                       <GridDishCard 
                         name={item.name} 
                         price={`₦${item.basePrice.toLocaleString()}`}
-                        image={item.imageUrl || 'https://cdn-icons-png.flaticon.com/512/684/684045.png'}
+                        image={item.imageUrl || CUSTOM_PACKAGE_IMAGE}
                         isSelected={isSelected}
                         isAvailable={item.isAvailable !== false} 
                         onPress={item.isAvailable !== false ? () => handleCardPress(item) : undefined}

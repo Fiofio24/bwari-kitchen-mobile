@@ -12,7 +12,8 @@ import {
   ActivityIndicator,
   DeviceEventEmitter
 } from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
+import { useSafeRouter } from '../hooks/useSafeRouter';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context'; 
 import * as WebBrowser from 'expo-web-browser';
@@ -53,7 +54,7 @@ const buildOrderPackagesPayload = (items: any[]) => {
 };
 
 export default function CheckoutScreen() {
-  const router = useRouter();
+  const router = useSafeRouter();
   const params = useLocalSearchParams(); 
   const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();

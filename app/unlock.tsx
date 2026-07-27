@@ -8,7 +8,8 @@ import {
   ActivityIndicator,
   BackHandler
 } from 'react-native';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { useFocusEffect } from 'expo-router';
+import { useSafeRouter } from '../hooks/useSafeRouter';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -23,7 +24,7 @@ import { useAddresses } from '../context/AddressContext';
 import { useFavorites } from '../context/FavoriteContext';
 
 export default function UnlockScreen() {
-  const router = useRouter();
+  const router = useSafeRouter();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const { userData } = useUser();

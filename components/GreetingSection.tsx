@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/Colors';
-import { useRouter } from 'expo-router'; // 1. Added the router!
+import { useSafeRouter } from '../hooks/useSafeRouter'; // 1. Added the router!
 import { useUser } from '../context/UserContext'; 
 
 interface GreetingProps {
@@ -9,7 +9,7 @@ interface GreetingProps {
 }
 
 export default function GreetingSection({ userName }: GreetingProps) {
-  const router = useRouter(); // 2. Initialized the router
+  const router = useSafeRouter(); // 2. Initialized the router
   const { userData } = useUser(); 
 
   const getMealTime = () => {

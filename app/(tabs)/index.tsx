@@ -12,7 +12,8 @@ import {
   BackHandler
 } from 'react-native'; 
 import { Colors } from '../../constants/Colors';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { useFocusEffect } from 'expo-router';
+import { useSafeRouter } from '../../hooks/useSafeRouter';
 import { Ionicons } from '@expo/vector-icons';
 import TopNav from '../../components/TopNav';
 import GreetingSection from '../../components/GreetingSection';
@@ -37,7 +38,7 @@ import { useAddresses } from '../../context/AddressContext';
 const USER_PROFILE = { name: "User" };
 
 export default function HomeScreen() {
-  const router = useRouter(); 
+  const router = useSafeRouter(); 
   const { addToCart } = useCart(); 
   const { toggleFavorite, isFavorite } = useFavorites(); 
   const { unreadCount } = useNotifications();
@@ -51,7 +52,7 @@ export default function HomeScreen() {
     name: pkg.name,
     category: pkg.items[0]?.menuItem.category.name || 'Combo',
     price: pkg.totalPrice,
-    image: pkg.imageUrl || 'https://cdn-icons-png.flaticon.com/512/684/684045.png',
+    image: pkg.imageUrl || require('../../assets/images/custom-plate.png'),
     rating: '4.8',
     isAvailable: true,
     subItems: pkg.items.map(i => ({

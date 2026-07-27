@@ -10,7 +10,8 @@ import {
   Platform,
   BackHandler
 } from 'react-native';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { useFocusEffect } from 'expo-router';
+import { useSafeRouter } from '../hooks/useSafeRouter';
 import { Colors } from '../constants/Colors';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -19,7 +20,7 @@ import { BlurView } from 'expo-blur';
 const { width } = Dimensions.get('window');
 
 export default function WelcomeScreen() {
-  const router = useRouter();
+  const router = useSafeRouter();
   const insets = useSafeAreaInsets();
 
   // THE POINT OF NO RETURN: Force app exit if they press the hardware back button here

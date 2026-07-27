@@ -10,7 +10,7 @@ import {
   RefreshControl,
   Image
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useSafeRouter } from '../../hooks/useSafeRouter';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context'; 
 import { useTheme } from '../../context/ThemeContext';
@@ -31,7 +31,7 @@ import ItemVariantModal from '../../components/ItemVariantModal';
 export const CUSTOM_PACKAGE_IMAGE = require('../../assets/images/custom-plate.png');
 
 export default function MenuScreen() {
-  const router = useRouter();
+  const router = useSafeRouter();
   const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const { items, categories, loading, refresh, findItem } = useMenu();
@@ -338,7 +338,7 @@ export default function MenuScreen() {
                 <GridDishCard 
                   name={item.name} 
                   price={`₦${item.basePrice.toLocaleString()}`}
-                  image={item.imageUrl || 'https://cdn-icons-png.flaticon.com/512/684/684045.png'}
+                  image={item.imageUrl || CUSTOM_PACKAGE_IMAGE}
                   isSelected={isSelected}
                   isAvailable={item.isAvailable !== false} 
                   onPress={item.isAvailable !== false ? () => handleCardPress(item) : undefined}

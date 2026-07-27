@@ -18,7 +18,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../context/ThemeContext'; 
 import { useUser } from '../context/UserContext'; 
 import { useSafeAreaInsets } from 'react-native-safe-area-context'; 
-import { useRouter } from 'expo-router'; 
+import { useSafeRouter } from '../hooks/useSafeRouter'; 
 import api from '../app/lib/api'; // <-- Imported API
 import * as SecureStore from 'expo-secure-store';
 
@@ -57,7 +57,7 @@ export default function Sidebar({ visible, onClose, menuItems, profileOverride }
   const { colors, mode, setThemeMode, isDark } = useTheme();
   const { userData, resetToDefault } = useUser(); 
   const insets = useSafeAreaInsets();
-  const router = useRouter(); 
+  const router = useSafeRouter(); 
   
   const safeTop = Platform.OS === 'web' ? 50 : insets.top + 20;
 

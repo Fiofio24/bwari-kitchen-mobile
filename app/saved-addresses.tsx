@@ -13,7 +13,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useSafeRouter } from '../hooks/useSafeRouter';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context'; 
 import { useTheme } from '../context/ThemeContext';
@@ -23,7 +23,7 @@ import { useAddresses, Address } from '../context/AddressContext';
 import TopNav from '../components/TopNav';
 
 export default function SavedAddressesScreen() {
-  const router = useRouter();
+  const router = useSafeRouter();
   const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   
@@ -291,7 +291,7 @@ export default function SavedAddressesScreen() {
 
           {!editingId && (
             <Text style={{ fontSize: 12, color: colors.textMuted, fontStyle: 'italic' }}>
-              We'll use your device's current location to pinpoint this address for delivery.
+              We&apos;ll use your device&apos;s current location to pinpoint this address for delivery.
             </Text>
           )}
 

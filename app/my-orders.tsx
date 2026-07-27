@@ -10,7 +10,8 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
-import { useRouter, useFocusEffect } from 'expo-router'; 
+import { useFocusEffect } from 'expo-router'; 
+import { useSafeRouter } from '../hooks/useSafeRouter';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { Colors } from '../constants/Colors';
@@ -72,7 +73,7 @@ const formatDate = (isoString: string) => {
 };
 
 export default function MyOrdersScreen() {
-  const router = useRouter();
+  const router = useSafeRouter();
   const { colors, isDark } = useTheme();
   
   const [activeTab, setActiveTab] = useState<'active' | 'past'>('active');

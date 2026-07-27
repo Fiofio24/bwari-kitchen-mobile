@@ -19,7 +19,7 @@ import { Colors } from '../constants/Colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context'; 
 import { useTheme } from '../context/ThemeContext';
 import { BlurView } from 'expo-blur';
-import { useRouter } from 'expo-router';
+import { useSafeRouter } from '../hooks/useSafeRouter';
 import { useAddresses } from '../context/AddressContext'; 
 
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
@@ -32,7 +32,7 @@ interface AddressSelectorModalProps {
 export default function AddressSelectorModal({ visible, onClose }: AddressSelectorModalProps) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
-  const router = useRouter();
+  const router = useSafeRouter();
   const { addresses, setDefaultAddress, addCurrentLocationAddress } = useAddresses();
 
   const [inputText, setInputText] = useState(''); 

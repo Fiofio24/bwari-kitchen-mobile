@@ -7,7 +7,7 @@ import {
   Switch,
   ActivityIndicator,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useSafeRouter } from '../hooks/useSafeRouter';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { Colors } from '../constants/Colors';
@@ -31,7 +31,7 @@ interface DevicePrefs {
 }
 
 export default function NotificationPreferencesScreen() {
-  const router = useRouter();
+  const router = useSafeRouter();
   const { colors, isDark } = useTheme();
 
   const [serverPrefs, setServerPrefs] = useState<ServerPrefs>({

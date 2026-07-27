@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, useWindowDimensions } from 'react-native';
-import { useRouter } from 'expo-router'; // <-- Added to allow routing to Details
+import { useSafeRouter } from '../hooks/useSafeRouter'; // <-- Added to allow routing to Details
 import GridDishCard from './GridDishCard';
 import { Colors } from '../constants/Colors';
 import { useTheme } from '../context/ThemeContext';
@@ -15,7 +15,7 @@ export default function ForYouCard({ onAddToCart }: ForYouCardProps) {
   const { colors } = useTheme();
   const { width } = useWindowDimensions();
   const { toggleFavorite, isFavorite } = useFavorites(); 
-  const router = useRouter(); 
+  const router = useSafeRouter(); 
   
   const { packages, findItem } = useMenu();
 
