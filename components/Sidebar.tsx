@@ -21,6 +21,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSafeRouter } from '../hooks/useSafeRouter'; 
 import api from '../app/lib/api'; // <-- Imported API
 import * as SecureStore from 'expo-secure-store';
+import ActionModal from './ActionModal';
 
 const { width } = Dimensions.get('window');
 const SIDEBAR_WIDTH = width * 0.75; 
@@ -50,6 +51,9 @@ export default function Sidebar({ visible, onClose, menuItems, profileOverride }
   const slideAnim = useRef(new Animated.Value(-SIDEBAR_WIDTH)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current; 
   const [isRendering, setIsRendering] = useState(visible);
+  
+  // NEW: State for the Sign Out Modal
+  const [isSignOutModalVisible, setIsSignOutModalVisible] = useState(false);
   
   // NEW: State to hold the dynamic order count
   const [activeOrderCount, setActiveOrderCount] = useState(0);
@@ -138,7 +142,8 @@ export default function Sidebar({ visible, onClose, menuItems, profileOverride }
   };
 
   const executeLogout = async () => {
-    setIsRendering(false); // Instantly vaporize the Modal!
+    setIsSignOutModalVisible(false); // Close the sign out modal
+    setIsRendering(false); // Instantly vaporize the Sidebar!
     onClose();
     
     await SecureStore.deleteItemAsync('authToken');
@@ -309,7 +314,7 @@ export default function Sidebar({ visible, onClose, menuItems, profileOverride }
             <TouchableOpacity 
               style={styles.logoutBtn} 
               activeOpacity={0.8}
-              onPress={executeLogout} 
+              onPress={() => setIsSignOutModalVisible(true)} // NEW: Trigger custom modal
             >
               <Ionicons name="log-out-outline" size={22} color="#D32F2F" />
               <Text style={styles.logoutText}>
@@ -318,6 +323,19 @@ export default function Sidebar({ visible, onClose, menuItems, profileOverride }
             </TouchableOpacity>
           </View>
         </Animated.View>
+        
+        {/* Render the confirmation modal on top of the Sidebar */}
+        <ActionModal 
+          visible={isSignOutModalVisible} 
+          onClose={() => setIsSignOutModalVisible(false)} 
+          onConfirm={executeLogout} 
+          title="Sign Out"
+          message="Are you sure you want to sign out of Bwari Kitchen?"
+          iconName="log-out-outline"
+          confirmText="Yes"
+          cancelText="No"
+        />
+
       </View>
     </Modal>
   );

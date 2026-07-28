@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { 
   View, 
   Text, 
@@ -10,7 +10,8 @@ import {
   TextInput,
   Switch,
   ActivityIndicator,
-  DeviceEventEmitter
+  DeviceEventEmitter,
+  useWindowDimensions
 } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useSafeRouter } from '../hooks/useSafeRouter';
@@ -70,6 +71,26 @@ export default function CheckoutScreen() {
   const [promoCode, setPromoCode] = useState('');
   const [promoResult, setPromoResult] = useState<{ discountAmount: number; message: string } | null>(null);
   const [applyingPromo, setApplyingPromo] = useState(false);
+
+  // SWIPE LOGIC REQUIREMENTS
+  const { width } = useWindowDimensions();
+  const cardWidth = width - 40; // Screen width minus 20 padding on each side
+  const scrollViewRef = useRef<ScrollView>(null);
+
+  const handleTabPress = (method: 'delivery' | 'pickup') => {
+    setDeliveryMethod(method);
+    const index = method === 'delivery' ? 0 : 1;
+    scrollViewRef.current?.scrollTo({ x: index * cardWidth, animated: true });
+  };
+
+  const handleHorizontalScroll = (event: any) => {
+    const offsetX = event.nativeEvent.contentOffset.x;
+    const index = Math.round(offsetX / cardWidth);
+    const newMethod = index === 0 ? 'delivery' : 'pickup';
+    if (deliveryMethod !== newMethod) {
+      setDeliveryMethod(newMethod);
+    }
+  };
 
   const handleCutleryToggle = (newValue: boolean) => {
     setNoCutlery(newValue);
@@ -248,7 +269,7 @@ export default function CheckoutScreen() {
               styles.methodToggleBtn, 
               deliveryMethod === 'delivery' ? [styles.methodToggleBtnActive, { backgroundColor: Colors.primary }] : null
             ]}
-            onPress={() => setDeliveryMethod('delivery')}
+            onPress={() => handleTabPress('delivery')}
             activeOpacity={0.8}
           >
             <Ionicons name="bicycle" size={18} color={deliveryMethod === 'delivery' ? '#FFF' : colors.textMuted} />
@@ -260,7 +281,7 @@ export default function CheckoutScreen() {
               styles.methodToggleBtn, 
               deliveryMethod === 'pickup' ? [styles.methodToggleBtnActive, { backgroundColor: Colors.primary }] : null
             ]}
-            onPress={() => setDeliveryMethod('pickup')}
+            onPress={() => handleTabPress('pickup')}
             activeOpacity={0.8}
           >
             <Ionicons name="storefront" size={18} color={deliveryMethod === 'pickup' ? '#FFF' : colors.textMuted} />
@@ -268,10 +289,18 @@ export default function CheckoutScreen() {
           </TouchableOpacity>
         </View>
 
-        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        {/* SWIPEABLE FULFILLMENT CARD */}
+        <View style={[styles.card, { padding: 0, overflow: 'hidden', backgroundColor: colors.surface, borderColor: colors.border }]}>
           
-          {deliveryMethod === 'delivery' ? (
-            <>
+          <ScrollView
+            ref={scrollViewRef}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onMomentumScrollEnd={handleHorizontalScroll}
+          >
+            {/* --- PAGE 1: DELIVERY --- */}
+            <View style={{ width: cardWidth, padding: 15 }}>
               <View style={styles.addressRow}>
                 <View style={[styles.iconBox, { backgroundColor: 'rgba(229, 57, 53, 0.1)' }]}>
                   <Ionicons name="location" size={24} color={Colors.primary} />
@@ -298,32 +327,47 @@ export default function CheckoutScreen() {
                 value={orderNote}
                 onChangeText={setOrderNote}
               />
-            </>
-          ) : (
-            <View style={styles.addressRow}>
-              <View style={[styles.iconBox, { backgroundColor: 'rgba(76, 175, 80, 0.1)' }]}>
-                <Ionicons name="storefront" size={24} color="#4CAF50" />
-              </View>
-              <View style={styles.addressTextContainer}>
-                <Text style={[styles.addressTitle, { color: colors.text }]}>Bwari Kitchen Main Branch</Text>
-                <Text style={[styles.addressDetail, { color: colors.textMuted }]}>No 1 Kitchen Avenue, Central FCT</Text>
-              </View>
             </View>
-          )}
 
-          <View style={[styles.divider, { backgroundColor: colors.border, marginVertical: 15 }]} />
-          
-          <View style={styles.ecoRow}>
-            <View style={styles.ecoTextWrap}>
-              <Text style={[styles.ecoTitle, { color: colors.text }]}>No Cutlery Required</Text>
-              <Text style={[styles.ecoSub, { color: colors.textMuted }]}>Help us reduce plastic waste</Text>
+            {/* --- PAGE 2: PICK UP --- */}
+            <View style={{ width: cardWidth, padding: 15 }}>
+              <View style={styles.addressRow}>
+                <View style={[styles.iconBox, { backgroundColor: 'rgba(76, 175, 80, 0.1)' }]}>
+                  <Ionicons name="storefront" size={24} color="#4CAF50" />
+                </View>
+                <View style={styles.addressTextContainer}>
+                  <Text style={[styles.addressTitle, { color: colors.text }]}>Bwari Kitchen Main Branch</Text>
+                  <Text style={[styles.addressDetail, { color: colors.textMuted }]}>No 1 Kitchen Avenue, Central FCT</Text>
+                </View>
+              </View>
+
+              <View style={[styles.divider, { backgroundColor: colors.border, marginVertical: 15 }]} />
+              
+              <TextInput
+                style={[styles.noteInput, { backgroundColor: isDark ? colors.background : '#F5F5F5', color: colors.text, borderColor: colors.border }]}
+                placeholder="Add pickup note (e.g., Arriving in 20 mins)"
+                placeholderTextColor={colors.textMuted}
+                value={orderNote}
+                onChangeText={setOrderNote}
+              />
             </View>
-            <Switch 
-              value={noCutlery} 
-              onValueChange={handleCutleryToggle} 
-              trackColor={{ false: '#767577', true: '#81C784' }} 
-              thumbColor={noCutlery ? '#388E3C' : '#f4f3f4'} 
-            />
+          </ScrollView>
+
+          {/* SHARED BOTTOM SECTION (Cutlery Toggle) */}
+          <View style={{ paddingHorizontal: 15, paddingBottom: 15 }}>
+            <View style={[styles.divider, { backgroundColor: colors.border, marginBottom: 15 }]} />
+            <View style={styles.ecoRow}>
+              <View style={styles.ecoTextWrap}>
+                <Text style={[styles.ecoTitle, { color: colors.text }]}>No Cutlery Required</Text>
+                <Text style={[styles.ecoSub, { color: colors.textMuted }]}>Help us reduce plastic waste</Text>
+              </View>
+              <Switch 
+                value={noCutlery} 
+                onValueChange={handleCutleryToggle} 
+                trackColor={{ false: '#767577', true: '#81C784' }} 
+                thumbColor={noCutlery ? '#388E3C' : '#f4f3f4'} 
+              />
+            </View>
           </View>
         </View>
 

@@ -11,12 +11,12 @@ To Do List:
 10. (Partially Done ✅)Stop buttons from activating more than once even if user clicks it several times before the button rout to the next page. this is because currently when user clicks a button more than once when the next page opens and user wants to go back they will go back to same page because they opened that same page repeatedly 
 11. (Done ✅)why is it that when i click a package in the details page default price in the QuickEditPackage is ₦0 then when i deselect and select that item again then the actual price appears 
 12. change the default image that the a menu item has if admin forgot to add an item image from that basketball image to something food related probably the bwari kitchen logo 
-13. in the my-order.tsx make it that user can switch from active orders to past orders by just swipping the page left or right
+13. (Done ✅)in the my-order.tsx make it that user can switch from active orders to past orders by just swipping the page left or right
 14. (Done ✅)when sign out button is clicked either sidebar.tsx or profile.tsx it should actually sign the user out instead of just routing them to login page cus right now after siging out and the app is closed and reopened it still goes to unlock page as if the user was prviously signed in before the app was closed
 15. (victor) is the star rating for orders functioning?
-16. creat a new component that appears when "sign out" is clicked that asks "Are you sure you want to sign out of Bwari kitchen?" the opions Yes and No
+16. (Done ✅)creat a new component that appears when "sign out" is clicked that asks "Are you sure you want to sign out of Bwari kitchen?" the opions Yes and No
 17. for the package and menu images make a loading effect when their yet to fetch the actual image for that item also generally creat loading effects for any other thing like package details texts
-18. in the sign up page under password input section make that it will have a kind of must have features before the password will be accepted like showing message under "password must be up to 8-characters" etc
+18. (Done ✅)in the sign up page under password input section make that it will have a kind of must have features before the password will be accepted like showing message under "password must be up to 8-characters" etc
 19. it's like cart orders are being saved to phone memory or something even when i created a new account on signig up successful the account already had items in the cart
 20. (Done ✅)in the promo page instead of the "copy code" button let it be copy icon so that there would be enough space in case of long promo code
 21. in the sidebar the sign out button does not have allowance for the phone's navigation bar 

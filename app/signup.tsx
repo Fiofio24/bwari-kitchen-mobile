@@ -46,9 +46,10 @@ export default function SignupScreen() {
   const { refresh: refreshAddresses } = useAddresses();
   const { refresh: refreshFavorites } = useFavorites();
 
-  // Validation now explicitly checks if passwords match
+  // Validation now explicitly checks for 8 characters and if passwords match
+  const isPasswordValid = password.length >= 8;
   const passwordsMatch = password === confirmPassword;
-  const isValid = name.trim() && email.trim() && phone.trim() && password.length >= 6 && passwordsMatch && agreed;
+  const isValid = name.trim() && email.trim() && phone.trim() && isPasswordValid && passwordsMatch && agreed;
 
   const handleSignup = async () => {
     if (!isValid) return;
@@ -158,7 +159,13 @@ export default function SignupScreen() {
               <Text style={[styles.inputLabel, { color: colors.text }]}>
                 Password
               </Text>
-              <View style={[styles.inputWrapper, { backgroundColor: isDark ? colors.surface : '#FFF', borderColor: colors.border }]}>
+              <View style={[
+                styles.inputWrapper, 
+                { 
+                  backgroundColor: isDark ? colors.surface : '#FFF', 
+                  borderColor: (password.length > 0 && !isPasswordValid) ? '#D32F2F' : colors.border 
+                }
+              ]}>
                 <TextInput
                   style={[styles.textInput, { color: colors.text }]}
                   placeholder="Create a password"
@@ -171,6 +178,15 @@ export default function SignupScreen() {
                   <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={20} color={colors.textMuted} />
                 </TouchableOpacity>
               </View>
+              
+              {/* Dynamic Password Feedback */}
+              {password.length === 0 ? (
+                <Text style={[styles.helperText, { color: colors.textMuted }]}>Password must be at least 8 characters</Text>
+              ) : !isPasswordValid ? (
+                <Text style={styles.errorText}>Password must be at least 8 characters</Text>
+              ) : (
+                <Text style={styles.successText}>✓ Strong password</Text>
+              )}
             </View>
 
             {/* CONFIRM PASSWORD */}
@@ -250,7 +266,7 @@ export default function SignupScreen() {
             </TouchableOpacity>
 
             {/* SOCIAL SIGN UP */}
-            <View style={styles.socialSection}>
+            {/* <View style={styles.socialSection}>
               <Text style={[styles.socialDividerText, { color: colors.textMuted }]}>
                 other ways to sign up
               </Text>
@@ -262,7 +278,7 @@ export default function SignupScreen() {
                   <Ionicons name="logo-facebook" size={24} color="#4267B2" />
                 </TouchableOpacity>
               </View>
-            </View>
+            </View> */}
 
             {/* FOOTER LINK */}
             <View style={styles.footerContainer}>
@@ -343,6 +359,18 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: '#D32F2F',
+    fontSize: 12,
+    marginTop: 5,
+    marginLeft: 15,
+    fontWeight: '500',
+  },
+  helperText: {
+    fontSize: 12,
+    marginTop: 5,
+    marginLeft: 15,
+  },
+  successText: {
+    color: '#4CAF50',
     fontSize: 12,
     marginTop: 5,
     marginLeft: 15,

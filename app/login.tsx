@@ -185,7 +185,7 @@ export default function LoginScreen() {
             </TouchableOpacity>
 
             {/* SOCIAL LOGIN */}
-            <View style={styles.socialSection}>
+            {/* <View style={styles.socialSection}>
               <Text style={[styles.socialDividerText, { color: colors.textMuted }]}>
                 other ways to sign in
               </Text>
@@ -197,7 +197,7 @@ export default function LoginScreen() {
                   <Ionicons name="logo-facebook" size={24} color="#4267B2" />
                 </TouchableOpacity>
               </View>
-            </View>
+            </View> */}
 
             {/* FOOTER LINK */}
             <View style={styles.footerContainer}>

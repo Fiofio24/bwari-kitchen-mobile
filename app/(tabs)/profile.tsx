@@ -22,6 +22,7 @@ import { useSafeRouter } from '../../hooks/useSafeRouter';
 import TopNav from '../../components/TopNav';
 import CartBadgeIcon from '../../components/CartBadgeIcon';
 import * as SecureStore from 'expo-secure-store';
+import ActionModal from '../../components/ActionModal';
 
 export default function ProfileScreen() {
   const { colors, isDark, setThemeMode } = useTheme();
@@ -30,6 +31,10 @@ export default function ProfileScreen() {
   
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isBiometricEnabled, setIsBiometricEnabled] = useState(true);
+  
+  // States for the Modals
+  const [isSignOutModalVisible, setIsSignOutModalVisible] = useState(false);
+  const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
 
   const userStats = { ordersCount: 24, points: 450, referralCode: "BWARI-SERIFF-99" };
 
@@ -221,16 +226,13 @@ export default function ProfileScreen() {
             icon="trash-outline" 
             label="Delete Account" 
             isDestructive={true} 
+            onPress={() => setIsDeleteModalVisible(true)}
           />
           <ProfileMenuItem 
             icon="log-out-outline" 
             label="Sign Out" 
             isDestructive={true} 
-            onPress={async () => {
-              await SecureStore.deleteItemAsync('authToken'); // NUKE THE TOKEN
-              resetToDefault(); // WIPE LOCAL CONTEXT
-              router.replace('/welcome'); // REPLACE so they can't go back
-            }}
+            onPress={() => setIsSignOutModalVisible(true)}
           />
         </View>
 
@@ -244,7 +246,44 @@ export default function ProfileScreen() {
         </View>
         <Text style={[styles.versionText, { color: colors.textMuted }]}>Version 2.4.0 (Build 102)</Text>
       </ScrollView>
+
       <Sidebar visible={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+      
+      {/* Reusable Modal for Sign Out */}
+      <ActionModal 
+        visible={isSignOutModalVisible} 
+        onClose={() => setIsSignOutModalVisible(false)} 
+        onConfirm={async () => {
+          setIsSignOutModalVisible(false);
+          await SecureStore.deleteItemAsync('authToken'); 
+          resetToDefault(); 
+          router.replace('/welcome'); 
+        }} 
+        title="Sign Out"
+        message="Are you sure you want to sign out of Bwari Kitchen?"
+        iconName="log-out-outline"
+        confirmText="Sign Out"
+        cancelText="Cancel"
+      />
+
+      {/* Reusable Modal for Delete Account */}
+      <ActionModal 
+        visible={isDeleteModalVisible} 
+        onClose={() => setIsDeleteModalVisible(false)} 
+        onConfirm={async () => {
+          setIsDeleteModalVisible(false);
+          // Future API call to delete account goes here
+          await SecureStore.deleteItemAsync('authToken'); 
+          resetToDefault(); 
+          router.replace('/welcome'); 
+        }} 
+        title="Delete Account"
+        message="Are you sure you want to permanently delete your account? This action cannot be undone."
+        iconName="trash-outline"
+        confirmText="Delete"
+        cancelText="Cancel"
+      />
+
     </View>
   );
 }
