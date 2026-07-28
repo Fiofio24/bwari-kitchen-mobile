@@ -19,9 +19,9 @@ To Do List:
 18. (Done ✅)in the sign up page under password input section make that it will have a kind of must have features before the password will be accepted like showing message under "password must be up to 8-characters" etc
 19. it's like cart orders are being saved to phone memory or something even when i created a new account on signig up successful the account already had items in the cart
 20. (Done ✅)in the promo page instead of the "copy code" button let it be copy icon so that there would be enough space in case of long promo code
-21. in the sidebar the sign out button does not have allowance for the phone's navigation bar 
+21. (not confirmed)in the sidebar the sign out button does not have allowance for the phone's navigation bar 
 22. the location area in the home page at the very top should show the selected address not "Select Location"
-23. in the admin dashboard in menu page when creating a new package after adding a discription then saved the package, then in the main customer app the discription on the details page was shoeing a hardcoded discrition aside the perticular discription i just added to that new package
+23. in the admin dashboard in menu page when creating a new package after adding a discription then saved the package, then in the main customer app the discription on the details page was showing a hardcoded discrition aside the perticular discription i just added to that new package
 24.  
 
 Future updates:

@@ -310,7 +310,14 @@ export default function Sidebar({ visible, onClose, menuItems, profileOverride }
             </View>
           </ScrollView>
           
-          <View style={[styles.logoutWrapper, { borderTopColor: colors.border }]}>
+          <View style={[
+            styles.logoutWrapper, 
+            { 
+              borderTopColor: colors.border,
+              // FIX: This ensures the button perfectly adapts to the device's navigation bar
+              paddingBottom: insets.bottom > 0 ? insets.bottom + 10 : 25 
+            }
+          ]}>
             <TouchableOpacity 
               style={styles.logoutBtn} 
               activeOpacity={0.8}
@@ -512,7 +519,6 @@ const styles = StyleSheet.create({
   },
   logoutWrapper: {
     paddingTop: 15,
-    paddingBottom: Platform.OS === 'ios' ? 40 : 25,
     borderTopWidth: 1,
   },
   logoutBtn: { 

@@ -6,7 +6,9 @@ import {
   Dimensions, 
   TouchableOpacity, 
   Platform,
-  DeviceEventEmitter // <-- Kept for instant updates if the component is mounted
+  DeviceEventEmitter,
+  View,
+  Text
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/Colors';
@@ -24,8 +26,9 @@ export default function DraggableOrderButton() {
   const router = useSafeRouter(); 
   const { isDark, colors } = useTheme(); 
   
-  // NEW: State to track if the user has an ongoing order
-  const [hasActiveOrders, setHasActiveOrders] = useState(false);
+  // NEW: State to track the exact number of active orders
+  const [activeOrderCount, setActiveOrderCount] = useState(0);
+  const hasActiveOrders = activeOrderCount > 0;
 
   const pan = useRef(new Animated.ValueXY({ 
     x: width - BUTTON_SIZE - EDGE_PADDING, 
@@ -42,8 +45,9 @@ export default function DraggableOrderButton() {
       try {
         const res = await api.get('/api/orders?limit=10');
         const orders = res.data.orders || [];
-        const active = orders.some((o: any) => ACTIVE_STATUSES.includes(o.status));
-        if (isMounted) setHasActiveOrders(active);
+        // Count how many orders match the active statuses
+        const activeCount = orders.filter((o: any) => ACTIVE_STATUSES.includes(o.status)).length;
+        if (isMounted) setActiveOrderCount(activeCount);
       } catch (err) {
         // Silent fail for background checking
       }
@@ -187,6 +191,15 @@ export default function DraggableOrderButton() {
           size={26} 
           color={hasActiveOrders ? "#FFF" : colors.text} // DYNAMIC ICON COLOR
         />
+
+        {/* NOTIFICATION BADGE FOR ACTIVE ORDERS */}
+        {hasActiveOrders && (
+          <View style={styles.badgeContainer}>
+            <Text style={styles.badgeText}>
+              {activeOrderCount > 9 ? '9+' : activeOrderCount}
+            </Text>
+          </View>
+        )}
       </TouchableOpacity>
     </Animated.View>
   );
@@ -215,6 +228,30 @@ const styles = StyleSheet.create({
     justifyContent: 'center', 
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(150,150,150,0.1)', // Light border so it doesn't blend entirely into white backgrounds
+    borderColor: 'rgba(150,150,150,0.1)', 
+  },
+  badgeContainer: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    minWidth: 22,
+    height: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+    zIndex: 10,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+  },
+  badgeText: {
+    color: Colors.primary,
+    fontSize: 12,
+    fontWeight: '900',
+    textAlign: 'center',
   },
 });
