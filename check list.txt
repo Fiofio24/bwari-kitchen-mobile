@@ -33,3 +33,4 @@ Checked ✅:
 3. I updated context/NotificationContext.tsx to silently fetch new notifications every 30 seconds in the background, so the bell icon updates live without having to go to the notification page and refresh first.
 4. I updated the app/checkout.tsx so that by default the "No Cutlery Required" option is switched off then on switch on it automatically fills the "add delivery note box" with "No Cutlery Required"
 5. I rearranged the GridDishCard.tsx from [{category || name} {rating}],[{name}],[{price} Add] to  [{name}],[{category || name} {rating}],[{price} Add]
+6. I created an in-app browser that handles the paystack url instead of redirecting to phone browser which also fixed some errors concerning checkout process
