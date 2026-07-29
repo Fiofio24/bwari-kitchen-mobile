@@ -73,9 +73,13 @@ export default function HelpScreen() {
       case 'email':
         Linking.openURL('mailto:support@bwarikitchen.com?subject=App Support').catch(() => Alert.alert('Error', 'Unable to open email client.'));
         break;
-      case 'chat':
-        Alert.alert('Live Chat', 'Connecting you to the next available agent...');
+      case 'chat': {
+        const phone = '2349123901489';
+        const message = encodeURIComponent('Hi, I have enquiries/complaints.');
+        const whatsappUrl = `https://wa.me/${phone}?text=${message}`;
+        Linking.openURL(whatsappUrl).catch(() => Alert.alert('Error', 'Unable to open WhatsApp. Please make sure it is installed.'));
         break;
+      }
     }
   };
 
@@ -115,8 +119,8 @@ export default function HelpScreen() {
             <View style={[styles.contactIconBox, { backgroundColor: '#FFC107' }]}>
               <Ionicons name="chatbubbles" size={24} color="#FFF" />
             </View>
-            <Text style={[styles.contactTitle, { color: colors.text }]}>Live Chat</Text>
-            <Text style={[styles.contactSub, { color: colors.textMuted }]}>Typical reply: 2m</Text>
+            <Text style={[styles.contactTitle, { color: colors.text }]}>Chat us on WhatsApp</Text>
+            <Text style={[styles.contactSub, { color: colors.textMuted }]}>Chat with our team</Text>
           </TouchableOpacity>
 
           <TouchableOpacity 
@@ -196,12 +200,18 @@ export default function HelpScreen() {
           LEGAL & POLICIES
         </Text>
         <View style={[styles.legalContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <TouchableOpacity style={[styles.legalItem, { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
+          <TouchableOpacity 
+            style={[styles.legalItem, { borderBottomWidth: 1, borderBottomColor: colors.border }]}
+            onPress={() => Alert.alert('Coming Soon', 'Our Terms of Service will be available here shortly.')}
+          >
             <Ionicons name="document-text-outline" size={20} color={colors.textMuted} style={styles.legalIcon} />
             <Text style={[styles.legalText, { color: colors.text }]}>Terms of Service</Text>
             <Ionicons name="chevron-forward" size={18} color={colors.border} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.legalItem}>
+          <TouchableOpacity 
+            style={styles.legalItem}
+            onPress={() => Alert.alert('Coming Soon', 'Our Privacy Policy will be available here shortly.')}
+          >
             <Ionicons name="shield-checkmark-outline" size={20} color={colors.textMuted} style={styles.legalIcon} />
             <Text style={[styles.legalText, { color: colors.text }]}>Privacy Policy</Text>
             <Ionicons name="chevron-forward" size={18} color={colors.border} />
