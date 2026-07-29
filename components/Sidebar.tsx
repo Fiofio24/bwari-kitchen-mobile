@@ -18,10 +18,14 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../context/ThemeContext'; 
 import { useUser } from '../context/UserContext'; 
 import { useSafeAreaInsets } from 'react-native-safe-area-context'; 
-import { useRouter } from 'expo-router'; 
+import { useSafeRouter } from '../hooks/useSafeRouter'; 
+import api from '../app/lib/api'; // <-- Imported API
+import * as SecureStore from 'expo-secure-store';
+import ActionModal from './ActionModal';
 
 const { width } = Dimensions.get('window');
 const SIDEBAR_WIDTH = width * 0.75; 
+const ACTIVE_STATUSES = ['pending', 'confirmed', 'preparing', 'ready', 'picked_up', 'on_the_way'];
 
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 
@@ -48,14 +52,37 @@ export default function Sidebar({ visible, onClose, menuItems, profileOverride }
   const fadeAnim = useRef(new Animated.Value(0)).current; 
   const [isRendering, setIsRendering] = useState(visible);
   
+  // NEW: State for the Sign Out Modal
+  const [isSignOutModalVisible, setIsSignOutModalVisible] = useState(false);
+  
+  // NEW: State to hold the dynamic order count
+  const [activeOrderCount, setActiveOrderCount] = useState(0);
+  
   const { colors, mode, setThemeMode, isDark } = useTheme();
   const { userData, resetToDefault } = useUser(); 
   const insets = useSafeAreaInsets();
-  const router = useRouter(); 
+  const router = useSafeRouter(); 
   
   const safeTop = Platform.OS === 'web' ? 50 : insets.top + 20;
 
   const profileToDisplay = profileOverride || userData;
+
+  // NEW: Fetch active orders silently every time the sidebar opens
+  useEffect(() => {
+    if (visible) {
+      const fetchActiveOrders = async () => {
+        try {
+          const res = await api.get('/api/orders?limit=20');
+          const orders = res.data.orders || [];
+          const count = orders.filter((o: any) => ACTIVE_STATUSES.includes(o.status)).length;
+          setActiveOrderCount(count);
+        } catch (err) {
+          // Silent fail to preserve UX
+        }
+      };
+      fetchActiveOrders();
+    }
+  }, [visible]);
 
   useEffect(() => {
     if (visible) {
@@ -92,15 +119,40 @@ export default function Sidebar({ visible, onClose, menuItems, profileOverride }
     }
   }, [visible, slideAnim, fadeAnim]);
 
+  // NEW: Replaced the hardcoded '4' with our dynamic state
   const defaultMenuItems: SidebarMenuItem[] = [
     { name: 'Account & Settings', icon: 'person-outline', route: '/profile' },
-    { name: 'My Orders', icon: 'bag-handle-outline', route: '/my-orders', badge: '4' },
+    { name: 'My Orders', icon: 'bag-handle-outline', route: '/my-orders', badge: activeOrderCount > 0 ? activeOrderCount.toString() : undefined },
     { name: 'Saved Addresses', icon: 'location-outline', route: '/saved-addresses' },
     { name: 'Offers & Promo', icon: 'pricetag-outline', route: '/promo', badge: 'NEW' },
     { name: 'Help & Support', icon: 'chatbubbles-outline', route: '/help' },
   ];
 
   const itemsToRender = menuItems || defaultMenuItems;
+
+  // NEW: Dedicated, bulletproof navigation handlers that instantly kill the Modal
+  const executeNavigation = (route: string) => {
+    setIsRendering(false); // Instantly vaporize the Modal!
+    onClose(); // Update parent state
+    
+    // Wait just 50ms for React to clear the UI tree, then route safely
+    setTimeout(() => {
+      router.push(route as any);
+    }, 50);
+  };
+
+  const executeLogout = async () => {
+    setIsSignOutModalVisible(false); // Close the sign out modal
+    setIsRendering(false); // Instantly vaporize the Sidebar!
+    onClose();
+    
+    await SecureStore.deleteItemAsync('authToken');
+    resetToDefault();
+    
+    setTimeout(() => {
+      router.replace('/welcome');
+    }, 50);
+  };
 
   if (!isRendering) return null;
 
@@ -165,8 +217,7 @@ export default function Sidebar({ visible, onClose, menuItems, profileOverride }
             <TouchableOpacity
               onPress={() => {
                 if (!profileOverride) {
-                  onClose(); 
-                  router.replace('/profile');
+                  executeNavigation('/profile');
                 }
               }}
               activeOpacity={profileOverride ? 1 : 0.7}
@@ -230,9 +281,10 @@ export default function Sidebar({ visible, onClose, menuItems, profileOverride }
                   style={[styles.menuItem, { borderBottomColor: colors.border }]} 
                   activeOpacity={0.7}
                   onPress={() => {
-                    onClose();
                     if (item.route) {
-                      router.push(item.route as any);
+                      executeNavigation(item.route);
+                    } else {
+                      onClose();
                     }
                   }}
                 >
@@ -258,15 +310,18 @@ export default function Sidebar({ visible, onClose, menuItems, profileOverride }
             </View>
           </ScrollView>
           
-          <View style={[styles.logoutWrapper, { borderTopColor: colors.border }]}>
+          <View style={[
+            styles.logoutWrapper, 
+            { 
+              borderTopColor: colors.border,
+              // FIX: This ensures the button perfectly adapts to the device's navigation bar
+              paddingBottom: insets.bottom > 0 ? insets.bottom + 10 : 25 
+            }
+          ]}>
             <TouchableOpacity 
               style={styles.logoutBtn} 
               activeOpacity={0.8}
-              onPress={() => {
-                onClose(); 
-                resetToDefault(); 
-                router.replace('/welcome');
-              }} 
+              onPress={() => setIsSignOutModalVisible(true)} // NEW: Trigger custom modal
             >
               <Ionicons name="log-out-outline" size={22} color="#D32F2F" />
               <Text style={styles.logoutText}>
@@ -275,6 +330,19 @@ export default function Sidebar({ visible, onClose, menuItems, profileOverride }
             </TouchableOpacity>
           </View>
         </Animated.View>
+        
+        {/* Render the confirmation modal on top of the Sidebar */}
+        <ActionModal 
+          visible={isSignOutModalVisible} 
+          onClose={() => setIsSignOutModalVisible(false)} 
+          onConfirm={executeLogout} 
+          title="Sign Out"
+          message="Are you sure you want to sign out of Bwari Kitchen?"
+          iconName="log-out-outline"
+          confirmText="Yes"
+          cancelText="No"
+        />
+
       </View>
     </Modal>
   );
@@ -451,7 +519,6 @@ const styles = StyleSheet.create({
   },
   logoutWrapper: {
     paddingTop: 15,
-    paddingBottom: Platform.OS === 'ios' ? 40 : 25,
     borderTopWidth: 1,
   },
   logoutBtn: { 

@@ -9,7 +9,7 @@ import {
   Keyboard,
   Image,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useSafeRouter } from '../hooks/useSafeRouter';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context'; 
 import SearchBar from '../components/SearchBar';
@@ -53,7 +53,7 @@ const safeStorage = {
 };
 
 export default function SearchScreen() {
-  const router = useRouter();
+  const router = useSafeRouter();
   const { colors, isDark } = useTheme();
   const { items, packages } = useMenu();
   

@@ -9,7 +9,8 @@ import {
   Platform,
   Animated
 } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
+import { useSafeRouter } from '../hooks/useSafeRouter';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context'; 
 import { useTheme } from '../context/ThemeContext';
@@ -27,7 +28,7 @@ import ForYouCard from '../components/ForYouCard';
 
 export default function DetailsScreen() {
   const { id } = useLocalSearchParams();
-  const router = useRouter();
+  const router = useSafeRouter();
   const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const { addToCart } = useCart();
@@ -40,10 +41,11 @@ export default function DetailsScreen() {
   const { findItem, findPackage, loading } = useMenu();
   const rawItem = findPackage(id as string) || findItem(id as string);
 
+  // TYPE FIX: Handled the missing 'category' field on Packages cleanly!
   const item: any = rawItem ? {
     id: rawItem.id,
     name: rawItem.name,
-    category: 'category' in rawItem ? rawItem.category.name : rawItem.category,
+    category: 'category' in rawItem ? (rawItem as any).category.name : 'Package',
     price: 'totalPrice' in rawItem ? rawItem.totalPrice : (rawItem as any).basePrice,
     image: 'imageUrl' in rawItem ? rawItem.imageUrl : undefined,
     isAvailable: (rawItem as any).isAvailable !== false,
@@ -52,6 +54,8 @@ export default function DetailsScreen() {
       id: i.menuItem.id,
       qty: i.quantity,
       name: i.menuItem.name,
+      price: i.menuItem.basePrice,
+      compositeKey: `${i.menuItem.id}::Base::${i.menuItem.basePrice}`
     })) : [],
   } : null;
 
@@ -134,7 +138,7 @@ export default function DetailsScreen() {
         rightComponent={
           <View style={styles.headerRight}>
             <CartBadgeIcon onPress={() => router.push('/cart')} />
-            <HomeIcon onPress={() => router.push('/')} />
+            <HomeIcon onPress={() => router.push('/(tabs)')} />
           </View>
         }
         isAbsolute={true} 
@@ -145,7 +149,7 @@ export default function DetailsScreen() {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 140 }]}>
         
         <ImageBackground 
-          source={{ uri: item.image }} 
+          source={typeof item.image === 'string' ? { uri: item.image } : require('../assets/images/custom-plate.png')} 
           style={[styles.heroImage, { marginTop: imageMarginTop }]}
         >
           {!isAvail && (

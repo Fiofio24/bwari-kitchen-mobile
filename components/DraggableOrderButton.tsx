@@ -1,35 +1,72 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { 
   Animated, 
   PanResponder, 
   StyleSheet, 
   Dimensions, 
   TouchableOpacity, 
-  Platform 
+  Platform,
+  DeviceEventEmitter,
+  View,
+  Text
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/Colors';
 import { useTheme } from '../context/ThemeContext'; 
-import { useRouter } from 'expo-router'; // <-- Added Router
+import { useSafeRouter } from '../hooks/useSafeRouter'; 
+import api from '../app/lib/api'; // <-- Import API to check orders
 
 const { width, height } = Dimensions.get('window');
 const BUTTON_SIZE = 60;
 const EDGE_PADDING = 20; 
 
-/**
- * A professional, floating action button that users can drag across the screen.
- * Tapping this button now intelligently routes directly to the 'My Orders' page.
- */
+const ACTIVE_STATUSES = ['pending', 'confirmed', 'preparing', 'ready', 'picked_up', 'on_the_way'];
+
 export default function DraggableOrderButton() {
-  const router = useRouter(); // <-- Initialized Router
+  const router = useSafeRouter(); 
+  const { isDark, colors } = useTheme(); 
   
+  // NEW: State to track the exact number of active orders
+  const [activeOrderCount, setActiveOrderCount] = useState(0);
+  const hasActiveOrders = activeOrderCount > 0;
+
   const pan = useRef(new Animated.ValueXY({ 
     x: width - BUTTON_SIZE - EDGE_PADDING, 
     y: height - 250 
   })).current;
   
   const glowAnim = useRef(new Animated.Value(0)).current;
-  const { isDark } = useTheme(); 
+
+  // BACKGROUND CHECK LOGIC
+  useEffect(() => {
+    let isMounted = true;
+
+    const checkActiveOrders = async () => {
+      try {
+        const res = await api.get('/api/orders?limit=10');
+        const orders = res.data.orders || [];
+        // Count how many orders match the active statuses
+        const activeCount = orders.filter((o: any) => ACTIVE_STATUSES.includes(o.status)).length;
+        if (isMounted) setActiveOrderCount(activeCount);
+      } catch (err) {
+        // Silent fail for background checking
+      }
+    };
+
+    checkActiveOrders(); // Check on mount
+    
+    // Check every 15 seconds
+    const interval = setInterval(checkActiveOrders, 15000);
+    
+    // Listen for an instant trigger when an order is placed from Checkout
+    const subscription = DeviceEventEmitter.addListener('ORDER_PLACED', checkActiveOrders);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+      subscription.remove();
+    };
+  }, []);
 
   const shadowStyle = isDark 
     ? Platform.select({ 
@@ -65,8 +102,10 @@ export default function DraggableOrderButton() {
         if (finished) startPulse(); 
       });
     };
-    startPulse(); 
-  }, [glowAnim]);
+    if (hasActiveOrders) {
+      startPulse(); 
+    }
+  }, [glowAnim, hasActiveOrders]);
 
   const glowScale = glowAnim.interpolate({ 
     inputRange: [0, 1], 
@@ -78,7 +117,6 @@ export default function DraggableOrderButton() {
     outputRange: [0.6, 0, 0] 
   });
 
-  // Draggable logic with snapping to edges
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
@@ -96,22 +134,15 @@ export default function DraggableOrderButton() {
       onPanResponderRelease: (e, gestureState) => {
         pan.flattenOffset(); 
         
-        // Detect if it was a quick tap rather than a drag
         const isTap = Math.abs(gestureState.dx) < 5 && Math.abs(gestureState.dy) < 5;
-        
-        // ROUTE DIRECTLY TO MY ORDERS IF TAPPED
-        if (isTap) {
-          router.push('/my-orders');
-        }
+        if (isTap) router.push('/my-orders');
 
         const releaseX = (pan.x as any)._value;
         let releaseY = (pan.y as any)._value;
 
-        // Determine which side to snap to
         const isLeftHalf = releaseX + (BUTTON_SIZE / 2) < width / 2;
         const snapX = isLeftHalf ? EDGE_PADDING : width - BUTTON_SIZE - EDGE_PADDING;
 
-        // Constrain Y position so it doesn't fly off screen
         const MIN_Y = 120; 
         const MAX_Y = height - 150; 
         if (releaseY < MIN_Y) releaseY = MIN_Y;
@@ -135,25 +166,40 @@ export default function DraggableOrderButton() {
         { transform: [{ translateX: pan.x }, { translateY: pan.y }] }
       ]}
     >
-      <Animated.View 
-        style={[
-          styles.halo, 
-          { transform: [{ scale: glowScale }], opacity: glowOpacity }
-        ]} 
-      />
-      {/* The actual TouchableOpacity needs to have disabled={true} 
-        so the PanResponder can reliably catch the tap events above it 
-      */}
+      {/* ONLY SHOW GLOWING HALO IF THERE IS AN ACTIVE ORDER */}
+      {hasActiveOrders && (
+        <Animated.View 
+          style={[
+            styles.halo, 
+            { transform: [{ scale: glowScale }], opacity: glowOpacity }
+          ]} 
+        />
+      )}
+      
       <TouchableOpacity 
         style={[
           styles.button, 
-          { backgroundColor: Colors.primary, borderRadius: BUTTON_SIZE / 2 }, 
+          // DYNAMIC BACKGROUND COLOR
+          { backgroundColor: hasActiveOrders ? Colors.primary : colors.surface }, 
           shadowStyle
         ]} 
         activeOpacity={0.8} 
         disabled={true}
       >
-        <Ionicons name="bag-handle" size={26} color="#FFF" />
+        <Ionicons 
+          name={hasActiveOrders ? "bag-handle" : "bag-handle-outline"} 
+          size={26} 
+          color={hasActiveOrders ? "#FFF" : colors.text} // DYNAMIC ICON COLOR
+        />
+
+        {/* NOTIFICATION BADGE FOR ACTIVE ORDERS */}
+        {hasActiveOrders && (
+          <View style={styles.badgeContainer}>
+            <Text style={styles.badgeText}>
+              {activeOrderCount > 9 ? '9+' : activeOrderCount}
+            </Text>
+          </View>
+        )}
       </TouchableOpacity>
     </Animated.View>
   );
@@ -166,21 +212,46 @@ const styles = StyleSheet.create({
     justifyContent: 'center', 
     alignItems: 'center', 
     width: BUTTON_SIZE, 
-    height: BUTTON_SIZE 
+    height: BUTTON_SIZE,
   },
   halo: { 
     position: 'absolute', 
     width: BUTTON_SIZE, 
     height: BUTTON_SIZE, 
     borderRadius: BUTTON_SIZE / 2, 
-    backgroundColor: Colors.primary 
+    backgroundColor: Colors.primary,
   },
   button: { 
     width: BUTTON_SIZE, 
     height: BUTTON_SIZE, 
     borderRadius: BUTTON_SIZE / 2, 
-    backgroundColor: Colors.primary, 
     justifyContent: 'center', 
-    alignItems: 'center' 
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(150,150,150,0.1)', 
+  },
+  badgeContainer: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    minWidth: 22,
+    height: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+    zIndex: 10,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+  },
+  badgeText: {
+    color: Colors.primary,
+    fontSize: 12,
+    fontWeight: '900',
+    textAlign: 'center',
   },
 });

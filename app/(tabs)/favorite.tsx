@@ -9,7 +9,7 @@ import {
   useWindowDimensions, 
   RefreshControl 
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useSafeRouter } from '../../hooks/useSafeRouter';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../context/ThemeContext';
@@ -24,7 +24,7 @@ import { useMenu } from '../../context/MenuContext';
 import TopNav from '../../components/TopNav';
 
 export default function FavoriteScreen() {
-  const router = useRouter();
+  const router = useSafeRouter();
   const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const { addToCart } = useCart();

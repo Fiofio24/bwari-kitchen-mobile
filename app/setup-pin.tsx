@@ -6,7 +6,7 @@ import {
   TouchableOpacity, 
   Animated
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useSafeRouter } from '../hooks/useSafeRouter';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -19,7 +19,7 @@ import { useUser } from '../context/UserContext';
 const PIN_LENGTH = 6;
 
 export default function SetupPinScreen() {
-  const router = useRouter();
+  const router = useSafeRouter();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const { userData } = useUser();

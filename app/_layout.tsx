@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Stack, useRouter, useSegments } from 'expo-router';
+import { Stack, useSegments } from 'expo-router';
+import { useSafeRouter } from '../hooks/useSafeRouter';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context'; 
 import { ThemeProvider } from '../context/ThemeContext'; 
@@ -19,7 +20,7 @@ function RootContent() {
   const [appIsReady, setAppIsReady] = useState(false);
   const [initialRoute, setInitialRoute] = useState<string | null>(null);
   
-  const router = useRouter();
+  const router = useSafeRouter();
   const segments = useSegments();
 
   useEffect(() => {

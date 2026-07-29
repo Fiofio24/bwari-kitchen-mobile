@@ -8,10 +8,12 @@ import {
   useWindowDimensions, 
   Animated, 
   RefreshControl,
-  Platform
+  Platform,
+  BackHandler
 } from 'react-native'; 
 import { Colors } from '../../constants/Colors';
-import { useRouter } from 'expo-router';
+import { useFocusEffect } from 'expo-router';
+import { useSafeRouter } from '../../hooks/useSafeRouter';
 import { Ionicons } from '@expo/vector-icons';
 import TopNav from '../../components/TopNav';
 import GreetingSection from '../../components/GreetingSection';
@@ -36,13 +38,13 @@ import { useAddresses } from '../../context/AddressContext';
 const USER_PROFILE = { name: "User" };
 
 export default function HomeScreen() {
-  const router = useRouter(); 
+  const router = useSafeRouter(); 
   const { addToCart } = useCart(); 
   const { toggleFavorite, isFavorite } = useFavorites(); 
   const { unreadCount } = useNotifications();
   const { activeAddress } = useAddresses();
   
-  const { packages, items, categories, findItem, loading, refresh } = useMenu();
+  const { packages, categories, findItem, loading, refresh } = useMenu();
   const CATEGORIES = ['All', ...categories.map(c => c.name)];
   
   const normalizedPackages = packages.map(pkg => ({
@@ -50,7 +52,7 @@ export default function HomeScreen() {
     name: pkg.name,
     category: pkg.items[0]?.menuItem.category.name || 'Combo',
     price: pkg.totalPrice,
-    image: pkg.imageUrl || undefined,
+    image: pkg.imageUrl || require('../../assets/images/custom-plate.png'),
     rating: '4.8',
     isAvailable: true,
     subItems: pkg.items.map(i => ({
@@ -78,6 +80,20 @@ export default function HomeScreen() {
   const AVAILABLE_WIDTH = width - (GRID_PADDING * 2);
   const NUM_COLUMNS = Math.max(2, Math.ceil(AVAILABLE_WIDTH / (MAX_GRID_WIDTH + GRID_GAP)));
   const CARD_WIDTH = Math.floor((AVAILABLE_WIDTH - (GRID_GAP * (NUM_COLUMNS - 1))) / NUM_COLUMNS);
+
+  // THE POINT OF NO RETURN: Force app exit if they press the hardware back button here
+  // We do not want users pressing back to return to the lock screen or login!
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => {
+        BackHandler.exitApp();
+        return true; // Prevents default back navigation
+      };
+
+      const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+      return () => subscription.remove();
+    }, [])
+  );
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -220,7 +236,7 @@ export default function HomeScreen() {
             <View style={styles.addressRow}>
               <Ionicons name="location" size={14} color="#FFC107" />
               <Text style={styles.addressText} numberOfLines={1} ellipsizeMode="tail">
-                {activeAddress?.address || "Select Location"}
+                {(activeAddress as any)?.address || "Select Location"}
               </Text>
               <Ionicons name="chevron-down" size={14} color="#FFF" style={styles.chevronIcon} />
             </View>

@@ -39,7 +39,9 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const systemColorScheme = useColorScheme(); 
-  const [mode, setModeState] = useState<ThemeMode>('system');
+  
+  // CHANGE THIS LINE: Default to 'light' instead of 'system'
+  const [mode, setModeState] = useState<ThemeMode>('light');
 
   useEffect(() => {
     const loadTheme = async () => {

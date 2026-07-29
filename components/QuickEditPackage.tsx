@@ -1,4 +1,3 @@
-// Note: This file requires an Expo/React Native environment to compile correctly.
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   View, 
@@ -19,14 +18,14 @@ import { parseCompositeKey } from '../constants/menuData';
 import { useMenu } from '../context/MenuContext';
 import { useCart } from '../context/CartContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router'; 
+import { useSafeRouter } from '../hooks/useSafeRouter'; 
 import SearchBar from './SearchBar';
 import CategoryFilter from './CategoryFilter';
 import GridDishCard from './GridDishCard';
 import ItemVariantModal from './ItemVariantModal';
 
-// Localizing the fallback image so we don't have circular dependencies with the menu file
-const CUSTOM_PACKAGE_IMAGE = { uri: 'https://cdn-icons-png.flaticon.com/512/684/684045.png' };
+// Make sure it matches the exact custom plate from the menu screen!
+const CUSTOM_PACKAGE_IMAGE = require('../assets/images/custom-plate.png');
 
 const { height, width } = Dimensions.get('window');
 
@@ -45,7 +44,7 @@ export default function QuickEditPackage({
 }: QuickEditPackageProps) {
   const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
-  const router = useRouter();
+  const router = useSafeRouter();
   const { cartItems, addToCart, removeFromCart } = useCart();
 
   const { items: MENU_ITEMS, categories, findItem } = useMenu();
@@ -75,13 +74,30 @@ export default function QuickEditPackage({
       setActiveCategory('Main');
       
       const initialPlate: Record<string, number> = {};
+      
+      // THE ULTIMATE SAFEGUARD: Smart mapping that fixes missing data from anywhere!
       if (initialItem.subItems && initialItem.subItems.length > 0) {
         initialItem.subItems.forEach((sub: any) => {
-          const key = sub.compositeKey || `${sub.id}::Base::1`;
-          initialPlate[key] = sub.qty;
+          // 1. Look up the live item in the database
+          const dbItem = findItem(sub.id);
+          
+          // 2. Find the true price (use sub.price if valid, otherwise use the live DB price)
+          const actualPrice = (sub.price !== undefined && sub.price > 1) 
+            ? sub.price 
+            : (dbItem?.basePrice || 0);
+            
+          // 3. Check if the key is broken or missing, and rebuild it perfectly!
+          let key = sub.compositeKey;
+          if (!key || key.includes('::1') || key.includes('::null')) {
+            key = `${sub.id}::${sub.variantLabel || 'Base'}::${actualPrice}`;
+          }
+          
+          // 4. Mount it to the plate
+          initialPlate[key] = sub.qty || 1;
         });
       } else {
-        initialPlate[`${initialItem.id}::Base::1`] = 1;
+        const basePrice = initialItem.basePrice ?? initialItem.price ?? 0;
+        initialPlate[`${initialItem.id}::Base::${basePrice}`] = 1;
       }
       setCustomPlate(initialPlate);
 
@@ -112,16 +128,29 @@ export default function QuickEditPackage({
         })
       ]).start(() => setIsRendering(false));
     }
-  }, [visible, initialItem, fadeAnim, slideAnim, isRendering]);
+  }, [visible, initialItem, fadeAnim, slideAnim, isRendering, findItem]);
 
   if (!isRendering || !initialItem) return null;
 
   const handleCardPress = (item: any) => {
-    if (item.variants && item.variants.length > 0) {
-      setVariantModalItem(item);
+    // 1. Check if ANY variant of this item is already in the custom plate
+    const existingKeys = Object.keys(customPlate).filter(key => key.startsWith(item.id + '::'));
+
+    if (existingKeys.length > 0) {
+      // 2. If it is already selected, DESELECT IT by completely removing it
+      setCustomPlate(prev => {
+        const newState = { ...prev };
+        existingKeys.forEach(key => delete newState[key]);
+        return newState;
+      });
     } else {
-      const compositeKey = `${item.id}::Base::${item.basePrice}`;
-      setCustomPlate(prev => ({ ...prev, [compositeKey]: (prev[compositeKey] || 0) + 1 }));
+      // 3. If it is NOT selected, proceed to add it or open the portion modal
+      if (item.variants && item.variants.length > 0) {
+        setVariantModalItem(item);
+      } else {
+        const compositeKey = `${item.id}::Base::${item.basePrice}`;
+        setCustomPlate(prev => ({ ...prev, [compositeKey]: 1 }));
+      }
     }
   };
 
@@ -360,7 +389,7 @@ export default function QuickEditPackage({
                       <GridDishCard 
                         name={item.name} 
                         price={`₦${item.basePrice.toLocaleString()}`}
-                        image={item.imageUrl || undefined}
+                        image={item.imageUrl || CUSTOM_PACKAGE_IMAGE}
                         isSelected={isSelected}
                         isAvailable={item.isAvailable !== false} 
                         onPress={item.isAvailable !== false ? () => handleCardPress(item) : undefined}

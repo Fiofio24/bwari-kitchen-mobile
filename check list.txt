@@ -1,0 +1,35 @@
+To Do List:
+1. (Done ✅)update the Sidebar.tsx under the "My Orders" button, the number badge should not be hardcoded as 4 it should actually show the numbers of active orders in the my-order.tsx page
+2. (Done ✅)Correct the Home button on other pages from routing to welcome page instead they should rout to index.tsx the main home
+3. (Victor) there should be a admin control that switches the restaurant on and off for working hours manually and automatically so customers can't make order closing period
+4. (Done ✅)Make sure it's not all back button action that actually takes user the the previous page, e.g in case of where a user logs out back button shouldn't just suddenly take them back to the previous page with their account signed in
+5. (Done ✅)fix when "offers & promo" button or any other button is clicked in the sidebar when navigating to the that page it either has a sort of faint overlay ash color cover the whole page or solid color blocking everything in that page 
+6. (victor)the rating stars is not reflection in admin dashboard after user rates an order
+7. (Done ✅)the mini menu for editing is showing all prices as ₦1
+8. (victor)fixing the isAvailable logic for menu items "Hey Victor, when you toggle an item to 'off' in the Admin dashboard, the /api/menu/items endpoint completely removes the item from the JSON array. Can you update the endpoint so it still returns all items, but changes the isAvailable boolean to false for sold-out items? We need the items to still appear in the app UI, just visually greyed out and unclickable."
+9. (Done ✅)let the theme of the app be light mode by default 
+10. (Partially Done ✅)Stop buttons from activating more than once even if user clicks it several times before the button rout to the next page. this is because currently when user clicks a button more than once when the next page opens and user wants to go back they will go back to same page because they opened that same page repeatedly 
+11. (Done ✅)why is it that when i click a package in the details page default price in the QuickEditPackage is ₦0 then when i deselect and select that item again then the actual price appears 
+12. change the default image that the a menu item has if admin forgot to add an item image from that basketball image to something food related probably the bwari kitchen logo 
+13. (Done ✅)in the my-order.tsx make it that user can switch from active orders to past orders by just swipping the page left or right
+14. (Done ✅)when sign out button is clicked either sidebar.tsx or profile.tsx it should actually sign the user out instead of just routing them to login page cus right now after siging out and the app is closed and reopened it still goes to unlock page as if the user was prviously signed in before the app was closed
+15. (victor) is the star rating for orders functioning?
+16. (Done ✅)creat a new component that appears when "sign out" is clicked that asks "Are you sure you want to sign out of Bwari kitchen?" the opions Yes and No
+17. for the package and menu images make a loading effect when their yet to fetch the actual image for that item also generally creat loading effects for any other thing like package details texts
+18. (Done ✅)in the sign up page under password input section make that it will have a kind of must have features before the password will be accepted like showing message under "password must be up to 8-characters" etc
+19. it's like cart orders are being saved to phone memory or something even when i created a new account on signig up successful the account already had items in the cart
+20. (Done ✅)in the promo page instead of the "copy code" button let it be copy icon so that there would be enough space in case of long promo code
+21. (not confirmed)in the sidebar the sign out button does not have allowance for the phone's navigation bar 
+22. the location area in the home page at the very top should show the selected address not "Select Location"
+23. in the admin dashboard in menu page when creating a new package after adding a discription then saved the package, then in the main customer app the discription on the details page was showing a hardcoded discrition aside the perticular discription i just added to that new package
+24.  
+
+Future updates:
+1. 
+
+Checked ✅:
+1. I updated components/DraggableOrderButton.tsx to only glow red when there's an active order (this triggers instantly after checkout).
+2. I updated app/my-orders.tsx to auto-refresh instantly when the page is opened, and silently check for order status updates every 15 seconds while the user is looking at it.
+3. I updated context/NotificationContext.tsx to silently fetch new notifications every 30 seconds in the background, so the bell icon updates live without having to go to the notification page and refresh first.
+4. I updated the app/checkout.tsx so that by default the "No Cutlery Required" option is switched off then on switch on it automatically fills the "add delivery note box" with "No Cutlery Required"
+5. I rearranged the GridDishCard.tsx from [{category || name} {rating}],[{name}],[{price} Add] to  [{name}],[{category || name} {rating}],[{price} Add]

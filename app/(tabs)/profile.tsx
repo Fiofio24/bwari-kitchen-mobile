@@ -18,17 +18,23 @@ import { useUser } from '../../context/UserContext';
 import { Colors } from '../../constants/Colors';
 import { StatusBar } from 'expo-status-bar';
 import Sidebar from '../../components/Sidebar';
-import { useRouter } from 'expo-router'; 
+import { useSafeRouter } from '../../hooks/useSafeRouter'; 
 import TopNav from '../../components/TopNav';
 import CartBadgeIcon from '../../components/CartBadgeIcon';
+import * as SecureStore from 'expo-secure-store';
+import ActionModal from '../../components/ActionModal';
 
 export default function ProfileScreen() {
   const { colors, isDark, setThemeMode } = useTheme();
-  const { userData, updateAvatar } = useUser(); 
-  const router = useRouter(); 
+  const { userData, updateAvatar, resetToDefault } = useUser(); 
+  const router = useSafeRouter(); 
   
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isBiometricEnabled, setIsBiometricEnabled] = useState(true);
+  
+  // States for the Modals
+  const [isSignOutModalVisible, setIsSignOutModalVisible] = useState(false);
+  const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
 
   const userStats = { ordersCount: 24, points: 450, referralCode: "BWARI-SERIFF-99" };
 
@@ -98,12 +104,11 @@ export default function ProfileScreen() {
         leftIcon="menu-outline"
         onLeftPress={() => setIsSidebarOpen(true)}
         rightComponent={
-          <View style={styles.headerRight}>
-            <CartBadgeIcon onPress={() => router.push('/cart')} />
-          </View>
+          <TouchableOpacity style={styles.iconButton} onPress={() => {}}>
+            <Ionicons name="settings-outline" size={24} color="#FFF" />
+          </TouchableOpacity>
         }
         isAbsolute={false} 
-        isScrolled={true}
       />
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.scrollContent, { paddingBottom: 140 }]}>
@@ -180,6 +185,12 @@ export default function ProfileScreen() {
             label="Saved Addresses" 
             onPress={() => router.push('/saved-addresses')} 
           />
+          <ProfileMenuItem 
+            icon="card-outline" 
+            label="Payment Methods" 
+            subLabel="Manage cards" 
+            onPress={() => router.push('/payment-methods')} 
+          />
         </View>
 
         <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>SECURITY & APP</Text>
@@ -197,7 +208,6 @@ export default function ProfileScreen() {
           <ProfileMenuItem 
             icon="notifications-outline" 
             label="Notification Preferences" 
-            onPress={() => router.push('/notification-preferences')}
           />
         </View>
 
@@ -216,12 +226,13 @@ export default function ProfileScreen() {
             icon="trash-outline" 
             label="Delete Account" 
             isDestructive={true} 
+            onPress={() => setIsDeleteModalVisible(true)}
           />
           <ProfileMenuItem 
             icon="log-out-outline" 
             label="Sign Out" 
             isDestructive={true} 
-            onPress={() => router.push('/login')}
+            onPress={() => setIsSignOutModalVisible(true)}
           />
         </View>
 
@@ -235,7 +246,44 @@ export default function ProfileScreen() {
         </View>
         <Text style={[styles.versionText, { color: colors.textMuted }]}>Version 2.4.0 (Build 102)</Text>
       </ScrollView>
+
       <Sidebar visible={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+      
+      {/* Reusable Modal for Sign Out */}
+      <ActionModal 
+        visible={isSignOutModalVisible} 
+        onClose={() => setIsSignOutModalVisible(false)} 
+        onConfirm={async () => {
+          setIsSignOutModalVisible(false);
+          await SecureStore.deleteItemAsync('authToken'); 
+          resetToDefault(); 
+          router.replace('/welcome'); 
+        }} 
+        title="Sign Out"
+        message="Are you sure you want to sign out of Bwari Kitchen?"
+        iconName="log-out-outline"
+        confirmText="Sign Out"
+        cancelText="Cancel"
+      />
+
+      {/* Reusable Modal for Delete Account */}
+      <ActionModal 
+        visible={isDeleteModalVisible} 
+        onClose={() => setIsDeleteModalVisible(false)} 
+        onConfirm={async () => {
+          setIsDeleteModalVisible(false);
+          // Future API call to delete account goes here
+          await SecureStore.deleteItemAsync('authToken'); 
+          resetToDefault(); 
+          router.replace('/welcome'); 
+        }} 
+        title="Delete Account"
+        message="Are you sure you want to permanently delete your account? This action cannot be undone."
+        iconName="trash-outline"
+        confirmText="Delete"
+        cancelText="Cancel"
+      />
+
     </View>
   );
 }
@@ -246,11 +294,6 @@ const styles = StyleSheet.create({
   },
   iconButton: { 
     padding: 5,
-  },
-  headerRight: { 
-    flexDirection: 'row', 
-    alignItems: 'center',
-    justifyContent: 'flex-end',
   },
   scrollContent: { 
     paddingTop: 20,

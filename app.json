@@ -20,7 +20,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/BK_logo1-w.png",
+        "foregroundImage": "./assets/BK_logo.png",
         "backgroundColor": "#d30000"
       },
       "package": "com.fiotecz.bwarikitchen",

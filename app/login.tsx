@@ -11,7 +11,7 @@ import {
   ActivityIndicator,
   Dimensions
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useSafeRouter } from '../hooks/useSafeRouter';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
@@ -28,7 +28,7 @@ import * as SecureStore from 'expo-secure-store';
 const { height } = Dimensions.get('window');
 
 export default function LoginScreen() {
-  const router = useRouter();
+  const router = useSafeRouter();
   const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const { updateUserData } = useUser();
@@ -185,7 +185,7 @@ export default function LoginScreen() {
             </TouchableOpacity>
 
             {/* SOCIAL LOGIN */}
-            <View style={styles.socialSection}>
+            {/* <View style={styles.socialSection}>
               <Text style={[styles.socialDividerText, { color: colors.textMuted }]}>
                 other ways to sign in
               </Text>
@@ -197,7 +197,7 @@ export default function LoginScreen() {
                   <Ionicons name="logo-facebook" size={24} color="#4267B2" />
                 </TouchableOpacity>
               </View>
-            </View>
+            </View> */}
 
             {/* FOOTER LINK */}
             <View style={styles.footerContainer}>

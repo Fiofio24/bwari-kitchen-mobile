@@ -10,7 +10,7 @@ import {
   Linking,
   Alert
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useSafeRouter } from '../hooks/useSafeRouter';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context'; 
 import { useTheme } from '../context/ThemeContext';
@@ -48,7 +48,7 @@ const FAQ_DATA = [
 ];
 
 export default function HelpScreen() {
-  const router = useRouter();
+  const router = useSafeRouter();
   const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const { userData } = useUser();

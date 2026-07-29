@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { 
   View, 
   Text, 
@@ -9,8 +9,10 @@ import {
   DimensionValue,
   ActivityIndicator,
   RefreshControl,
+  useWindowDimensions,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useFocusEffect } from 'expo-router'; 
+import { useSafeRouter } from '../hooks/useSafeRouter';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { Colors } from '../constants/Colors';
@@ -72,8 +74,10 @@ const formatDate = (isoString: string) => {
 };
 
 export default function MyOrdersScreen() {
-  const router = useRouter();
+  const router = useSafeRouter();
   const { colors, isDark } = useTheme();
+  const { width } = useWindowDimensions();
+  const scrollViewRef = useRef<ScrollView>(null);
   
   const [activeTab, setActiveTab] = useState<'active' | 'past'>('active');
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -92,10 +96,24 @@ export default function MyOrdersScreen() {
     }
   }, []);
 
-  useEffect(() => {
-    setLoading(true);
-    fetchOrders().finally(() => setLoading(false));
-  }, [fetchOrders]);
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+
+      fetchOrders().finally(() => {
+        if (isActive) setLoading(false);
+      });
+
+      const intervalId = setInterval(() => {
+        fetchOrders();
+      }, 15000);
+
+      return () => {
+        isActive = false;
+        clearInterval(intervalId);
+      };
+    }, [fetchOrders])
+  );
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -103,16 +121,51 @@ export default function MyOrdersScreen() {
     setRefreshing(false);
   };
 
-  const filteredOrders = orders.filter(order => 
-    activeTab === 'active' ? ACTIVE_STATUSES.includes(order.status) : !ACTIVE_STATUSES.includes(order.status)
-  );
+  const activeOrders = orders.filter(order => ACTIVE_STATUSES.includes(order.status));
+  const pastOrders = orders.filter(order => !ACTIVE_STATUSES.includes(order.status));
+
+  const handleTabPress = (tab: 'active' | 'past') => {
+    setActiveTab(tab);
+    const index = tab === 'active' ? 0 : 1;
+    scrollViewRef.current?.scrollTo({ x: index * width, animated: true });
+  };
+
+  const handleHorizontalScroll = (event: any) => {
+    const offsetX = event.nativeEvent.contentOffset.x;
+    const index = Math.round(offsetX / width);
+    const newTab = index === 0 ? 'active' : 'past';
+    if (activeTab !== newTab) {
+      setActiveTab(newTab);
+    }
+  };
+
+  const handleReorder = (order: Order) => {
+    const reorderPayload = order.orderPackages.map((pkg, index) => ({
+      id: `custom_reorder_${order.id}_${index}`,
+      name: pkg.packageName,
+      price: pkg.totalPrice,
+      quantity: 1,
+      subItems: pkg.items.map(item => ({
+        id: item.itemName,
+        name: item.itemName,
+        qty: item.quantity,
+        price: item.unitPrice
+      }))
+    }));
+
+    const encodedPayload = encodeURIComponent(JSON.stringify(reorderPayload));
+
+    router.push({
+      pathname: '/checkout',
+      params: { instantReorder: encodedPayload }
+    });
+  };
 
   const toggleExpand = async (id: string) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     const willExpand = expandedId !== id;
     setExpandedId(willExpand ? id : null);
 
-    // Lazily check review status the first time a delivered order is expanded
     if (willExpand && !reviewStatus[id]) {
       const order = orders.find(o => o.id === id);
       if (order?.status === 'delivered') {
@@ -207,6 +260,164 @@ export default function MyOrdersScreen() {
     );
   };
 
+  const renderOrderList = (list: Order[], emptyTitle: string, emptySub: string) => (
+    <ScrollView 
+      showsVerticalScrollIndicator={false} 
+      contentContainerStyle={styles.scrollContent}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} />}
+    >
+      {list.length > 0 ? (
+        list.map(order => {
+          const isExpanded = expandedId === order.id;
+          const isActive = ACTIVE_STATUSES.includes(order.status);
+          const review = reviewStatus[order.id];
+          
+          return (
+            <View key={order.id} style={[styles.orderCard, { backgroundColor: colors.surface, borderColor: isExpanded ? Colors.primary : colors.border }]}>
+              
+              <TouchableOpacity activeOpacity={0.8} onPress={() => toggleExpand(order.id)}>
+                <View style={styles.cardHeader}>
+                  <View style={styles.headerLeft}>
+                    <View style={[styles.iconBox, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F5F5F5' }]}>
+                      <Ionicons name="bag-handle" size={20} color={Colors.primary} />
+                    </View>
+                    <View style={styles.orderIdBox}>
+                      <Text style={[styles.orderIdText, { color: colors.text }]}>{order.orderNumber}</Text>
+                      <Text style={[styles.orderDate, { color: colors.textMuted }]}>{formatDate(order.createdAt)}</Text>
+                    </View>
+                  </View>
+                  <View style={[styles.statusBadge, { backgroundColor: `${getStatusColor(order.status)}15` }]}>
+                    <Text style={[styles.statusText, { color: getStatusColor(order.status) }]}>{formatStatusLabel(order.status)}</Text>
+                  </View>
+                </View>
+
+                <View style={[styles.divider, { backgroundColor: colors.border }]} />
+
+                <View style={styles.cardBody}>
+                  <Text style={[styles.itemSummaryText, { color: colors.text }]} numberOfLines={1}>{getOrderSummaryText(order)}</Text>
+                  <View style={styles.expandRow}>
+                    <Text style={[styles.totalText, { color: colors.text }]}>₦{order.totalAmount.toLocaleString()}</Text>
+                    <Ionicons name={isExpanded ? "chevron-up" : "chevron-down"} size={20} color={colors.textMuted} style={{ marginLeft: 10 }} />
+                  </View>
+                </View>
+              </TouchableOpacity>
+
+              {isExpanded && (
+                <View style={styles.expandedSection}>
+                  
+                  {isActive && (
+                    <OrderProgress status={order.status} orderType={order.orderType} />
+                  )}
+
+                  <View style={[styles.receiptBox, { backgroundColor: isDark ? colors.background : '#F9F9F9' }]}>
+                    <Text style={[styles.receiptTitle, { color: colors.textMuted }]}>ORDER DETAILS</Text>
+                    
+                    {order.orderPackages.map((pkg, pkgIndex) => (
+                      <View key={pkgIndex} style={styles.packageGroupContainer}>
+                        <Text style={[styles.packageGroupName, { color: colors.text }]}>
+                          {pkg.packageName}
+                        </Text>
+                        
+                        {pkg.items.map((item, itemIdx) => (
+                          <View key={itemIdx} style={styles.receiptItemRow}>
+                            <Text style={[styles.receiptItemName, { color: colors.textMuted }]} numberOfLines={1}>
+                              {item.itemName} × {item.quantity}
+                            </Text>
+                            <Text style={[styles.receiptItemPrice, { color: colors.textMuted }]}>
+                              ₦{item.totalPrice.toLocaleString()}
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
+                    ))}
+
+                    <View style={[styles.dashedDivider, { borderColor: colors.border }]} />
+                    <View style={styles.receiptItemRow}>
+                      <Text style={[styles.receiptSubText, { color: colors.textMuted }]}>Subtotal</Text>
+                      <Text style={[styles.receiptSubText, { color: colors.textMuted, textAlign: 'right', fontWeight: 'bold' }]}>
+                        ₦{order.subtotal.toLocaleString()}
+                      </Text>
+                    </View>
+                    <View style={styles.receiptItemRow}>
+                      <Text style={[styles.receiptSubText, { color: colors.textMuted }]}>Delivery Fee</Text>
+                      <Text style={[styles.receiptSubText, { color: colors.textMuted, textAlign: 'right', fontWeight: 'bold' }]}>
+                        ₦{order.deliveryFee.toLocaleString()}
+                      </Text>
+                    </View>
+                    <View style={[styles.dashedDivider, { borderColor: colors.border }]} />
+                    <View style={styles.receiptItemRow}>
+                      <Text style={[styles.receiptTotalText, { color: colors.text }]}>Total</Text>
+                      <Text style={[styles.receiptTotalValue, { color: Colors.primary }]}>
+                        ₦{order.totalAmount.toLocaleString()}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {order.status === 'delivered' && (
+                    <View style={styles.ratingSection}>
+                      <Text style={[styles.ratingLabel, { color: colors.text }]}>
+                        {review?.reviewed ? 'Your rating' : 'How was your food?'}
+                      </Text>
+                      <View style={styles.starsRow}>
+                        {submittingReview === order.id ? (
+                          <ActivityIndicator color={Colors.primary} />
+                        ) : (
+                          [1, 2, 3, 4, 5].map(star => (
+                            <TouchableOpacity 
+                              key={star} 
+                              disabled={review?.reviewed}
+                              onPress={() => handleSubmitRating(order.id, star)}
+                            >
+                              <Ionicons 
+                                name={star <= (review?.rating || 0) ? "star" : "star-outline"} 
+                                size={26} 
+                                color={Colors.primary} 
+                                style={{ marginHorizontal: 2 }}
+                              />
+                            </TouchableOpacity>
+                          ))
+                        )}
+                      </View>
+                    </View>
+                  )}
+
+                  <View style={styles.actionFooterRow}>
+                    <TouchableOpacity style={[styles.helpBtn, { borderColor: colors.border }]} onPress={() => router.push('/help')}>
+                      <Ionicons name="chatbubble-ellipses-outline" size={16} color={colors.text} />
+                      <Text style={[styles.helpBtnText, { color: colors.text }]}>Get Help</Text>
+                    </TouchableOpacity>
+                    
+                    {isActive ? (
+                      <TouchableOpacity 
+                        style={[styles.primaryActionBtn, { backgroundColor: Colors.primary }]}
+                        onPress={() => router.push({ pathname: '/track-order', params: { orderId: order.id } })}
+                      >
+                        <Text style={styles.primaryActionText}>Track Order</Text>
+                      </TouchableOpacity>
+                    ) : (
+                      <TouchableOpacity 
+                        style={[styles.primaryActionBtn, { backgroundColor: Colors.primary }]}
+                        onPress={() => handleReorder(order)}
+                      >
+                        <Text style={styles.primaryActionText}>Reorder</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                </View>
+              )}
+            </View>
+          );
+        })
+      ) : (
+        <View style={styles.emptyContainer}>
+          <Ionicons name="receipt-outline" size={80} color={colors.border} />
+          <Text style={[styles.emptyTitle, { color: colors.text }]}>{emptyTitle}</Text>
+          <Text style={[styles.emptySub, { color: colors.textMuted }]}>{emptySub}</Text>
+        </View>
+      )}
+    </ScrollView>
+  );
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar style="light" />
@@ -232,14 +443,14 @@ export default function MyOrdersScreen() {
       <View style={styles.tabContainer}>
         <TouchableOpacity 
           style={[styles.tabButton, activeTab === 'active' ? [styles.activeTab, { borderBottomColor: Colors.primary }] : null]} 
-          onPress={() => setActiveTab('active')}
+          onPress={() => handleTabPress('active')}
           activeOpacity={0.8}
         >
           <Text style={[styles.tabText, { color: activeTab === 'active' ? Colors.primary : colors.textMuted }]}>Active Orders</Text>
         </TouchableOpacity>
         <TouchableOpacity 
           style={[styles.tabButton, activeTab === 'past' ? [styles.activeTab, { borderBottomColor: Colors.primary }] : null]} 
-          onPress={() => setActiveTab('past')}
+          onPress={() => handleTabPress('past')}
           activeOpacity={0.8}
         >
           <Text style={[styles.tabText, { color: activeTab === 'past' ? Colors.primary : colors.textMuted }]}>Past Orders</Text>
@@ -249,143 +460,25 @@ export default function MyOrdersScreen() {
       {loading ? (
         <ActivityIndicator color={Colors.primary} style={{ marginTop: 60 }} />
       ) : (
-        <ScrollView 
-          showsVerticalScrollIndicator={false} 
-          contentContainerStyle={styles.scrollContent}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} />}
+        <ScrollView
+          ref={scrollViewRef}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          onMomentumScrollEnd={handleHorizontalScroll}
         >
-          {filteredOrders.length > 0 ? (
-            filteredOrders.map(order => {
-              const isExpanded = expandedId === order.id;
-              const allItems = order.orderPackages.flatMap(pkg => pkg.items);
-              const isActive = ACTIVE_STATUSES.includes(order.status);
-              const review = reviewStatus[order.id];
-              
-              return (
-                <View key={order.id} style={[styles.orderCard, { backgroundColor: colors.surface, borderColor: isExpanded ? Colors.primary : colors.border }]}>
-                  
-                  <TouchableOpacity activeOpacity={0.8} onPress={() => toggleExpand(order.id)}>
-                    <View style={styles.cardHeader}>
-                      <View style={styles.headerLeft}>
-                        <View style={[styles.iconBox, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F5F5F5' }]}>
-                          <Ionicons name="bag-handle" size={20} color={Colors.primary} />
-                        </View>
-                        <View style={styles.orderIdBox}>
-                          <Text style={[styles.orderIdText, { color: colors.text }]}>{order.orderNumber}</Text>
-                          <Text style={[styles.orderDate, { color: colors.textMuted }]}>{formatDate(order.createdAt)}</Text>
-                        </View>
-                      </View>
-                      <View style={[styles.statusBadge, { backgroundColor: `${getStatusColor(order.status)}15` }]}>
-                        <Text style={[styles.statusText, { color: getStatusColor(order.status) }]}>{formatStatusLabel(order.status)}</Text>
-                      </View>
-                    </View>
-
-                    <View style={[styles.divider, { backgroundColor: colors.border }]} />
-
-                    <View style={styles.cardBody}>
-                      <Text style={[styles.itemSummaryText, { color: colors.text }]} numberOfLines={1}>{getOrderSummaryText(order)}</Text>
-                      <View style={styles.expandRow}>
-                        <Text style={[styles.totalText, { color: colors.text }]}>₦{order.totalAmount.toLocaleString()}</Text>
-                        <Ionicons name={isExpanded ? "chevron-up" : "chevron-down"} size={20} color={colors.textMuted} style={{ marginLeft: 10 }} />
-                      </View>
-                    </View>
-                  </TouchableOpacity>
-
-                  {isExpanded && (
-                    <View style={styles.expandedSection}>
-                      
-                      {isActive && (
-                        <OrderProgress status={order.status} orderType={order.orderType} />
-                      )}
-
-                      <View style={[styles.receiptBox, { backgroundColor: isDark ? colors.background : '#F9F9F9' }]}>
-                        <Text style={[styles.receiptTitle, { color: colors.textMuted }]}>ORDER DETAILS</Text>
-                        {allItems.map((item, idx) => (
-                          <View key={idx} style={styles.receiptItemRow}>
-                            <Text style={[styles.receiptItemQty, { color: colors.text }]}>{item.quantity}x</Text>
-                            <Text style={[styles.receiptItemName, { color: colors.text }]} numberOfLines={1}>{item.itemName}</Text>
-                            <Text style={[styles.receiptItemPrice, { color: colors.text }]}>₦{item.totalPrice.toLocaleString()}</Text>
-                          </View>
-                        ))}
-                        <View style={[styles.dashedDivider, { borderColor: colors.border }]} />
-                        <View style={styles.receiptItemRow}>
-                          <Text style={[styles.receiptSubText, { color: colors.textMuted }]}>Subtotal</Text>
-                          <Text style={[styles.receiptSubText, { color: colors.textMuted, textAlign: 'right' }]}>₦{order.subtotal.toLocaleString()}</Text>
-                        </View>
-                        <View style={styles.receiptItemRow}>
-                          <Text style={[styles.receiptSubText, { color: colors.textMuted }]}>Delivery Fee</Text>
-                          <Text style={[styles.receiptSubText, { color: colors.textMuted, textAlign: 'right' }]}>₦{order.deliveryFee.toLocaleString()}</Text>
-                        </View>
-                      </View>
-
-                      {order.status === 'delivered' && (
-                        <View style={styles.ratingSection}>
-                          <Text style={[styles.ratingLabel, { color: colors.text }]}>
-                            {review?.reviewed ? 'Your rating' : 'How was your food?'}
-                          </Text>
-                          <View style={styles.starsRow}>
-                            {submittingReview === order.id ? (
-                              <ActivityIndicator color={Colors.primary} />
-                            ) : (
-                              [1, 2, 3, 4, 5].map(star => (
-                                <TouchableOpacity 
-                                  key={star} 
-                                  disabled={review?.reviewed}
-                                  onPress={() => handleSubmitRating(order.id, star)}
-                                >
-                                  <Ionicons 
-                                    name={star <= (review?.rating || 0) ? "star" : "star-outline"} 
-                                    size={26} 
-                                    color={Colors.primary} 
-                                    style={{ marginHorizontal: 2 }}
-                                  />
-                                </TouchableOpacity>
-                              ))
-                            )}
-                          </View>
-                        </View>
-                      )}
-
-                      <View style={styles.actionFooterRow}>
-                        <TouchableOpacity style={[styles.helpBtn, { borderColor: colors.border }]} onPress={() => router.push('/help')}>
-                          <Ionicons name="chatbubble-ellipses-outline" size={16} color={colors.text} />
-                          <Text style={[styles.helpBtnText, { color: colors.text }]}>Get Help</Text>
-                        </TouchableOpacity>
-                        
-                        {isActive ? (
-                          <TouchableOpacity 
-                            style={[styles.primaryActionBtn, { backgroundColor: Colors.primary }]}
-                            onPress={() => router.push({ pathname: '/track-order', params: { orderId: order.id } })}
-                          >
-                            <Text style={styles.primaryActionText}>Track Order</Text>
-                          </TouchableOpacity>
-                        ) : (
-                          <TouchableOpacity style={[styles.primaryActionBtn, { backgroundColor: Colors.primary }]}>
-                            <Text style={styles.primaryActionText}>Reorder</Text>
-                          </TouchableOpacity>
-                        )}
-                      </View>
-                    </View>
-                  )}
-                </View>
-              );
-            })
-          ) : (
-            <View style={styles.emptyContainer}>
-              <Ionicons name="receipt-outline" size={80} color={colors.border} />
-              <Text style={[styles.emptyTitle, { color: colors.text }]}>No {activeTab} orders</Text>
-              <Text style={[styles.emptySub, { color: colors.textMuted }]}>
-                {activeTab === 'active' ? "You don't have any ongoing orders at the moment." : "Your order history is empty."}
-              </Text>
-            </View>
-          )}
+          <View style={{ width }}>
+            {renderOrderList(activeOrders, 'No active orders', "You don't have any ongoing orders at the moment.")}
+          </View>
+          <View style={{ width }}>
+            {renderOrderList(pastOrders, 'No past orders', "Your order history is empty.")}
+          </View>
         </ScrollView>
       )}
     </View>
   );
 }
 
-// styles object unchanged — reuse exactly what you already have
 const styles = StyleSheet.create({
   container: { flex: 1 },
   iconButton: { padding: 5, justifyContent: 'center', alignItems: 'center' },
@@ -418,13 +511,18 @@ const styles = StyleSheet.create({
   stepText: { fontSize: 11, fontWeight: '600' },
   stepTextActive: { fontWeight: 'bold', color: Colors.primary },
   receiptBox: { padding: 15, borderRadius: 15, marginBottom: 20 },
-  receiptTitle: { fontSize: 11, fontWeight: 'bold', letterSpacing: 1, marginBottom: 12 },
-  receiptItemRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
-  receiptItemQty: { width: 25, fontSize: 13, fontWeight: 'bold' },
+  receiptTitle: { fontSize: 11, fontWeight: 'bold', letterSpacing: 1, marginBottom: 15 },
+  
+  packageGroupContainer: { marginBottom: 15 },
+  packageGroupName: { fontSize: 14, fontWeight: 'bold', marginBottom: 8 },
+  receiptItemRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
   receiptItemName: { flex: 1, fontSize: 13, paddingRight: 10 },
-  receiptItemPrice: { fontSize: 13, fontWeight: 'bold' },
+  receiptItemPrice: { fontSize: 13, fontWeight: '500' },
+  
   dashedDivider: { borderTopWidth: 1, borderStyle: 'dashed', marginVertical: 10 },
-  receiptSubText: { fontSize: 13, flex: 1 },
+  receiptSubText: { fontSize: 14, flex: 1 },
+  receiptTotalText: { fontSize: 16, fontWeight: 'bold', flex: 1 },
+  receiptTotalValue: { fontSize: 18, fontWeight: '900' },
   ratingSection: { alignItems: 'center', marginBottom: 20, paddingVertical: 10, borderRadius: 15 },
   ratingLabel: { fontSize: 14, fontWeight: 'bold', marginBottom: 8 },
   starsRow: { flexDirection: 'row', minHeight: 30, alignItems: 'center' },

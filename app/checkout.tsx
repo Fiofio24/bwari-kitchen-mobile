@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { 
   View, 
   Text, 
@@ -10,11 +10,15 @@ import {
   TextInput,
   Switch,
   ActivityIndicator,
+  DeviceEventEmitter,
+  useWindowDimensions,
+  Modal
 } from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
+import { useSafeRouter } from '../hooks/useSafeRouter';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context'; 
-import * as WebBrowser from 'expo-web-browser';
+import { WebView } from 'react-native-webview'; // <-- NEW IN-APP BROWSER
 import { useTheme } from '../context/ThemeContext';
 import { Colors } from '../constants/Colors';
 import { StatusBar } from 'expo-status-bar';
@@ -25,8 +29,6 @@ import TopNav from '../components/TopNav';
 import HomeIcon from '../components/HomeIcon';
 import api from './lib/api';
 
-// Every cart entry — real package, custom plate, or plain item — becomes
-// one "package" entry for the backend, matching its package-centric order model.
 const buildOrderPackagesPayload = (items: any[]) => {
   return items.map((item: any) => {
     if (item.subItems && item.subItems.length > 0) {
@@ -54,7 +56,7 @@ const buildOrderPackagesPayload = (items: any[]) => {
 };
 
 export default function CheckoutScreen() {
-  const router = useRouter();
+  const router = useSafeRouter();
   const params = useLocalSearchParams(); 
   const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
@@ -65,15 +67,60 @@ export default function CheckoutScreen() {
   const [deliveryMethod, setDeliveryMethod] = useState<'delivery' | 'pickup'>('delivery'); 
   const [isProcessing, setIsProcessing] = useState(false);
   const [orderNote, setOrderNote] = useState('');
-  const [noCutlery, setNoCutlery] = useState(true);
+  const [noCutlery, setNoCutlery] = useState(false); 
   const [isAddressModalVisible, setIsAddressModalVisible] = useState(false); 
   const [promoCode, setPromoCode] = useState('');
   const [promoResult, setPromoResult] = useState<{ discountAmount: number; message: string } | null>(null);
   const [applyingPromo, setApplyingPromo] = useState(false);
 
+  // NEW: State to control the In-App Browser Modal
+  const [paymentModalData, setPaymentModalData] = useState<{ url: string; reference: string } | null>(null);
+
+  const { width } = useWindowDimensions();
+  const cardWidth = width - 40; 
+  const scrollViewRef = useRef<ScrollView>(null);
+
+  const handleTabPress = (method: 'delivery' | 'pickup') => {
+    setDeliveryMethod(method);
+    const index = method === 'delivery' ? 0 : 1;
+    scrollViewRef.current?.scrollTo({ x: index * cardWidth, animated: true });
+  };
+
+  const handleHorizontalScroll = (event: any) => {
+    const offsetX = event.nativeEvent.contentOffset.x;
+    const index = Math.round(offsetX / cardWidth);
+    const newMethod = index === 0 ? 'delivery' : 'pickup';
+    if (deliveryMethod !== newMethod) {
+      setDeliveryMethod(newMethod);
+    }
+  };
+
+  const handleCutleryToggle = (newValue: boolean) => {
+    setNoCutlery(newValue);
+    const CUTLERY_NOTE = "No cutlery required.";
+    
+    if (newValue) {
+      setOrderNote(prev => {
+        if (prev.includes(CUTLERY_NOTE)) return prev;
+        return prev.trim() ? `${prev.trim()} - ${CUTLERY_NOTE}` : CUTLERY_NOTE;
+      });
+    } else {
+      setOrderNote(prev => prev.replace(` - ${CUTLERY_NOTE}`, '').replace(CUTLERY_NOTE, '').trim());
+    }
+  };
+
   const bottomNavHeight = 70 + Math.max(insets.bottom, 15);
 
   const checkoutItems = useMemo(() => {
+    if (params.instantReorder) {
+      try {
+        const decoded = decodeURIComponent(params.instantReorder as string);
+        return JSON.parse(decoded);
+      } catch (e) {
+        console.warn("Failed to parse instant reorder items", e);
+      }
+    }
+
     if (params.selectedItems) {
       try {
         const selectedIds = JSON.parse(params.selectedItems as string);
@@ -83,12 +130,10 @@ export default function CheckoutScreen() {
       }
     }
     return cartItems;
-  }, [params.selectedItems, cartItems]);
+  }, [params.instantReorder, params.selectedItems, cartItems]);
 
-  const subtotal = checkoutItems.reduce((sum, item) => sum + (item.price * (item.quantity || 1)), 0);
+  const subtotal = checkoutItems.reduce((sum: number, item: any) => sum + (item.price * (item.quantity || 1)), 0);
   
-  // Delivery fee is calculated server-side by the backend once the order is placed;
-  // this is just an estimate shown before checkout so the UI isn't blank.
   const [estimatedDeliveryFee, setEstimatedDeliveryFee] = useState(0);
 
   React.useEffect(() => {
@@ -100,7 +145,7 @@ export default function CheckoutScreen() {
       try {
         const res = await api.post('/api/addresses/delivery-fee', { addressId: activeAddress.id });
         setEstimatedDeliveryFee(res.data.deliveryFee);
-      } catch (err) {
+      } catch {
         setEstimatedDeliveryFee(0);
       }
     };
@@ -126,6 +171,50 @@ export default function CheckoutScreen() {
 
   const total = subtotal + estimatedDeliveryFee - (promoResult?.discountAmount || 0); 
 
+  // --- NEW PAYMENT VERIFICATION LOGIC ---
+  const verifyPayment = async (reference: string, isAutoDetect: boolean = false) => {
+    setPaymentModalData(null); // Instantly close the WebView modal
+    setIsProcessing(true);     // Show loading spinner on main screen
+    
+    const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+    let verified = false;
+
+    // Ping the backend 4 times to check if Paystack confirmed the payment
+    for (let attempt = 0; attempt < 4; attempt++) {
+      try {
+        const verifyRes = await api.get(`/api/payments/verify/${reference}`);
+        if (verifyRes.data.status === 'successful' || verifyRes.data.data?.status === 'success') {
+          verified = true;
+          break;
+        }
+      } catch {
+        // keep retrying
+      }
+      if (attempt < 3) await wait(2500); 
+    }
+
+    setIsProcessing(false);
+
+    if (verified) {
+      // SUCCESS! Clear the cart and navigate away
+      if (!params.instantReorder) {
+        removeMultipleFromCart(checkoutItems.map((item: any) => item.id));
+      }
+      DeviceEventEmitter.emit('ORDER_PLACED');
+      Alert.alert('Payment Successful!', 'Your food is confirmed and processing.');
+      router.replace('/my-orders');
+    } else {
+      // FAILED / PENDING! Leave them on the checkout screen with items intact
+      DeviceEventEmitter.emit('ORDER_PLACED');
+      Alert.alert(
+        isAutoDetect ? 'Verifying Payment...' : 'Payment Incomplete', 
+        'Your payment has not reflected yet. If you paid, check My Orders shortly for the latest status.'
+      );
+      router.replace('/my-orders');
+    }
+  };
+
+  // --- INITIALIZE ORDER LOGIC ---
   const handlePlaceOrder = async () => {
     if (checkoutItems.length === 0) return;
 
@@ -137,7 +226,6 @@ export default function CheckoutScreen() {
     setIsProcessing(true);
 
     try {
-      // 1. Create the order
       const orderPayload: any = {
         orderType: deliveryMethod,
         paymentMethod: 'paystack',
@@ -153,47 +241,41 @@ export default function CheckoutScreen() {
         orderPayload.promoCode = promoCode.trim();
       }
 
+      // 1. Send Order to Backend
       const orderRes = await api.post('/api/orders', orderPayload);
-      const order = orderRes.data.order;
+      const order = orderRes.data.order || orderRes.data.data || orderRes.data;
 
-      // 2. Initialize payment for that order
-      const paymentRes = await api.post('/api/payments/initialize', { orderId: order.id });
-      const { paymentUrl, reference } = paymentRes.data;
-
-      // 3. Open Paystack, waiting for redirect back to our app's custom scheme
-      const redirectUrl = 'bwarikitchen://payment-complete';
-      const result = await WebBrowser.openAuthSessionAsync(paymentUrl, redirectUrl);
-
-      // 4. Regardless of how the session ended, verify with the backend directly.
-      // Retry a few times with a short delay, since Paystack's own confirmation
-      // can lag slightly behind the redirect completing.
-      const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-      let verified = false;
-
-      for (let attempt = 0; attempt < 4; attempt++) {
-        try {
-          const verifyRes = await api.get(`/api/payments/verify/${reference}`);
-          if (verifyRes.data.status === 'successful') {
-            verified = true;
-            break;
-          }
-        } catch (verifyErr) {
-          // keep retrying — a failed verify attempt isn't necessarily final
-        }
-        if (attempt < 3) await wait(2000);
+      if (!order || (!order.id && !order._id)) {
+        throw new Error(`Missing Order ID from backend. Response: ${JSON.stringify(orderRes.data)}`);
       }
 
-      if (verified) {
-        removeMultipleFromCart(checkoutItems.map((item: any) => item.id));
-        if (Platform.OS === 'web') window.alert('Payment Successful! Order Placed.');
-        else Alert.alert('Order Placed!', 'Your food is on the way.');
-        router.replace('/my-orders');
-      } else {
-        Alert.alert('Payment Processing', 'Your payment is being confirmed. Check My Orders shortly for the latest status.');
-        router.replace('/my-orders');
+      const actualOrderId = order.id || order._id;
+
+      // 2. Initialize Paystack Payment
+      const paymentRes = await api.post('/api/payments/initialize', { orderId: actualOrderId });
+      
+      const paymentUrl = paymentRes.data.paymentUrl || paymentRes.data.data?.authorization_url || paymentRes.data.authorization_url;
+      const reference = paymentRes.data.reference || paymentRes.data.data?.reference;
+
+      if (!paymentUrl) {
+        throw new Error(`Missing Paystack URL. Response: ${JSON.stringify(paymentRes.data)}`);
       }
+
+      // 3. Open the custom WebView Modal!
+      setPaymentModalData({ url: paymentUrl, reference: reference });
+      
     } catch (err: any) {
-      Alert.alert('Order Failed', err.response?.data?.message || 'Something went wrong. Please try again.');
+      console.log("CHECKOUT ERROR:", err);
+      let errorMsg = 'Something went wrong.';
+      
+      if (err.response) {
+        const backendMsg = err.response.data?.message || err.response.data?.error || JSON.stringify(err.response.data);
+        errorMsg = `Backend Error (${err.response.status}): \n\n${backendMsg}`;
+      } else {
+        errorMsg = `App Error: \n\n${err.message}`;
+      }
+
+      Alert.alert('Checkout Diagnostic', errorMsg);
     } finally {
       setIsProcessing(false);
     }
@@ -209,7 +291,7 @@ export default function CheckoutScreen() {
         onLeftPress={() => router.back()}
         rightComponent={
           <View style={styles.headerRight}>
-            <HomeIcon onPress={() => router.push('/')} />
+            <HomeIcon onPress={() => router.push('/(tabs)')} />
           </View>
         }
         isAbsolute={false} 
@@ -227,7 +309,7 @@ export default function CheckoutScreen() {
               styles.methodToggleBtn, 
               deliveryMethod === 'delivery' ? [styles.methodToggleBtnActive, { backgroundColor: Colors.primary }] : null
             ]}
-            onPress={() => setDeliveryMethod('delivery')}
+            onPress={() => handleTabPress('delivery')}
             activeOpacity={0.8}
           >
             <Ionicons name="bicycle" size={18} color={deliveryMethod === 'delivery' ? '#FFF' : colors.textMuted} />
@@ -239,7 +321,7 @@ export default function CheckoutScreen() {
               styles.methodToggleBtn, 
               deliveryMethod === 'pickup' ? [styles.methodToggleBtnActive, { backgroundColor: Colors.primary }] : null
             ]}
-            onPress={() => setDeliveryMethod('pickup')}
+            onPress={() => handleTabPress('pickup')}
             activeOpacity={0.8}
           >
             <Ionicons name="storefront" size={18} color={deliveryMethod === 'pickup' ? '#FFF' : colors.textMuted} />
@@ -247,20 +329,28 @@ export default function CheckoutScreen() {
           </TouchableOpacity>
         </View>
 
-        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        {/* SWIPEABLE FULFILLMENT CARD */}
+        <View style={[styles.card, { padding: 0, overflow: 'hidden', backgroundColor: colors.surface, borderColor: colors.border }]}>
           
-          {deliveryMethod === 'delivery' ? (
-            <>
+          <ScrollView
+            ref={scrollViewRef}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onMomentumScrollEnd={handleHorizontalScroll}
+          >
+            {/* --- PAGE 1: DELIVERY --- */}
+            <View style={{ width: cardWidth, padding: 15 }}>
               <View style={styles.addressRow}>
                 <View style={[styles.iconBox, { backgroundColor: 'rgba(229, 57, 53, 0.1)' }]}>
                   <Ionicons name="location" size={24} color={Colors.primary} />
                 </View>
                 <View style={styles.addressTextContainer}>
                   <Text style={[styles.addressTitle, { color: colors.text }]} numberOfLines={1}>
-                    {activeAddress?.label || "No address selected"}
+                    {(activeAddress as any)?.title || (activeAddress as any)?.label || "No address selected"}
                   </Text>
                   <Text style={[styles.addressDetail, { color: colors.textMuted }]} numberOfLines={1}>
-                    {activeAddress ? [activeAddress.streetAddress, activeAddress.area].filter(Boolean).join(', ') : "Please add a delivery address"}
+                    {activeAddress ? [(activeAddress as any)?.address || (activeAddress as any)?.streetAddress, (activeAddress as any)?.area].filter(Boolean).join(', ') : "Please add a delivery address"}
                   </Text>
                 </View>
                 <TouchableOpacity onPress={() => setIsAddressModalVisible(true)}>
@@ -277,32 +367,47 @@ export default function CheckoutScreen() {
                 value={orderNote}
                 onChangeText={setOrderNote}
               />
-            </>
-          ) : (
-            <View style={styles.addressRow}>
-              <View style={[styles.iconBox, { backgroundColor: 'rgba(76, 175, 80, 0.1)' }]}>
-                <Ionicons name="storefront" size={24} color="#4CAF50" />
-              </View>
-              <View style={styles.addressTextContainer}>
-                <Text style={[styles.addressTitle, { color: colors.text }]}>Bwari Kitchen Main Branch</Text>
-                <Text style={[styles.addressDetail, { color: colors.textMuted }]}>No 1 Kitchen Avenue, Central FCT</Text>
-              </View>
             </View>
-          )}
 
-          <View style={[styles.divider, { backgroundColor: colors.border, marginVertical: 15 }]} />
-          
-          <View style={styles.ecoRow}>
-            <View style={styles.ecoTextWrap}>
-              <Text style={[styles.ecoTitle, { color: colors.text }]}>No Cutlery Required</Text>
-              <Text style={[styles.ecoSub, { color: colors.textMuted }]}>Help us reduce plastic waste</Text>
+            {/* --- PAGE 2: PICK UP --- */}
+            <View style={{ width: cardWidth, padding: 15 }}>
+              <View style={styles.addressRow}>
+                <View style={[styles.iconBox, { backgroundColor: 'rgba(76, 175, 80, 0.1)' }]}>
+                  <Ionicons name="storefront" size={24} color="#4CAF50" />
+                </View>
+                <View style={styles.addressTextContainer}>
+                  <Text style={[styles.addressTitle, { color: colors.text }]}>Bwari Kitchen Main Branch</Text>
+                  <Text style={[styles.addressDetail, { color: colors.textMuted }]}>No 1 Kitchen Avenue, Central FCT</Text>
+                </View>
+              </View>
+
+              <View style={[styles.divider, { backgroundColor: colors.border, marginVertical: 15 }]} />
+              
+              <TextInput
+                style={[styles.noteInput, { backgroundColor: isDark ? colors.background : '#F5F5F5', color: colors.text, borderColor: colors.border }]}
+                placeholder="Add pickup note (e.g., Arriving in 20 mins)"
+                placeholderTextColor={colors.textMuted}
+                value={orderNote}
+                onChangeText={setOrderNote}
+              />
             </View>
-            <Switch 
-              value={noCutlery} 
-              onValueChange={setNoCutlery} 
-              trackColor={{ false: '#767577', true: '#81C784' }} 
-              thumbColor={noCutlery ? '#388E3C' : '#f4f3f4'} 
-            />
+          </ScrollView>
+
+          {/* SHARED BOTTOM SECTION (Cutlery Toggle) */}
+          <View style={{ paddingHorizontal: 15, paddingBottom: 15 }}>
+            <View style={[styles.divider, { backgroundColor: colors.border, marginBottom: 15 }]} />
+            <View style={styles.ecoRow}>
+              <View style={styles.ecoTextWrap}>
+                <Text style={[styles.ecoTitle, { color: colors.text }]}>No Cutlery Required</Text>
+                <Text style={[styles.ecoSub, { color: colors.textMuted }]}>Help us reduce plastic waste</Text>
+              </View>
+              <Switch 
+                value={noCutlery} 
+                onValueChange={handleCutleryToggle} 
+                trackColor={{ false: '#767577', true: '#81C784' }} 
+                thumbColor={noCutlery ? '#388E3C' : '#f4f3f4'} 
+              />
+            </View>
           </View>
         </View>
 
@@ -411,6 +516,50 @@ export default function CheckoutScreen() {
         onClose={() => setIsAddressModalVisible(false)} 
       />
 
+      {/* --- NEW: IN-APP BROWSER MODAL FOR PAYSTACK --- */}
+      <Modal 
+        visible={!!paymentModalData} 
+        animationType="slide" 
+        onRequestClose={() => paymentModalData && verifyPayment(paymentModalData.reference, false)}
+      >
+        <View style={[styles.webViewContainer, { backgroundColor: colors.background, paddingTop: insets.top }]}>
+          
+          <View style={[styles.webViewHeader, { borderBottomColor: colors.border }]}>
+            <Text style={[styles.webViewTitle, { color: colors.text }]}>Secured by Paystack</Text>
+            <TouchableOpacity 
+              onPress={() => paymentModalData && verifyPayment(paymentModalData.reference, false)} 
+              style={styles.webViewCloseBtn}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.webViewCloseText}>Close & Verify</Text>
+            </TouchableOpacity>
+          </View>
+
+          {paymentModalData && (
+            <WebView 
+              source={{ uri: paymentModalData.url }}
+              style={styles.webView}
+              startInLoadingState={true}
+              renderLoading={() => (
+                <View style={styles.webViewLoader}>
+                  <ActivityIndicator size="large" color={Colors.primary} />
+                </View>
+              )}
+              onNavigationStateChange={(navState) => {
+                // Auto-detect if Paystack tries to redirect to a success or callback URL
+                if (
+                  navState.url.includes('payment-complete') || 
+                  navState.url.includes('callback') || 
+                  navState.url.includes('success')
+                ) {
+                  verifyPayment(paymentModalData.reference, true);
+                }
+              }}
+            />
+          )}
+        </View>
+      </Modal>
+
     </View>
   );
 }
@@ -448,7 +597,7 @@ const styles = StyleSheet.create({
   summaryItemPrice: { fontSize: 15, fontWeight: 'bold' },
   totalsContainer: { marginTop: 15 },
   summaryRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
-  summaryLabel: { fontSize: 15 },
+  summaryLabel: { fontSize: 15 }, 
   summaryValue: { fontSize: 15, fontWeight: '600' },
   divider: { height: 1, marginVertical: 10 },
   totalLabel: { fontSize: 16, fontWeight: 'bold' },
@@ -460,4 +609,13 @@ const styles = StyleSheet.create({
   footerTotalValue: { fontSize: 22, fontWeight: 'bold' },
   placeOrderBtn: { backgroundColor: Colors.primary, paddingVertical: 15, paddingHorizontal: 30, borderRadius: 20, elevation: 4, shadowColor: Colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 5, minWidth: 140, alignItems: 'center' },
   placeOrderText: { color: '#FFF', fontSize: 16, fontWeight: 'bold' },
+  
+  // WEBVIEW STYLES
+  webViewContainer: { flex: 1 },
+  webViewHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 15, borderBottomWidth: 1 },
+  webViewTitle: { fontSize: 16, fontWeight: 'bold' },
+  webViewCloseBtn: { backgroundColor: 'rgba(211, 47, 47, 0.1)', paddingHorizontal: 15, paddingVertical: 8, borderRadius: 15 },
+  webViewCloseText: { color: Colors.primary, fontWeight: 'bold' },
+  webView: { flex: 1 },
+  webViewLoader: { ...StyleSheet.absoluteFillObject, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.8)' },
 });

@@ -8,9 +8,9 @@ import {
   ActivityIndicator,
   Linking,
   RefreshControl,
-  DimensionValue,
 } from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
+import { useSafeRouter } from '../hooks/useSafeRouter';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
@@ -46,7 +46,7 @@ const getProgressStep = (status: string, steps: string[]) => {
 };
 
 export default function TrackOrderScreen() {
-  const router = useRouter();
+  const router = useSafeRouter();
   const { orderId } = useLocalSearchParams();
   const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
