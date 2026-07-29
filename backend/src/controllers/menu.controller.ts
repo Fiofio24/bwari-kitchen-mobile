@@ -52,7 +52,6 @@ export const getMenuItems = async (
   const skip = (pageNum - 1) * limitNum
 
   const where = {
-    isAvailable: true,
     deletedAt: null,
     category: {
       isActive: true,
@@ -75,6 +74,7 @@ export const getMenuItems = async (
       take: limitNum,
       select: {
         id: true,
+        isAvailable: true,
         name: true,
         description: true,
         basePrice: true,
@@ -129,7 +129,6 @@ export const getMenuItem = async (
   const item = await prisma.menuItem.findFirst({
     where: {
       id,
-      isAvailable: true,
       deletedAt: null,
       category: {
         isActive: true,
@@ -137,6 +136,7 @@ export const getMenuItem = async (
     },
     select: {
       id: true,
+      isAvailable: true,
       name: true,
       description: true,
       basePrice: true,
@@ -205,6 +205,7 @@ export const getPackages = async (
           menuItem: {
             select: {
               id: true,
+              isAvailable: true,
               name: true,
               basePrice: true,
               discountPrice: true,
@@ -259,6 +260,7 @@ export const getPackage = async (
           menuItem: {
             select: {
               id: true,
+              isAvailable: true,
               name: true,
               basePrice: true,
               discountPrice: true,
@@ -311,12 +313,12 @@ export const getFullMenu = async (
         sortOrder: true,
         menuItems: {
           where: {
-            isAvailable: true,
             deletedAt: null,
           },
           orderBy: { sortOrder: 'asc' },
           select: {
             id: true,
+            isAvailable: true,
             name: true,
             description: true,
             basePrice: true,
