@@ -25,6 +25,7 @@ import CartBadgeIcon from '../components/CartBadgeIcon';
 import HomeIcon from '@/components/HomeIcon';
 import TopNav from '../components/TopNav';
 import ForYouCard from '../components/ForYouCard';
+import { scale } from '../constants/Sizes'; // <-- IMPORTED MASTER SCALE
 
 export default function DetailsScreen() {
   const { id } = useLocalSearchParams();
@@ -36,12 +37,11 @@ export default function DetailsScreen() {
   
   const [quantity, setQuantity] = useState(1);
   const [isEditModalVisible, setIsEditModalVisible] = useState(false); 
-  const toastAnim = useRef(new Animated.Value(-100)).current;
+  const toastAnim = useRef(new Animated.Value(-scale(100))).current;
 
   const { findItem, findPackage, loading } = useMenu();
   const rawItem = findPackage(id as string) || findItem(id as string);
 
-  // TYPE FIX: Handled the missing 'category' field on Packages cleanly!
   const item: any = rawItem ? {
     id: rawItem.id,
     name: rawItem.name,
@@ -49,7 +49,7 @@ export default function DetailsScreen() {
     price: 'totalPrice' in rawItem ? rawItem.totalPrice : (rawItem as any).basePrice,
     image: 'imageUrl' in rawItem ? rawItem.imageUrl : undefined,
     isAvailable: (rawItem as any).isAvailable !== false,
-    rating: '4.8', // no rating field in schema yet — using static placeholder
+    rating: '4.8', 
     subItems: 'items' in rawItem ? rawItem.items.map((i: any) => ({
       id: i.menuItem.id,
       qty: i.quantity,
@@ -70,7 +70,7 @@ export default function DetailsScreen() {
   if (!item) {
     return (
       <View style={[styles.errorContainer, { backgroundColor: colors.background }]}>
-        <Ionicons name="alert-circle-outline" size={60} color={colors.textMuted} />
+        <Ionicons name="alert-circle-outline" size={scale(60)} color={colors.textMuted} />
         <Text style={[styles.errorText, { color: colors.text }]}>
           Item not found
         </Text>
@@ -107,25 +107,25 @@ export default function DetailsScreen() {
 
     Animated.sequence([
       Animated.spring(toastAnim, { 
-        toValue: insets.top + 20, 
+        toValue: insets.top + scale(20), 
         useNativeDriver: true, 
         friction: 6 
       }),
       Animated.delay(2000),
       Animated.timing(toastAnim, { 
-        toValue: -100, 
+        toValue: -scale(100), 
         duration: 300, 
         useNativeDriver: true 
       })
     ]).start();
   };
 
-  const safeTop = Platform.OS === 'web' ? 50 : insets.top + 10;
-  const paddingBottom = 15;
-  const iconHeight = 28; 
+  const safeTop = Platform.OS === 'web' ? scale(50) : insets.top + scale(10);
+  const paddingBottom = scale(15);
+  const iconHeight = scale(28); 
   const headerHeight = safeTop + paddingBottom + iconHeight;
   
-  const imageMarginTop = headerHeight - 30; 
+  const imageMarginTop = headerHeight - scale(30); 
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -146,7 +146,7 @@ export default function DetailsScreen() {
         showDivider={false}
       />
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 140 }]}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + scale(140) }]}>
         
         <ImageBackground 
           source={typeof item.image === 'string' ? { uri: item.image } : require('../assets/images/custom-plate.png')} 
@@ -155,7 +155,7 @@ export default function DetailsScreen() {
           {!isAvail && (
              <View style={styles.soldOutHeroOverlay}>
                <View style={styles.soldOutBadge}>
-                 <Ionicons name="alert-circle-outline" size={35} color="#FFF" style={styles.alertIcon} />
+                 <Ionicons name="alert-circle-outline" size={scale(35)} color="#FFF" style={styles.alertIcon} />
                  <Text style={styles.soldOutHeroText}>
                    One or more items sold out. Please edit package and add to cart.
                  </Text>
@@ -190,14 +190,14 @@ export default function DetailsScreen() {
             >
               <Ionicons 
                 name={isFavorite(item.id) ? "heart" : "heart-outline"} 
-                size={26} 
+                size={scale(26)} 
                 color={isFavorite(item.id) ? Colors.primary : colors.textMuted} 
               />
             </TouchableOpacity>
           </View>
 
           <View style={styles.ratingRow}>
-            <Ionicons name="star" size={18} color="#FFC107" />
+            <Ionicons name="star" size={scale(18)} color="#FFC107" />
             <Text style={[styles.ratingText, { color: colors.text }]}>
               {item.rating || '4.8'}
             </Text>
@@ -223,7 +223,7 @@ export default function DetailsScreen() {
                   Package Includes:
                 </Text>
                 <TouchableOpacity onPress={() => setIsEditModalVisible(true)} style={styles.editPackageBtn}>
-                  <Ionicons name="create-outline" size={16} color={Colors.primary} />
+                  <Ionicons name="create-outline" size={scale(16)} color={Colors.primary} />
                   <Text style={styles.editPackageText}>Edit</Text>
                 </TouchableOpacity>
               </View>
@@ -236,7 +236,7 @@ export default function DetailsScreen() {
                   <View key={idx} style={styles.comboItemRow}>
                     <Ionicons 
                       name="checkmark-circle" 
-                      size={18} 
+                      size={scale(18)} 
                       color={isSubSoldOut ? colors.textMuted : Colors.primary} 
                     />
                     <Text style={[
@@ -263,7 +263,7 @@ export default function DetailsScreen() {
       <View style={[
         styles.bottomBar, 
         { 
-          paddingBottom: insets.bottom + 20, 
+          paddingBottom: insets.bottom + scale(20), 
           backgroundColor: isDark ? colors.surface : '#FFF',
           borderTopColor: colors.border 
         }
@@ -274,7 +274,7 @@ export default function DetailsScreen() {
             onPress={() => setQuantity(Math.max(1, quantity - 1))}
             disabled={!isAvail}
           >
-            <Ionicons name="remove" size={20} color={!isAvail ? colors.textMuted : colors.text} />
+            <Ionicons name="remove" size={scale(20)} color={!isAvail ? colors.textMuted : colors.text} />
           </TouchableOpacity>
           <Text style={[styles.qtyValue, { color: !isAvail ? colors.textMuted : colors.text }]}>
             {quantity}
@@ -284,7 +284,7 @@ export default function DetailsScreen() {
             onPress={() => setQuantity(quantity + 1)}
             disabled={!isAvail}
           >
-            <Ionicons name="add" size={20} color={!isAvail ? colors.textMuted : colors.text} />
+            <Ionicons name="add" size={scale(20)} color={!isAvail ? colors.textMuted : colors.text} />
           </TouchableOpacity>
         </View>
 
@@ -309,7 +309,7 @@ export default function DetailsScreen() {
           backgroundColor: isDark ? '#333' : '#222' 
         }
       ]}>
-        <Ionicons name="checkmark-circle" size={24} color="#4CAF50" />
+        <Ionicons name="checkmark-circle" size={scale(24)} color="#4CAF50" />
         <Text style={styles.toastText}>Successfully added to cart!</Text>
       </Animated.View>
 
@@ -329,7 +329,7 @@ const styles = StyleSheet.create({
   },
   headerRight: { 
     flexDirection: 'row', 
-    gap: 10, 
+    gap: scale(10), 
     alignItems: 'center',
   },
   errorContainer: {
@@ -338,34 +338,34 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   errorText: {
-    fontSize: 20,
+    fontSize: scale(20),
     fontWeight: 'bold',
-    marginTop: 15,
-    marginBottom: 20,
+    marginTop: scale(15),
+    marginBottom: scale(20),
   },
   backBtn: {
-    paddingHorizontal: 25,
-    paddingVertical: 12,
-    borderRadius: 20,
+    paddingHorizontal: scale(25),
+    paddingVertical: scale(12),
+    borderRadius: scale(20),
   },
   backBtnText: {
     color: '#FFF',
     fontWeight: 'bold',
-    fontSize: 16,
+    fontSize: scale(16),
   },
   scrollContent: {
-    paddingBottom: 140, 
+    paddingBottom: scale(140), 
   },
   heroImage: {
     width: '100%',
-    height: 300,
+    height: scale(300),
   },
   gradientOverlay: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    height: 100,
+    height: scale(100),
   },
   soldOutHeroOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -377,25 +377,25 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#D32F2F',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    borderRadius: 15,
-    marginHorizontal: 30,
+    paddingHorizontal: scale(20),
+    paddingVertical: scale(15),
+    borderRadius: scale(15),
+    marginHorizontal: scale(30),
   },
   alertIcon: {
-    marginRight: 10,
-    marginTop: 2,
+    marginRight: scale(10),
+    marginTop: scale(2),
   },
   soldOutHeroText: {
     color: '#FFF',
     fontWeight: 'bold',
-    fontSize: 14,
+    fontSize: scale(14),
     flex: 1,
-    lineHeight: 20,
+    lineHeight: scale(20),
   },
   detailsContent: {
-    paddingHorizontal: 20,
-    paddingTop: 10,
+    paddingHorizontal: scale(20),
+    paddingTop: scale(10),
   },
   titleRow: {
     flexDirection: 'row',
@@ -404,118 +404,118 @@ const styles = StyleSheet.create({
   },
   titleLeft: {
     flex: 1,
-    paddingRight: 15,
+    paddingRight: scale(15),
   },
   categoryPill: {
     alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 15,
-    marginBottom: 10,
+    paddingHorizontal: scale(12),
+    paddingVertical: scale(6),
+    borderRadius: scale(15),
+    marginBottom: scale(10),
   },
   categoryText: {
     fontWeight: 'bold',
-    fontSize: 12,
+    fontSize: scale(12),
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
   itemTitle: {
-    fontSize: 26,
+    fontSize: scale(26),
     fontWeight: '900',
-    lineHeight: 34,
+    lineHeight: scale(34),
   },
   mainPrice: {
-    fontSize: 22,
+    fontSize: scale(22),
     fontWeight: 'bold',
-    marginTop: 5,
+    marginTop: scale(5),
   },
   favoriteBtn: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: scale(50),
+    height: scale(50),
+    borderRadius: scale(25),
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 4,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: scale(2),
     },
     shadowOpacity: 0.1,
-    shadowRadius: 5,
+    shadowRadius: scale(5),
   },
   ratingRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 10,
+    marginTop: scale(10),
   },
   ratingText: {
     fontWeight: 'bold',
-    fontSize: 16,
-    marginLeft: 6,
+    fontSize: scale(16),
+    marginLeft: scale(6),
   },
   reviewCount: {
-    fontSize: 14,
-    marginLeft: 8,
+    fontSize: scale(14),
+    marginLeft: scale(8),
   },
   divider: {
     height: 1,
-    marginVertical: 25,
+    marginVertical: scale(25),
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: scale(18),
     fontWeight: 'bold',
-    marginBottom: 10,
+    marginBottom: scale(10),
   },
   descriptionText: {
-    fontSize: 15,
-    lineHeight: 24,
-    marginBottom: 20,
+    fontSize: scale(15),
+    lineHeight: scale(24),
+    marginBottom: scale(20),
   },
   comboPackageBox: {
-    padding: 20,
-    borderRadius: 20,
+    padding: scale(20),
+    borderRadius: scale(20),
     borderWidth: 1,
-    marginBottom: 20,
+    marginBottom: scale(20),
   },
   comboHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 15,
+    marginBottom: scale(15),
   },
   comboTitle: {
-    fontSize: 16,
+    fontSize: scale(16),
     fontWeight: 'bold',
   },
   editPackageBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(211, 47, 47, 0.1)',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 12,
+    paddingHorizontal: scale(10),
+    paddingVertical: scale(6),
+    borderRadius: scale(12),
   },
   editPackageText: {
     color: Colors.primary,
     fontWeight: 'bold',
-    fontSize: 12,
-    marginLeft: 4,
+    fontSize: scale(12),
+    marginLeft: scale(4),
   },
   comboItemRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: scale(10),
   },
   comboItemText: {
-    fontSize: 15,
+    fontSize: scale(15),
     fontWeight: '500',
-    marginLeft: 10,
+    marginLeft: scale(10),
     flex: 1,
   },
   soldOutSubText: {
     color: '#D32F2F',
-    fontSize: 12,
+    fontSize: scale(12),
     fontWeight: 'bold',
   },
   bottomBar: {
@@ -525,80 +525,80 @@ const styles = StyleSheet.create({
     right: 0,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
+    paddingHorizontal: scale(20),
+    paddingTop: scale(20),
+    borderTopLeftRadius: scale(30),
+    borderTopRightRadius: scale(30),
     borderTopWidth: 1,
     elevation: 15,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: -5,
+      height: scale(-5),
     },
     shadowOpacity: 0.1,
-    shadowRadius: 10,
+    shadowRadius: scale(10),
   },
   quantitySelector: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginRight: 15,
+    marginRight: scale(15),
   },
   qtyBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: scale(40),
+    height: scale(40),
+    borderRadius: scale(20),
     justifyContent: 'center',
     alignItems: 'center',
   },
   qtyValue: {
-    fontSize: 18,
+    fontSize: scale(18),
     fontWeight: 'bold',
-    marginHorizontal: 15,
+    marginHorizontal: scale(15),
   },
   addToCartBtn: {
     flex: 1,
-    height: 54,
-    borderRadius: 27,
+    height: scale(54),
+    borderRadius: scale(27),
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 4,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 4,
+      height: scale(4),
     },
     shadowOpacity: 0.2,
-    shadowRadius: 5,
+    shadowRadius: scale(5),
   },
   addToCartText: {
-    fontSize: 16,
+    fontSize: scale(16),
     fontWeight: 'bold',
   },
   toastContainer: {
     position: 'absolute',
-    left: 20,
-    right: 20,
+    left: scale(20),
+    right: scale(20),
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderRadius: 30,
+    paddingVertical: scale(14),
+    paddingHorizontal: scale(20),
+    borderRadius: scale(30),
     elevation: 10,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 5,
+      height: scale(5),
     },
     shadowOpacity: 0.3,
-    shadowRadius: 8,
+    shadowRadius: scale(8),
     zIndex: 100,
     justifyContent: 'center',
-    gap: 10,
+    gap: scale(10),
   },
   toastText: {
     color: '#FFF',
-    fontSize: 16,
+    fontSize: scale(16),
     fontWeight: 'bold',
   },
 });

@@ -16,6 +16,7 @@ import { Colors } from '../constants/Colors';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
+import { scale } from '../constants/Sizes'; // <-- IMPORTED MASTER SCALE
 
 const { width } = Dimensions.get('window');
 
@@ -65,7 +66,7 @@ export default function WelcomeScreen() {
 
             {/* CONTENT INNER CONTAINER */}
             {/* Notice the paddingBottom here fixes the minimize bar issue! */}
-            <View style={[styles.contentContainer, { paddingBottom: Math.max(insets.bottom, 20) + 20 }]}>
+            <View style={[styles.contentContainer, { paddingBottom: Math.max(insets.bottom, scale(20)) + scale(20) }]}>
               
               {/* LOGO */}
               <View style={styles.logoWrapper}>
@@ -150,7 +151,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: width * 0.75,
     overflow: 'hidden',
     alignItems: 'center',
-    paddingTop: 40, 
+    paddingTop: scale(40), 
   },
   blurView: {
     ...StyleSheet.absoluteFillObject,
@@ -159,24 +160,24 @@ const styles = StyleSheet.create({
     // Constrain inner content back to standard screen width
     width: width,
     alignItems: 'center',
-    paddingHorizontal: 30,
+    paddingHorizontal: scale(30),
   },
 
   // INTERNAL ELEMENTS
   logoWrapper: {
-    marginBottom: 10,
+    marginBottom: scale(10),
     alignItems: 'center',
   },
   logoIcon: {
-    width: 80,
-    height: 80,
+    width: scale(80),
+    height: scale(80),
     tintColor: Colors.primary, // Applies the red color to the logo
   },
   welcomeTextRow: {
-    fontSize: 32,
+    fontSize: scale(32),
     fontWeight: '900',
     letterSpacing: 0.5,
-    marginBottom: -5, 
+    marginBottom: scale(-5), 
   },
   textRed: {
     color: Colors.primary,
@@ -185,56 +186,56 @@ const styles = StyleSheet.create({
     color: '#FFF',
   },
   brandTitle: {
-    fontSize: 24,
+    fontSize: scale(24),
     fontWeight: 'bold',
     color: '#FFF',
-    marginBottom: 20,
+    marginBottom: scale(20),
   },
   divider: {
     width: '70%',
     height: 1,
     backgroundColor: 'rgba(255,255,255,0.3)',
-    marginBottom: 20,
+    marginBottom: scale(20),
   },
   descriptionText: {
-    fontSize: 15,
+    fontSize: scale(15),
     color: '#E0E0E0',
     textAlign: 'center',
-    lineHeight: 22,
-    marginBottom: 40,
+    lineHeight: scale(22),
+    marginBottom: scale(40),
   },
   actionSection: {
     width: '100%',
-    gap: 15,
+    gap: scale(15),
   },
   primaryBtn: {
     width: '100%',
-    height: 60,
-    borderRadius: 30,
+    height: scale(60),
+    borderRadius: scale(30),
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 4,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: scale(4) },
     shadowOpacity: 0.3,
-    shadowRadius: 5,
+    shadowRadius: scale(5),
   },
   primaryBtnText: {
     color: '#FFF',
-    fontSize: 16,
+    fontSize: scale(16),
     fontWeight: 'bold',
   },
   secondaryBtn: {
     width: '100%',
-    height: 60,
-    borderRadius: 30,
+    height: scale(60),
+    borderRadius: scale(30),
     backgroundColor: 'rgba(40, 40, 40, 0.8)', // Dark translucent button from design
     justifyContent: 'center',
     alignItems: 'center',
   },
   secondaryBtnText: {
     color: '#FFF',
-    fontSize: 16,
+    fontSize: scale(16),
     fontWeight: 'bold',
   },
 });

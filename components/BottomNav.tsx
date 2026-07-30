@@ -3,25 +3,25 @@ import { View, Text, StyleSheet, TouchableOpacity, Platform, Animated, Dimension
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext'; 
 import { useSafeAreaInsets } from 'react-native-safe-area-context'; 
+import { scale } from '../constants/Sizes'; // <-- IMPORTED MASTER SCALE
 
 const { width } = Dimensions.get('window');
 
-// THE FIX: Strict 20px padding to align with the global app structure
-const PADDING_HORIZONTAL = 10; 
+const PADDING_HORIZONTAL = scale(10); 
 const USABLE_WIDTH = width - (PADDING_HORIZONTAL * 2); 
 
 export default function BottomNav({ state, descriptors, navigation }: any) {
   const { colors, isDark } = useTheme(); 
   const insets = useSafeAreaInsets();
   
-  const safeBottom = Math.max(insets.bottom, 15); 
+  const safeBottom = Math.max(insets.bottom, scale(15)); 
 
   const shadowStyle = isDark 
     ? Platform.select({ ios: { shadowOpacity: 0 }, android: { elevation: 0, borderTopWidth: 1, borderTopColor: colors.border }, web: { boxShadow: 'none' } as any })
     : Platform.select({
-        ios: { shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 15, shadowOffset: { width: 0, height: -6 } },
+        ios: { shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: scale(15), shadowOffset: { width: 0, height: scale(-6) } },
         android: { elevation: 20, shadowColor: '#000', borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.05)' }, 
-        web: { boxShadow: '0px -5px 20px rgba(0, 0, 0, 0.1)' } as any
+        web: { boxShadow: `0px ${scale(-5)}px ${scale(20)}px rgba(0, 0, 0, 0.1)` } as any
       });
 
   const slideAnim = useRef(new Animated.Value(0)).current;
@@ -66,7 +66,7 @@ export default function BottomNav({ state, descriptors, navigation }: any) {
 
                 return (
                   <TouchableOpacity key={route.key} style={[styles.navItem, { width: TAB_WIDTH }]} activeOpacity={0.8} onPress={onPress}>
-                    <Ionicons name={isFocused ? config.icon as any : config.outlineIcon as any} size={22} color={isFocused ? '#FFFFFF' : colors.textMuted} />
+                    <Ionicons name={isFocused ? config.icon as any : config.outlineIcon as any} size={scale(22)} color={isFocused ? '#FFFFFF' : colors.textMuted} />
                     {isFocused && <Text style={styles.activeText} numberOfLines={1}>{config.label}</Text>}
                   </TouchableOpacity>
                 );
@@ -80,12 +80,12 @@ export default function BottomNav({ state, descriptors, navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-  container: { position: 'absolute', bottom: 0, left: 0, right: 0, borderTopLeftRadius: 30, borderTopRightRadius: 30, zIndex: 20 },
-  boundaryWall: { borderTopLeftRadius: 30, borderTopRightRadius: 30, overflow: 'hidden' },
+  container: { position: 'absolute', bottom: 0, left: 0, right: 0, borderTopLeftRadius: scale(30), borderTopRightRadius: scale(30), zIndex: 20 },
+  boundaryWall: { borderTopLeftRadius: scale(30), borderTopRightRadius: scale(30), overflow: 'hidden' },
   paddedInner: { marginHorizontal: PADDING_HORIZONTAL, position: 'relative' },
-  iconRow: { flexDirection: 'row', alignItems: 'center', height: 70 },
-  animatedPill: { position: 'absolute', height: 70, justifyContent: 'center', alignItems: 'center', left: 0, top: 0 },
-  pillInner: { width: '90%', height: '70%', borderRadius: 30 },
+  iconRow: { flexDirection: 'row', alignItems: 'center', height: scale(70) },
+  animatedPill: { position: 'absolute', height: scale(70), justifyContent: 'center', alignItems: 'center', left: 0, top: 0 },
+  pillInner: { width: '90%', height: '70%', borderRadius: scale(30) },
   navItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', height: '100%', zIndex: 1 },
-  activeText: { color: '#FFFFFF', fontWeight: 'bold', fontSize: 13, marginLeft: 4 },
+  activeText: { color: '#FFFFFF', fontWeight: 'bold', fontSize: scale(13), marginLeft: scale(4) },
 });

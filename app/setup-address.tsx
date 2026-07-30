@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
 import { Colors } from '../constants/Colors';
 import { StatusBar } from 'expo-status-bar';
+import { scale } from '../constants/Sizes'; // <-- IMPORTED MASTER SCALE
 
 export default function SetupAddressScreen() {
   const router = useSafeRouter();
@@ -63,7 +64,7 @@ export default function SetupAddressScreen() {
             onPress={() => router.back()} 
             style={[styles.backBtn, { backgroundColor: colors.surface }]}
           >
-            <Ionicons name="arrow-back" size={24} color={colors.text} />
+            <Ionicons name="arrow-back" size={scale(24)} color={colors.text} />
           </TouchableOpacity>
           <TouchableOpacity onPress={handleSkip}>
             <Text style={[styles.skipText, { color: colors.textMuted }]}>Skip for now</Text>
@@ -72,12 +73,12 @@ export default function SetupAddressScreen() {
 
         <ScrollView
           showsVerticalScrollIndicator={false} 
-          contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 40 }]}
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + scale(40) }]}
         >
           {/* Icon Header */}
           <View style={styles.iconContainer}>
             <View style={[styles.iconCircle, { backgroundColor: Colors.primary + '20' }]}>
-              <Ionicons name="location" size={40} color={Colors.primary} />
+              <Ionicons name="location" size={scale(40)} color={Colors.primary} />
             </View>
           </View>
 
@@ -99,7 +100,7 @@ export default function SetupAddressScreen() {
               onPress={() => setAddressType('home')}
               activeOpacity={0.7}
             >
-              <Ionicons name="home" size={20} color={addressType === 'home' ? '#FFF' : colors.text} />
+              <Ionicons name="home" size={scale(20)} color={addressType === 'home' ? '#FFF' : colors.text} />
               <Text style={[styles.typeText, { color: addressType === 'home' ? '#FFF' : colors.text }]}>Home</Text>
             </TouchableOpacity>
 
@@ -114,7 +115,7 @@ export default function SetupAddressScreen() {
               onPress={() => setAddressType('office')}
               activeOpacity={0.7}
             >
-              <Ionicons name="briefcase" size={20} color={addressType === 'office' ? '#FFF' : colors.text} />
+              <Ionicons name="briefcase" size={scale(20)} color={addressType === 'office' ? '#FFF' : colors.text} />
               <Text style={[styles.typeText, { color: addressType === 'office' ? '#FFF' : colors.text }]}>Office</Text>
             </TouchableOpacity>
           </View>
@@ -123,7 +124,7 @@ export default function SetupAddressScreen() {
           <View style={styles.inputGroup}>
             <Text style={[styles.inputLabel, { color: colors.text }]}>Street Address</Text>
             <View style={[styles.inputWrapper, { backgroundColor: isDark ? colors.surface : '#FFF', borderColor: colors.border }]}>
-              <Ionicons name="map-outline" size={20} color={colors.textMuted} style={styles.inputIcon} />
+              <Ionicons name="map-outline" size={scale(20)} color={colors.textMuted} style={styles.inputIcon} />
               <TextInput
                 style={[styles.textInput, { color: colors.text }]}
                 placeholder="e.g. 15 Law School Road"
@@ -138,7 +139,7 @@ export default function SetupAddressScreen() {
           <View style={styles.inputGroup}>
             <Text style={[styles.inputLabel, { color: colors.text }]}>City / Area</Text>
             <View style={[styles.inputWrapper, { backgroundColor: isDark ? colors.surface : '#FFF', borderColor: colors.border }]}>
-              <Ionicons name="business-outline" size={20} color={colors.textMuted} style={styles.inputIcon} />
+              <Ionicons name="business-outline" size={scale(20)} color={colors.textMuted} style={styles.inputIcon} />
               <TextInput
                 style={[styles.textInput, { color: colors.text }]}
                 placeholder="City"
@@ -205,125 +206,125 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: 10,
+    paddingHorizontal: scale(20),
+    paddingTop: scale(10),
+    paddingBottom: scale(10),
   },
   backBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: scale(44),
+    height: scale(44),
+    borderRadius: scale(22),
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: scale(2) },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowRadius: scale(4),
   },
   skipText: {
-    fontSize: 16,
+    fontSize: scale(16),
     fontWeight: '500',
   },
   scrollContent: {
-    paddingHorizontal: 25,
-    paddingTop: 10,
+    paddingHorizontal: scale(25),
+    paddingTop: scale(10),
     flexGrow: 1,
   },
   iconContainer: {
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: scale(20),
   },
   iconCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: scale(80),
+    height: scale(80),
+    borderRadius: scale(40),
     justifyContent: 'center',
     alignItems: 'center',
   },
   title: {
-    fontSize: 26,
+    fontSize: scale(26),
     fontWeight: 'bold',
-    marginBottom: 10,
+    marginBottom: scale(10),
     textAlign: 'center',
   },
   subtitle: {
-    fontSize: 15,
-    lineHeight: 22,
+    fontSize: scale(15),
+    lineHeight: scale(22),
     textAlign: 'center',
-    marginBottom: 30,
+    marginBottom: scale(30),
   },
   typeContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 25,
-    gap: 15,
+    marginBottom: scale(25),
+    gap: scale(15),
   },
   typeBtn: {
     flex: 1,
-    height: 50,
+    height: scale(50),
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderRadius: 15,
-    gap: 8,
+    borderRadius: scale(15),
+    gap: scale(8),
   },
   typeText: {
-    fontSize: 16,
+    fontSize: scale(16),
     fontWeight: 'bold',
   },
   inputGroup: {
-    marginBottom: 20,
+    marginBottom: scale(20),
   },
   inputLabel: {
-    fontSize: 14,
+    fontSize: scale(14),
     fontWeight: 'bold',
-    marginBottom: 10,
-    marginLeft: 5,
+    marginBottom: scale(10),
+    marginLeft: scale(5),
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderRadius: 15,
-    paddingHorizontal: 15,
-    height: 56,
+    borderRadius: scale(15),
+    paddingHorizontal: scale(15),
+    height: scale(56),
   },
   inputIcon: {
-    marginRight: 10,
+    marginRight: scale(10),
   },
   textInput: {
     flex: 1,
-    fontSize: 15,
+    fontSize: scale(15),
     height: '100%',
   },
   textAreaWrapper: {
     borderWidth: 1,
-    borderRadius: 15,
-    paddingHorizontal: 15,
-    paddingTop: 15,
-    height: 100,
+    borderRadius: scale(15),
+    paddingHorizontal: scale(15),
+    paddingTop: scale(15),
+    height: scale(100),
   },
   textArea: {
     flex: 1,
-    fontSize: 15,
+    fontSize: scale(15),
   },
   primaryBtn: {
-    height: 56,
-    borderRadius: 30,
+    height: scale(56),
+    borderRadius: scale(30),
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 4,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: scale(4) },
     shadowOpacity: 0.2,
-    shadowRadius: 5,
-    marginTop: 20,
-    marginBottom: 10,
+    shadowRadius: scale(5),
+    marginTop: scale(20),
+    marginBottom: scale(10),
   },
   primaryBtnText: {
-    fontSize: 16,
+    fontSize: scale(16),
     fontWeight: 'bold',
   },
 });

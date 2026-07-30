@@ -18,6 +18,7 @@ import { useMenu } from '../context/MenuContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { StatusBar } from 'expo-status-bar';
 import { Colors } from '../constants/Colors';
+import { scale } from '../constants/Sizes'; // <-- IMPORTED MASTER SCALE
 
 const STORAGE_KEY = '@bwari_kitchen_recent_searches';
 
@@ -58,7 +59,7 @@ export default function SearchScreen() {
   const { items, packages } = useMenu();
   
   const insets = useSafeAreaInsets();
-  const paddingTop = Platform.OS === 'web' ? 50 : insets.top + 10;
+  const paddingTop = Platform.OS === 'web' ? scale(50) : insets.top + scale(10);
 
   const [query, setQuery] = useState('');
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
@@ -119,7 +120,7 @@ export default function SearchScreen() {
           style={[styles.backButton, { backgroundColor: colors.primary }]} 
           activeOpacity={0.8}
         >
-          <Ionicons name="arrow-back" size={24} color="#FFF" />
+          <Ionicons name="arrow-back" size={scale(24)} color="#FFF" />
         </TouchableOpacity>
         
         <View style={styles.searchWrapper}>
@@ -138,7 +139,7 @@ export default function SearchScreen() {
             <View style={styles.section}>
               {results.itemResults.length > 0 && (
                 <>
-                  <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 15 }]}>Menu Items</Text>
+                  <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: scale(15) }]}>Menu Items</Text>
                   {results.itemResults.map((item) => (
                     <TouchableOpacity 
                       key={item.id} 
@@ -155,7 +156,7 @@ export default function SearchScreen() {
                         <Text style={[styles.resultName, { color: colors.text }]} numberOfLines={1}>{item.name}</Text>
                         <Text style={[styles.resultPrice, { color: Colors.primary }]}>₦{item.basePrice.toLocaleString()}</Text>
                       </View>
-                      <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+                      <Ionicons name="chevron-forward" size={scale(18)} color={colors.textMuted} />
                     </TouchableOpacity>
                   ))}
                 </>
@@ -163,7 +164,7 @@ export default function SearchScreen() {
 
               {results.packageResults.length > 0 && (
                 <>
-                  <Text style={[styles.sectionTitle, { color: colors.text, marginTop: 20, marginBottom: 15 }]}>Packages</Text>
+                  <Text style={[styles.sectionTitle, { color: colors.text, marginTop: scale(20), marginBottom: scale(15) }]}>Packages</Text>
                   {results.packageResults.map((pkg) => (
                     <TouchableOpacity 
                       key={pkg.id} 
@@ -180,7 +181,7 @@ export default function SearchScreen() {
                         <Text style={[styles.resultName, { color: colors.text }]} numberOfLines={1}>{pkg.name}</Text>
                         <Text style={[styles.resultPrice, { color: Colors.primary }]}>₦{pkg.totalPrice.toLocaleString()}</Text>
                       </View>
-                      <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+                      <Ionicons name="chevron-forward" size={scale(18)} color={colors.textMuted} />
                     </TouchableOpacity>
                   ))}
                 </>
@@ -188,7 +189,7 @@ export default function SearchScreen() {
             </View>
           ) : (
             <View style={styles.noResultsContainer}>
-              <Ionicons name="search-outline" size={50} color={colors.textMuted} style={{ opacity: 0.4 }} />
+              <Ionicons name="search-outline" size={scale(50)} color={colors.textMuted} style={{ opacity: 0.4 }} />
               <Text style={[styles.noResultsText, { color: colors.textMuted }]}>
                 No results for &quot;{query}&quot;
               </Text>
@@ -219,7 +220,7 @@ export default function SearchScreen() {
                       style={[styles.tag, { backgroundColor: isDark ? colors.border : '#EAEAEC' }]} 
                       onPress={() => handleAddSearch(item)}
                     >
-                      <Ionicons name="time-outline" size={14} color={colors.textMuted} style={styles.tagIcon} />
+                      <Ionicons name="time-outline" size={scale(14)} color={colors.textMuted} style={styles.tagIcon} />
                       <Text style={[styles.tagText, { color: colors.text }]}>{item}</Text>
                     </TouchableOpacity>
                   ))}
@@ -232,7 +233,7 @@ export default function SearchScreen() {
             </View>
 
             <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 15 }]}>
+              <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: scale(15) }]}>
                 Others also searched
               </Text>
               {trendingSearches.map((item, index) => (
@@ -243,10 +244,10 @@ export default function SearchScreen() {
                   onPress={() => handleAddSearch(item)}
                 >
                   <View style={[styles.trendingIconBox, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F5F5F5' }]}>
-                    <Ionicons name="trending-up" size={18} color={colors.primary} />
+                    <Ionicons name="trending-up" size={scale(18)} color={colors.primary} />
                   </View>
                   <Text style={[styles.trendingText, { color: colors.text }]}>{item}</Text>
-                  <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+                  <Ionicons name="chevron-forward" size={scale(18)} color={colors.textMuted} />
                 </TouchableOpacity>
               ))}
             </View>
@@ -259,27 +260,27 @@ export default function SearchScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingBottom: 20, zIndex: 10 },
-  backButton: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center', marginRight: 15, elevation: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 3 },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: scale(20), paddingBottom: scale(20), zIndex: 10 },
+  backButton: { width: scale(44), height: scale(44), borderRadius: scale(22), justifyContent: 'center', alignItems: 'center', marginRight: scale(15), elevation: 3, shadowColor: '#000', shadowOffset: { width: 0, height: scale(2) }, shadowOpacity: 0.2, shadowRadius: scale(3) },
   searchWrapper: { flex: 1 },
-  scrollContent: { paddingHorizontal: 20, paddingBottom: 40 },
-  section: { marginBottom: 30 },
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
-  sectionTitle: { fontSize: 18, fontWeight: 'bold' },
-  clearText: { fontSize: 14, fontWeight: 'bold' },
-  tagsContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  tag: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, paddingHorizontal: 15, borderRadius: 20 },
-  tagIcon: { marginRight: 5 },
-  tagText: { fontSize: 14, fontWeight: '500' },
-  emptyText: { fontStyle: 'italic', marginTop: 5 },
-  trendingRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 15 },
-  trendingIconBox: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center', marginRight: 15 },
-  trendingText: { flex: 1, fontSize: 16, fontWeight: '500' },
-  resultRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 15 },
-  resultImage: { width: 50, height: 50, borderRadius: 12, marginRight: 15 },
+  scrollContent: { paddingHorizontal: scale(20), paddingBottom: scale(40) },
+  section: { marginBottom: scale(30) },
+  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: scale(15) },
+  sectionTitle: { fontSize: scale(18), fontWeight: 'bold' },
+  clearText: { fontSize: scale(14), fontWeight: 'bold' },
+  tagsContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: scale(10) },
+  tag: { flexDirection: 'row', alignItems: 'center', paddingVertical: scale(8), paddingHorizontal: scale(15), borderRadius: scale(20) },
+  tagIcon: { marginRight: scale(5) },
+  tagText: { fontSize: scale(14), fontWeight: '500' },
+  emptyText: { fontStyle: 'italic', marginTop: scale(5) },
+  trendingRow: { flexDirection: 'row', alignItems: 'center', marginBottom: scale(15) },
+  trendingIconBox: { width: scale(40), height: scale(40), borderRadius: scale(20), justifyContent: 'center', alignItems: 'center', marginRight: scale(15) },
+  trendingText: { flex: 1, fontSize: scale(16), fontWeight: '500' },
+  resultRow: { flexDirection: 'row', alignItems: 'center', marginBottom: scale(15) },
+  resultImage: { width: scale(50), height: scale(50), borderRadius: scale(12), marginRight: scale(15) },
   resultTextWrap: { flex: 1 },
-  resultName: { fontSize: 15, fontWeight: '600', marginBottom: 3 },
-  resultPrice: { fontSize: 13, fontWeight: 'bold' },
-  noResultsContainer: { alignItems: 'center', justifyContent: 'center', marginTop: 60 },
-  noResultsText: { fontSize: 15, marginTop: 15, textAlign: 'center' },
+  resultName: { fontSize: scale(15), fontWeight: '600', marginBottom: scale(3) },
+  resultPrice: { fontSize: scale(13), fontWeight: 'bold' },
+  noResultsContainer: { alignItems: 'center', justifyContent: 'center', marginTop: scale(60) },
+  noResultsText: { fontSize: scale(15), marginTop: scale(15), textAlign: 'center' },
 });

@@ -14,11 +14,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/Colors';
 import { useTheme } from '../context/ThemeContext'; 
 import { useSafeRouter } from '../hooks/useSafeRouter'; 
-import api from '../app/lib/api'; // <-- Import API to check orders
+import api from '../app/lib/api'; 
+import { scale } from '../constants/Sizes'; // <-- IMPORTED MASTER SCALE
 
 const { width, height } = Dimensions.get('window');
-const BUTTON_SIZE = 60;
-const EDGE_PADDING = 20; 
+const BUTTON_SIZE = scale(60);
+const EDGE_PADDING = scale(20); 
 
 const ACTIVE_STATUSES = ['pending', 'confirmed', 'preparing', 'ready', 'picked_up', 'on_the_way'];
 
@@ -26,13 +27,12 @@ export default function DraggableOrderButton() {
   const router = useSafeRouter(); 
   const { isDark, colors } = useTheme(); 
   
-  // NEW: State to track the exact number of active orders
   const [activeOrderCount, setActiveOrderCount] = useState(0);
   const hasActiveOrders = activeOrderCount > 0;
 
   const pan = useRef(new Animated.ValueXY({ 
     x: width - BUTTON_SIZE - EDGE_PADDING, 
-    y: height - 250 
+    y: height - scale(250) 
   })).current;
   
   const glowAnim = useRef(new Animated.Value(0)).current;
@@ -45,7 +45,6 @@ export default function DraggableOrderButton() {
       try {
         const res = await api.get('/api/orders?limit=10');
         const orders = res.data.orders || [];
-        // Count how many orders match the active statuses
         const activeCount = orders.filter((o: any) => ACTIVE_STATUSES.includes(o.status)).length;
         if (isMounted) setActiveOrderCount(activeCount);
       } catch (err) {
@@ -53,12 +52,9 @@ export default function DraggableOrderButton() {
       }
     };
 
-    checkActiveOrders(); // Check on mount
+    checkActiveOrders(); 
     
-    // Check every 15 seconds
     const interval = setInterval(checkActiveOrders, 15000);
-    
-    // Listen for an instant trigger when an order is placed from Checkout
     const subscription = DeviceEventEmitter.addListener('ORDER_PLACED', checkActiveOrders);
 
     return () => {
@@ -78,15 +74,15 @@ export default function DraggableOrderButton() {
         ios: { 
           shadowColor: '#000', 
           shadowOpacity: 0.3, 
-          shadowRadius: 10, 
-          shadowOffset: { width: 0, height: 5 } 
+          shadowRadius: scale(10), 
+          shadowOffset: { width: 0, height: scale(5) } 
         },
         android: { 
-          elevation: 10, 
+          elevation: 4, 
           shadowColor: '#000' 
         },
         web: { 
-          boxShadow: '0px 5px 15px rgba(0, 0, 0, 0.3)' 
+          boxShadow: `0px ${scale(5)}px ${scale(15)}px rgba(0, 0, 0, 0.3)` 
         } as any
       });
 
@@ -134,7 +130,8 @@ export default function DraggableOrderButton() {
       onPanResponderRelease: (e, gestureState) => {
         pan.flattenOffset(); 
         
-        const isTap = Math.abs(gestureState.dx) < 5 && Math.abs(gestureState.dy) < 5;
+        // Use scaled distance to determine a tap vs swipe
+        const isTap = Math.abs(gestureState.dx) < scale(5) && Math.abs(gestureState.dy) < scale(5);
         if (isTap) router.push('/my-orders');
 
         const releaseX = (pan.x as any)._value;
@@ -143,8 +140,8 @@ export default function DraggableOrderButton() {
         const isLeftHalf = releaseX + (BUTTON_SIZE / 2) < width / 2;
         const snapX = isLeftHalf ? EDGE_PADDING : width - BUTTON_SIZE - EDGE_PADDING;
 
-        const MIN_Y = 120; 
-        const MAX_Y = height - 150; 
+        const MIN_Y = scale(120); 
+        const MAX_Y = height - scale(150); 
         if (releaseY < MIN_Y) releaseY = MIN_Y;
         if (releaseY > MAX_Y) releaseY = MAX_Y;
 
@@ -166,7 +163,6 @@ export default function DraggableOrderButton() {
         { transform: [{ translateX: pan.x }, { translateY: pan.y }] }
       ]}
     >
-      {/* ONLY SHOW GLOWING HALO IF THERE IS AN ACTIVE ORDER */}
       {hasActiveOrders && (
         <Animated.View 
           style={[
@@ -179,7 +175,6 @@ export default function DraggableOrderButton() {
       <TouchableOpacity 
         style={[
           styles.button, 
-          // DYNAMIC BACKGROUND COLOR
           { backgroundColor: hasActiveOrders ? Colors.primary : colors.surface }, 
           shadowStyle
         ]} 
@@ -188,11 +183,10 @@ export default function DraggableOrderButton() {
       >
         <Ionicons 
           name={hasActiveOrders ? "bag-handle" : "bag-handle-outline"} 
-          size={26} 
-          color={hasActiveOrders ? "#FFF" : colors.text} // DYNAMIC ICON COLOR
+          size={scale(26)} 
+          color={hasActiveOrders ? "#FFF" : colors.text} 
         />
 
-        {/* NOTIFICATION BADGE FOR ACTIVE ORDERS */}
         {hasActiveOrders && (
           <View style={styles.badgeContainer}>
             <Text style={styles.badgeText}>
@@ -232,25 +226,25 @@ const styles = StyleSheet.create({
   },
   badgeContainer: {
     position: 'absolute',
-    top: -2,
-    right: -2,
+    top: scale(-2),
+    right: scale(-2),
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    minWidth: 22,
-    height: 22,
+    borderRadius: scale(12),
+    minWidth: scale(22),
+    height: scale(22),
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 4,
+    paddingHorizontal: scale(4),
     zIndex: 10,
     elevation: 4,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: scale(2) },
     shadowOpacity: 0.2,
-    shadowRadius: 2,
+    shadowRadius: scale(2),
   },
   badgeText: {
     color: Colors.primary,
-    fontSize: 12,
+    fontSize: scale(12),
     fontWeight: '900',
     textAlign: 'center',
   },

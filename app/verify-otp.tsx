@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
 import { Colors } from '../constants/Colors';
 import { StatusBar } from 'expo-status-bar';
+import { scale } from '../constants/Sizes'; // <-- IMPORTED MASTER SCALE
 
 const OTP_LENGTH = 6;
 
@@ -31,11 +32,11 @@ export default function VerifyOTPScreen() {
   const [resendTimer, setResendTimer] = useState(30);
   
   // Create an array of refs for the input fields
-  const inputRefs = useRef<Array<TextInput | null>>([]);
+  const inputRefs = useRef<(TextInput | null)[]>([]);
 
   // Handle countdown timer for Resend button
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let interval: ReturnType<typeof setInterval>;
     if (resendTimer > 0) {
       interval = setInterval(() => {
         setResendTimer((prev) => prev - 1);
@@ -113,14 +114,14 @@ export default function VerifyOTPScreen() {
             onPress={() => router.back()} 
             style={[styles.backBtn, { backgroundColor: colors.surface }]}
           >
-            <Ionicons name="arrow-back" size={24} color={colors.text} />
+            <Ionicons name="arrow-back" size={scale(24)} color={colors.text} />
           </TouchableOpacity>
         </View>
 
         <View style={styles.content}>
           <View style={styles.iconContainer}>
             <View style={[styles.iconCircle, { backgroundColor: Colors.primary + '20' }]}>
-              <Ionicons name="shield-checkmark" size={40} color={Colors.primary} />
+              <Ionicons name="shield-checkmark" size={scale(40)} color={Colors.primary} />
             </View>
           </View>
 
@@ -135,7 +136,7 @@ export default function VerifyOTPScreen() {
             {Array(OTP_LENGTH).fill(0).map((_, index) => (
               <TextInput
                 key={index}
-                ref={(ref) => inputRefs.current[index] = ref}
+                ref={(ref) => { inputRefs.current[index] = ref; }}
                 style={[
                   styles.otpInput,
                   { 
@@ -205,87 +206,87 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerRow: {
-    paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: 20,
+    paddingHorizontal: scale(20),
+    paddingTop: scale(10),
+    paddingBottom: scale(20),
   },
   backBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: scale(44),
+    height: scale(44),
+    borderRadius: scale(22),
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: scale(2) },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowRadius: scale(4),
   },
   content: {
     flex: 1,
-    paddingHorizontal: 25,
-    paddingTop: 20,
+    paddingHorizontal: scale(25),
+    paddingTop: scale(20),
   },
   iconContainer: {
     alignItems: 'center',
-    marginBottom: 30,
+    marginBottom: scale(30),
   },
   iconCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: scale(80),
+    height: scale(80),
+    borderRadius: scale(40),
     justifyContent: 'center',
     alignItems: 'center',
   },
   title: {
-    fontSize: 28,
+    fontSize: scale(28),
     fontWeight: 'bold',
-    marginBottom: 10,
+    marginBottom: scale(10),
     textAlign: 'center',
   },
   subtitle: {
-    fontSize: 15,
-    lineHeight: 22,
+    fontSize: scale(15),
+    lineHeight: scale(22),
     textAlign: 'center',
-    marginBottom: 40,
+    marginBottom: scale(40),
   },
   otpContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 40,
-    paddingHorizontal: 10,
+    marginBottom: scale(40),
+    paddingHorizontal: scale(10),
   },
   otpInput: {
-    width: 45,
-    height: 55,
+    width: scale(45),
+    height: scale(55),
     borderWidth: 2,
-    borderRadius: 12,
-    fontSize: 24,
+    borderRadius: scale(12),
+    fontSize: scale(24),
     fontWeight: 'bold',
     textAlign: 'center',
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: scale(2) },
     shadowOpacity: 0.05,
-    shadowRadius: 3,
+    shadowRadius: scale(3),
   },
   primaryBtn: {
-    height: 56,
-    borderRadius: 30,
+    height: scale(56),
+    borderRadius: scale(30),
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 4,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 4,
+      height: scale(4),
     },
     shadowOpacity: 0.2,
-    shadowRadius: 5,
-    marginBottom: 30,
+    shadowRadius: scale(5),
+    marginBottom: scale(30),
   },
   primaryBtnText: {
-    fontSize: 16,
+    fontSize: scale(16),
     fontWeight: 'bold',
   },
   resendContainer: {
@@ -294,10 +295,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   resendText: {
-    fontSize: 14,
+    fontSize: scale(14),
   },
   resendLink: {
-    fontSize: 14,
+    fontSize: scale(14),
     fontWeight: 'bold',
   },
 });

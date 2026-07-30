@@ -18,6 +18,7 @@ import { Colors } from '../constants/Colors';
 import { StatusBar } from 'expo-status-bar';
 import TopNav from '../components/TopNav';
 import api from './lib/api';
+import { scale } from '../constants/Sizes'; // <-- IMPORTED MASTER SCALE
 
 interface OrderDetail {
   id: string;
@@ -96,7 +97,7 @@ export default function TrackOrderScreen() {
         <StatusBar style="light" />
         <TopNav title="Track Order" leftIcon="arrow-back" onLeftPress={() => router.back()} isAbsolute={false} isScrolled={true} showDivider={false} />
         <View style={styles.centerContent}>
-          <Ionicons name="alert-circle-outline" size={60} color={colors.textMuted} />
+          <Ionicons name="alert-circle-outline" size={scale(60)} color={colors.textMuted} />
           <Text style={[styles.emptyText, { color: colors.text }]}>Order not found</Text>
         </View>
       </View>
@@ -122,7 +123,7 @@ export default function TrackOrderScreen() {
 
       <ScrollView 
         showsVerticalScrollIndicator={false} 
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 40 }]}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + scale(40) }]}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} />}
       >
         <View style={styles.headerBlock}>
@@ -134,7 +135,7 @@ export default function TrackOrderScreen() {
 
         {isCancelled ? (
           <View style={[styles.cancelledBox, { backgroundColor: isDark ? 'rgba(211,47,47,0.1)' : '#FFEBEE' }]}>
-            <Ionicons name="close-circle" size={40} color="#D32F2F" />
+            <Ionicons name="close-circle" size={scale(40)} color="#D32F2F" />
             <Text style={[styles.cancelledText, { color: '#D32F2F' }]}>
               This order was {order.status}.
             </Text>
@@ -156,7 +157,7 @@ export default function TrackOrderScreen() {
                         ? { backgroundColor: Colors.primary, borderColor: Colors.primary }
                         : { backgroundColor: colors.background, borderColor: isDark ? '#333' : '#EAEAEC' }
                     ]}>
-                      {isActive && <Ionicons name="checkmark" size={16} color="#FFF" />}
+                      {isActive && <Ionicons name="checkmark" size={scale(16)} color="#FFF" />}
                     </View>
                     {index < steps.length - 1 && (
                       <View style={[
@@ -188,21 +189,21 @@ export default function TrackOrderScreen() {
         {order.rider && !isCancelled && (
           <View style={[styles.riderCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             <View style={[styles.riderIconBox, { backgroundColor: 'rgba(211, 47, 47, 0.1)' }]}>
-              <Ionicons name="bicycle" size={24} color={Colors.primary} />
+              <Ionicons name="bicycle" size={scale(24)} color={Colors.primary} />
             </View>
             <View style={styles.riderInfo}>
               <Text style={[styles.riderLabel, { color: colors.textMuted }]}>Your Rider</Text>
               <Text style={[styles.riderName, { color: colors.text }]}>{order.rider.fullName}</Text>
             </View>
             <TouchableOpacity style={styles.callBtn} onPress={handleCallRider}>
-              <Ionicons name="call" size={20} color="#FFF" />
+              <Ionicons name="call" size={scale(20)} color="#FFF" />
             </TouchableOpacity>
           </View>
         )}
 
         {order.orderType === 'delivery' && order.deliveryAddress && (
           <View style={[styles.addressCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <Ionicons name="location" size={20} color={Colors.primary} />
+            <Ionicons name="location" size={scale(20)} color={Colors.primary} />
             <Text style={[styles.addressText, { color: colors.text }]}>
               {[order.deliveryAddress.streetAddress, order.deliveryAddress.landmark, order.deliveryAddress.area].filter(Boolean).join(', ')}
             </Text>
@@ -216,27 +217,27 @@ export default function TrackOrderScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   centerContent: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  emptyText: { fontSize: 18, fontWeight: 'bold', marginTop: 15 },
-  scrollContent: { paddingHorizontal: 20, paddingTop: 20 },
-  headerBlock: { marginBottom: 25 },
-  orderNumber: { fontSize: 22, fontWeight: 'bold', marginBottom: 4 },
-  orderType: { fontSize: 14 },
-  cancelledBox: { borderRadius: 20, padding: 30, alignItems: 'center', marginBottom: 25 },
-  cancelledText: { fontSize: 16, fontWeight: 'bold', marginTop: 10 },
-  stepsContainer: { marginBottom: 25 },
+  emptyText: { fontSize: scale(18), fontWeight: 'bold', marginTop: scale(15) },
+  scrollContent: { paddingHorizontal: scale(20), paddingTop: scale(20) },
+  headerBlock: { marginBottom: scale(25) },
+  orderNumber: { fontSize: scale(22), fontWeight: 'bold', marginBottom: scale(4) },
+  orderType: { fontSize: scale(14) },
+  cancelledBox: { borderRadius: scale(20), padding: scale(30), alignItems: 'center', marginBottom: scale(25) },
+  cancelledText: { fontSize: scale(16), fontWeight: 'bold', marginTop: scale(10) },
+  stepsContainer: { marginBottom: scale(25) },
   stepRow: { flexDirection: 'row' },
-  stepIndicatorColumn: { alignItems: 'center', width: 40 },
-  stepCircle: { width: 30, height: 30, borderRadius: 15, borderWidth: 2, justifyContent: 'center', alignItems: 'center' },
-  stepLine: { width: 2, flex: 1, minHeight: 30 },
-  stepTextColumn: { flex: 1, paddingBottom: 25, paddingLeft: 12 },
-  stepLabel: { fontSize: 16, fontWeight: 'bold', marginTop: 4 },
-  stepTime: { fontSize: 12, marginTop: 2 },
-  riderCard: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: 20, padding: 15, marginBottom: 15 },
-  riderIconBox: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center', marginRight: 15 },
+  stepIndicatorColumn: { alignItems: 'center', width: scale(40) },
+  stepCircle: { width: scale(30), height: scale(30), borderRadius: scale(15), borderWidth: scale(2), justifyContent: 'center', alignItems: 'center' },
+  stepLine: { width: scale(2), flex: 1, minHeight: scale(30) },
+  stepTextColumn: { flex: 1, paddingBottom: scale(25), paddingLeft: scale(12) },
+  stepLabel: { fontSize: scale(16), fontWeight: 'bold', marginTop: scale(4) },
+  stepTime: { fontSize: scale(12), marginTop: scale(2) },
+  riderCard: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: scale(20), padding: scale(15), marginBottom: scale(15) },
+  riderIconBox: { width: scale(44), height: scale(44), borderRadius: scale(22), justifyContent: 'center', alignItems: 'center', marginRight: scale(15) },
   riderInfo: { flex: 1 },
-  riderLabel: { fontSize: 12, marginBottom: 2 },
-  riderName: { fontSize: 16, fontWeight: 'bold' },
-  callBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: Colors.primary, justifyContent: 'center', alignItems: 'center' },
-  addressCard: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, borderWidth: 1, borderRadius: 20, padding: 15 },
-  addressText: { flex: 1, fontSize: 14, lineHeight: 20 },
+  riderLabel: { fontSize: scale(12), marginBottom: scale(2) },
+  riderName: { fontSize: scale(16), fontWeight: 'bold' },
+  callBtn: { width: scale(44), height: scale(44), borderRadius: scale(22), backgroundColor: Colors.primary, justifyContent: 'center', alignItems: 'center' },
+  addressCard: { flexDirection: 'row', alignItems: 'flex-start', gap: scale(12), borderWidth: 1, borderRadius: scale(20), padding: scale(15) },
+  addressText: { flex: 1, fontSize: scale(14), lineHeight: scale(20) },
 });

@@ -3,11 +3,11 @@ import {
   View, 
   Text, 
   StyleSheet, 
-  TouchableOpacity, 
   ScrollView, 
   Animated, 
   useWindowDimensions, 
-  RefreshControl 
+  RefreshControl,
+  TouchableOpacity
 } from 'react-native';
 import { useSafeRouter } from '../../hooks/useSafeRouter';
 import { Ionicons } from '@expo/vector-icons';
@@ -22,6 +22,7 @@ import Sidebar from '../../components/Sidebar';
 import CartBadgeIcon from '../../components/CartBadgeIcon';
 import { useMenu } from '../../context/MenuContext';
 import TopNav from '../../components/TopNav';
+import { scale } from '../../constants/Sizes'; // <-- IMPORTED MASTER SCALE
 
 export default function FavoriteScreen() {
   const router = useSafeRouter();
@@ -34,18 +35,18 @@ export default function FavoriteScreen() {
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false); 
-  const toastAnim = useRef(new Animated.Value(-100)).current;
+  const toastAnim = useRef(new Animated.Value(-scale(100))).current;
 
   const { width } = useWindowDimensions();
-  const GRID_PADDING = 20;
-  const GRID_GAP = 15;
+  const GRID_PADDING = scale(20);
+  const GRID_GAP = scale(15);
   const AVAILABLE_WIDTH = width - (GRID_PADDING * 2);
   
-  const MAX_GRID_WIDTH = 200; 
+  const MAX_GRID_WIDTH = scale(200); 
   const NUM_COLUMNS = Math.max(2, Math.ceil(AVAILABLE_WIDTH / (MAX_GRID_WIDTH + GRID_GAP)));
   const CARD_WIDTH = Math.floor((AVAILABLE_WIDTH - (GRID_GAP * (NUM_COLUMNS - 1))) / NUM_COLUMNS);
 
-  const bottomNavHeight = 70 + Math.max(insets.bottom, 15);
+  const bottomNavHeight = scale(70) + Math.max(insets.bottom, scale(15));
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -72,9 +73,9 @@ export default function FavoriteScreen() {
     addToCart(newItem);
 
     Animated.sequence([
-      Animated.spring(toastAnim, { toValue: insets.top + 10, useNativeDriver: true, friction: 6 }),
+      Animated.spring(toastAnim, { toValue: insets.top + scale(10), useNativeDriver: true, friction: 6 }),
       Animated.delay(2000),
-      Animated.timing(toastAnim, { toValue: -100, duration: 300, useNativeDriver: true })
+      Animated.timing(toastAnim, { toValue: -scale(100), duration: 300, useNativeDriver: true })
     ]).start();
   };
 
@@ -120,7 +121,7 @@ export default function FavoriteScreen() {
         showsVerticalScrollIndicator={false} 
         contentContainerStyle={[
           favorites.length > 0 ? styles.scrollContent : { flexGrow: 1, justifyContent: 'center' },
-          { paddingBottom: bottomNavHeight + 20 }
+          { paddingBottom: bottomNavHeight + scale(20) }
         ]}
         refreshControl={
           <RefreshControl 
@@ -165,7 +166,7 @@ export default function FavoriteScreen() {
         ) : (
           <View style={styles.emptyContainer}>
             <View style={[styles.iconCircle, { backgroundColor: isDark ? colors.surface : '#FFEEEE' }]}>
-              <Ionicons name="heart" size={80} color={isDark ? colors.textMuted : '#FFCCCC'} />
+              <Ionicons name="heart" size={scale(80)} color={isDark ? colors.textMuted : '#FFCCCC'} />
             </View>
             <Text style={[styles.emptyTitle, { color: colors.text }]}>No Favorites Yet</Text>
             <Text style={[styles.emptySubtitle, { color: colors.textMuted }]}>
@@ -179,7 +180,7 @@ export default function FavoriteScreen() {
       </ScrollView>
 
       <Animated.View style={[styles.toastContainer, { transform: [{ translateY: toastAnim }], backgroundColor: isDark ? '#333' : '#222' }]}>
-        <Ionicons name="checkmark-circle" size={24} color="#4CAF50" />
+        <Ionicons name="checkmark-circle" size={scale(24)} color="#4CAF50" />
         <Text style={styles.toastText}>Added to cart!</Text>
       </Animated.View>
 
@@ -198,93 +199,87 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   scrollContent: { 
-    paddingTop: 15,
+    paddingTop: scale(15),
   },
   headerRow: { 
     flexDirection: 'row', 
     justifyContent: 'space-between', 
     alignItems: 'center', 
-    paddingHorizontal: 20, 
-    marginBottom: 15,
+    paddingHorizontal: scale(20), 
+    marginBottom: scale(15),
   },
   resultCount: { 
-    fontSize: 14, 
+    fontSize: scale(14), 
     fontWeight: 'bold',
   },
   gridContainer: { 
     flexDirection: 'row', 
     flexWrap: 'wrap', 
-    paddingHorizontal: 20,
+    paddingHorizontal: scale(20),
   },
   emptyContainer: { 
     justifyContent: 'center', 
     alignItems: 'center', 
-    paddingHorizontal: 40, 
-    paddingBottom: 50,
+    paddingHorizontal: scale(40), 
+    paddingBottom: scale(50),
   },
   iconCircle: { 
-    width: 140, 
-    height: 140, 
-    borderRadius: 70, 
+    width: scale(140), 
+    height: scale(140), 
+    borderRadius: scale(70), 
     justifyContent: 'center', 
     alignItems: 'center', 
-    marginBottom: 20,
+    marginBottom: scale(20),
   },
   emptyTitle: { 
-    fontSize: 24, 
+    fontSize: scale(24), 
     fontWeight: 'bold', 
-    marginBottom: 10, 
+    marginBottom: scale(10), 
     textAlign: 'center',
   },
   emptySubtitle: { 
-    fontSize: 16, 
+    fontSize: scale(16), 
     textAlign: 'center', 
-    lineHeight: 24, 
-    marginBottom: 35,
+    lineHeight: scale(24), 
+    marginBottom: scale(35),
   },
   browseBtn: { 
     backgroundColor: Colors.primary, 
-    paddingVertical: 16, 
-    paddingHorizontal: 35, 
-    borderRadius: 30,
+    paddingVertical: scale(16), 
+    paddingHorizontal: scale(35), 
+    borderRadius: scale(30),
     elevation: 3,
     shadowColor: Colors.primary,
-    shadowOffset: { 
-      width: 0, 
-      height: 4 
-    },
+    shadowOffset: { width: 0, height: scale(4) },
     shadowOpacity: 0.3,
-    shadowRadius: 5,
+    shadowRadius: scale(5),
   },
   browseBtnText: { 
     color: '#FFF', 
-    fontSize: 18, 
+    fontSize: scale(18), 
     fontWeight: 'bold',
   },
   toastContainer: { 
     position: 'absolute', 
-    left: 20, 
-    right: 20, 
+    left: scale(20), 
+    right: scale(20), 
     flexDirection: 'row', 
     alignItems: 'center', 
-    paddingVertical: 14, 
-    paddingHorizontal: 20, 
-    borderRadius: 30, 
+    paddingVertical: scale(14), 
+    paddingHorizontal: scale(20), 
+    borderRadius: scale(30), 
     elevation: 10, 
     shadowColor: '#000', 
-    shadowOffset: { 
-      width: 0, 
-      height: 5 
-    }, 
+    shadowOffset: { width: 0, height: scale(5) }, 
     shadowOpacity: 0.3, 
-    shadowRadius: 8, 
+    shadowRadius: scale(8), 
     zIndex: 100, 
     justifyContent: 'center', 
-    gap: 10,
+    gap: scale(10),
   },
   toastText: { 
     color: '#FFF', 
-    fontSize: 16, 
+    fontSize: scale(16), 
     fontWeight: 'bold',
   }
 });

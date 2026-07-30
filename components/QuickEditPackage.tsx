@@ -23,6 +23,7 @@ import SearchBar from './SearchBar';
 import CategoryFilter from './CategoryFilter';
 import GridDishCard from './GridDishCard';
 import ItemVariantModal from './ItemVariantModal';
+import { scale } from '../constants/Sizes'; // <-- IMPORTED MASTER SCALE
 
 // Make sure it matches the exact custom plate from the menu screen!
 const CUSTOM_PACKAGE_IMAGE = require('../assets/images/custom-plate.png');
@@ -60,10 +61,10 @@ export default function QuickEditPackage({
   
   const [variantModalItem, setVariantModalItem] = useState<any>(null);
 
-  const GRID_PADDING = 20; 
-  const GRID_GAP = 10; 
+  const GRID_PADDING = scale(20); 
+  const GRID_GAP = scale(10); 
   const AVAILABLE_WIDTH = width - (GRID_PADDING * 2);
-  const MIN_CARD_WIDTH = 105; 
+  const MIN_CARD_WIDTH = scale(105); 
   const NUM_COLUMNS = Math.max(3, Math.floor((AVAILABLE_WIDTH + GRID_GAP) / (MIN_CARD_WIDTH + GRID_GAP)));
   const CARD_WIDTH = Math.floor((AVAILABLE_WIDTH - (GRID_GAP * (NUM_COLUMNS - 1))) / NUM_COLUMNS);
 
@@ -75,24 +76,17 @@ export default function QuickEditPackage({
       
       const initialPlate: Record<string, number> = {};
       
-      // THE ULTIMATE SAFEGUARD: Smart mapping that fixes missing data from anywhere!
       if (initialItem.subItems && initialItem.subItems.length > 0) {
         initialItem.subItems.forEach((sub: any) => {
-          // 1. Look up the live item in the database
           const dbItem = findItem(sub.id);
-          
-          // 2. Find the true price (use sub.price if valid, otherwise use the live DB price)
           const actualPrice = (sub.price !== undefined && sub.price > 1) 
             ? sub.price 
             : (dbItem?.basePrice || 0);
             
-          // 3. Check if the key is broken or missing, and rebuild it perfectly!
           let key = sub.compositeKey;
           if (!key || key.includes('::1') || key.includes('::null')) {
             key = `${sub.id}::${sub.variantLabel || 'Base'}::${actualPrice}`;
           }
-          
-          // 4. Mount it to the plate
           initialPlate[key] = sub.qty || 1;
         });
       } else {
@@ -133,18 +127,15 @@ export default function QuickEditPackage({
   if (!isRendering || !initialItem) return null;
 
   const handleCardPress = (item: any) => {
-    // 1. Check if ANY variant of this item is already in the custom plate
     const existingKeys = Object.keys(customPlate).filter(key => key.startsWith(item.id + '::'));
 
     if (existingKeys.length > 0) {
-      // 2. If it is already selected, DESELECT IT by completely removing it
       setCustomPlate(prev => {
         const newState = { ...prev };
         existingKeys.forEach(key => delete newState[key]);
         return newState;
       });
     } else {
-      // 3. If it is NOT selected, proceed to add it or open the portion modal
       if (item.variants && item.variants.length > 0) {
         setVariantModalItem(item);
       } else {
@@ -263,7 +254,7 @@ export default function QuickEditPackage({
               styles.bottomSheet, 
               { 
                 backgroundColor: colors.background,
-                paddingBottom: Math.max(insets.bottom, 20),
+                paddingBottom: Math.max(insets.bottom, scale(20)),
                 transform: [{ translateY: slideAnim }] 
               }
             ]}
@@ -280,7 +271,7 @@ export default function QuickEditPackage({
                   { backgroundColor: isDark ? colors.surface : '#F5F5F5' }
                 ]}
               >
-                <Ionicons name="close" size={24} color={colors.text} />
+                <Ionicons name="close" size={scale(24)} color={colors.text} />
               </TouchableOpacity>
             </View>
 
@@ -342,13 +333,13 @@ export default function QuickEditPackage({
                         { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F5F5F5' }
                       ]}>
                         <TouchableOpacity onPress={() => decreaseQuantity(item.compositeKey)} style={styles.qtyBtn}>
-                          <Ionicons name="remove" size={16} color={colors.text} />
+                          <Ionicons name="remove" size={scale(16)} color={colors.text} />
                         </TouchableOpacity>
                         <Text style={[styles.qtyText, { color: colors.text }]}>
                           {item.qty}
                         </Text>
                         <TouchableOpacity onPress={() => increaseQuantity(item.compositeKey)} style={styles.qtyBtn}>
-                          <Ionicons name="add" size={16} color={colors.text} />
+                          <Ionicons name="add" size={scale(16)} color={colors.text} />
                         </TouchableOpacity>
                       </View>
 
@@ -356,7 +347,7 @@ export default function QuickEditPackage({
                         ₦{(item.price * item.qty).toLocaleString()}
                       </Text>
                       <TouchableOpacity onPress={() => removeItem(item.compositeKey)} style={styles.trashBtn}>
-                        <Ionicons name="trash-outline" size={18} color="#FF4444" />
+                        <Ionicons name="trash-outline" size={scale(18)} color="#FF4444" />
                       </TouchableOpacity>
                     </View>
                   ))}
@@ -368,7 +359,7 @@ export default function QuickEditPackage({
                 </View>
               )}
 
-              <Text style={[styles.sectionTitle, { color: colors.textMuted, marginTop: 15 }]}>ADD FROM MENU</Text>
+              <Text style={[styles.sectionTitle, { color: colors.textMuted, marginTop: scale(15) }]}>ADD FROM MENU</Text>
               
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
                 {MENU_CATEGORIES.map(category => (
@@ -440,204 +431,205 @@ const styles = StyleSheet.create({
     zIndex: 1000,
     elevation: 1000,
     justifyContent: 'flex-end',
+    paddingBottom: scale(20),
   },
   bottomSheet: {
     width: '100%',
     maxHeight: '90%',
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
+    borderTopLeftRadius: scale(30),
+    borderTopRightRadius: scale(30),
     elevation: 20,
     shadowColor: '#000',
     shadowOpacity: 0.2,
-    shadowRadius: 15,
+    shadowRadius: scale(15),
     shadowOffset: { 
       width: 0, 
-      height: -5 
+      height: scale(-5) 
     },
   },
   handlebarWrapper: {
     width: '100%',
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: scale(12),
   },
   handlebar: {
-    width: 40,
-    height: 5,
-    borderRadius: 3,
+    width: scale(40),
+    height: scale(5),
+    borderRadius: scale(3),
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingBottom: 15,
+    paddingHorizontal: scale(20),
+    paddingBottom: scale(15),
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: scale(20),
     fontWeight: 'bold',
   },
   closeBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: scale(36),
+    height: scale(36),
+    borderRadius: scale(18),
     justifyContent: 'center',
     alignItems: 'center',
   },
   scrollContent: {
-    paddingBottom: 40,
+    paddingBottom: scale(40),
   },
   footer: {
-    paddingHorizontal: 20,
-    paddingTop: 15,
+    paddingHorizontal: scale(20),
+    paddingTop: scale(15),
     borderTopWidth: 1,
   },
   saveBtn: {
-    paddingVertical: 16,
-    borderRadius: 25,
+    paddingVertical: scale(16),
+    borderRadius: scale(25),
     justifyContent: 'center',
     alignItems: 'center',
     width: '100%',
   },
   saveBtnText: {
-    fontSize: 16,
+    fontSize: scale(16),
     fontWeight: 'bold',
   },
   searchContainer: { 
-    marginBottom: 20, 
-    paddingHorizontal: 20 
+    marginBottom: scale(20), 
+    paddingHorizontal: scale(20) 
   },
   sectionTitle: { 
-    fontSize: 12, 
+    fontSize: scale(12), 
     fontWeight: 'bold', 
     letterSpacing: 1, 
-    marginBottom: 10, 
-    marginTop: 5, 
-    paddingHorizontal: 20 
+    marginBottom: scale(10), 
+    marginTop: scale(5), 
+    paddingHorizontal: scale(20) 
   },
   emptyBox: { 
-    borderWidth: 2, 
+    borderWidth: scale(2), 
     borderStyle: 'dashed', 
-    borderRadius: 20, 
-    padding: 30, 
+    borderRadius: scale(20), 
+    padding: scale(30), 
     alignItems: 'center', 
-    marginBottom: 25, 
-    marginHorizontal: 20 
+    marginBottom: scale(25), 
+    marginHorizontal: scale(20) 
   },
   emptyPackageIcon: { 
-    width: 110, 
-    height: 110, 
+    width: scale(110), 
+    height: scale(110), 
     marginBottom: 0 
   },
   emptyBoxTitle: { 
-    fontSize: 18, 
+    fontSize: scale(18), 
     fontWeight: 'bold', 
-    marginTop: 5, 
-    marginBottom: 5 
+    marginTop: scale(5), 
+    marginBottom: scale(5) 
   },
   emptyBoxSub: { 
-    fontSize: 13, 
+    fontSize: scale(13), 
     textAlign: 'center', 
     opacity: 0.8 
   },
   filledBox: { 
     borderWidth: 1, 
-    borderRadius: 20, 
-    padding: 20, 
-    marginBottom: 25, 
-    marginHorizontal: 20, 
+    borderRadius: scale(20), 
+    padding: scale(20), 
+    marginBottom: scale(25), 
+    marginHorizontal: scale(20), 
     elevation: 2, 
     shadowColor: '#000', 
-    shadowOffset: { width: 0, height: 2 }, 
+    shadowOffset: { width: 0, height: scale(2) }, 
     shadowOpacity: 0.1, 
-    shadowRadius: 4 
+    shadowRadius: scale(4) 
   },
   filledBoxHeader: { 
     flexDirection: 'row', 
     justifyContent: 'space-between', 
-    marginBottom: 15 
+    marginBottom: scale(15) 
   },
   filledBoxTitle: { 
-    fontSize: 16, 
+    fontSize: scale(16), 
     fontWeight: 'bold' 
   },
   deleteAllText: { 
     color: Colors.primary, 
     fontWeight: 'bold', 
-    fontSize: 14 
+    fontSize: scale(14) 
   },
   receiptRow: { 
     flexDirection: 'row', 
     alignItems: 'center', 
-    marginBottom: 15 
+    marginBottom: scale(15) 
   },
   receiptInfo: { 
     flex: 1, 
-    paddingRight: 5 
+    paddingRight: scale(5) 
   },
   receiptName: { 
-    fontSize: 14, 
+    fontSize: scale(14), 
     fontWeight: '500' 
   },
   soldOutWarningText: { 
-    fontSize: 11, 
+    fontSize: scale(11), 
     fontWeight: 'bold', 
     color: '#D32F2F', 
-    marginTop: 2 
+    marginTop: scale(2) 
   },
   quantityBox: { 
     flexDirection: 'row', 
     alignItems: 'center', 
-    borderRadius: 20, 
-    paddingHorizontal: 5, 
-    paddingVertical: 5, 
-    marginHorizontal: 10 
+    borderRadius: scale(20), 
+    paddingHorizontal: scale(5), 
+    paddingVertical: scale(5), 
+    marginHorizontal: scale(10) 
   },
   qtyBtn: { 
-    width: 26, 
-    height: 26, 
+    width: scale(26), 
+    height: scale(26), 
     justifyContent: 'center', 
     alignItems: 'center', 
-    borderRadius: 13, 
+    borderRadius: scale(13), 
     backgroundColor: 'rgba(150,150,150,0.2)' 
   },
   qtyText: { 
-    fontSize: 14, 
+    fontSize: scale(14), 
     fontWeight: 'bold', 
-    marginHorizontal: 8 
+    marginHorizontal: scale(8) 
   },
   receiptPrice: { 
-    fontSize: 14, 
+    fontSize: scale(14), 
     fontWeight: 'bold', 
-    minWidth: 60, 
+    minWidth: scale(60), 
     textAlign: 'right' 
   },
   trashBtn: { 
-    marginLeft: 15, 
-    padding: 5 
+    marginLeft: scale(15), 
+    padding: scale(5) 
   },
   totalRow: { 
     flexDirection: 'row', 
     justifyContent: 'space-between', 
     borderTopWidth: 1, 
-    paddingTop: 15, 
-    marginTop: 5 
+    paddingTop: scale(15), 
+    marginTop: scale(5) 
   },
   totalText: { 
-    fontSize: 18, 
+    fontSize: scale(18), 
     fontWeight: 'bold' 
   },
   totalPrice: { 
-    fontSize: 18, 
+    fontSize: scale(18), 
     fontWeight: 'bold' 
   },
   categoryScroll: { 
-    marginBottom: 20, 
-    paddingLeft: 20 
+    marginBottom: scale(20), 
+    paddingLeft: scale(20) 
   },
   gridContainer: { 
     flexDirection: 'row', 
     flexWrap: 'wrap', 
-    marginBottom: 10, 
-    paddingHorizontal: 20 
+    marginBottom: scale(10), 
+    paddingHorizontal: scale(20) 
   },
 });

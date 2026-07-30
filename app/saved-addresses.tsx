@@ -21,6 +21,7 @@ import { Colors } from '../constants/Colors';
 import { StatusBar } from 'expo-status-bar';
 import { useAddresses, Address } from '../context/AddressContext'; 
 import TopNav from '../components/TopNav';
+import { scale } from '../constants/Sizes'; // <-- IMPORTED MASTER SCALE
 
 export default function SavedAddressesScreen() {
   const router = useSafeRouter();
@@ -87,7 +88,6 @@ export default function SavedAddressesScreen() {
     setSaving(true);
     try {
       if (editingId) {
-        // Editing text details only — coordinates stay as originally captured
         await updateAddress(editingId, {
           label: label || undefined,
           streetAddress,
@@ -96,7 +96,6 @@ export default function SavedAddressesScreen() {
         });
         setModalVisible(false);
       } else {
-        // New address — capture GPS coordinates for this text
         const result = await addCurrentLocationAddress({
           label: label || undefined,
           streetAddress,
@@ -129,7 +128,7 @@ export default function SavedAddressesScreen() {
         showDivider={false} 
       />
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 100 }]}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + scale(100) }]}>
         
         <View style={styles.headerSection}>
           <Text style={[styles.titleText, { color: colors.text }]}>
@@ -141,7 +140,7 @@ export default function SavedAddressesScreen() {
         </View>
 
         {loading ? (
-          <ActivityIndicator color={Colors.primary} style={{ marginTop: 40 }} />
+          <ActivityIndicator color={Colors.primary} style={{ marginTop: scale(40) }} />
         ) : addresses.length > 0 ? (
           addresses.map((item) => (
             <TouchableOpacity 
@@ -162,7 +161,7 @@ export default function SavedAddressesScreen() {
                   ]}>
                     <Ionicons 
                       name={item.label?.toLowerCase() === 'home' ? 'home' : 'location'} 
-                      size={20} 
+                      size={scale(20)} 
                       color={item.isDefault ? Colors.primary : colors.textMuted} 
                     />
                   </View>
@@ -189,7 +188,7 @@ export default function SavedAddressesScreen() {
                   style={styles.actionBtn} 
                   onPress={() => openEditModal(item)}
                 >
-                  <Ionicons name="create-outline" size={18} color={colors.text} />
+                  <Ionicons name="create-outline" size={scale(18)} color={colors.text} />
                   <Text style={[styles.actionBtnText, { color: colors.text }]}>Edit</Text>
                 </TouchableOpacity>
                 
@@ -197,7 +196,7 @@ export default function SavedAddressesScreen() {
                   style={styles.actionBtn} 
                   onPress={() => handleDelete(item.id, item.label || 'this address')}
                 >
-                  <Ionicons name="trash-outline" size={18} color="#D32F2F" />
+                  <Ionicons name="trash-outline" size={scale(18)} color="#D32F2F" />
                   <Text style={[styles.actionBtnText, { color: '#D32F2F' }]}>Delete</Text>
                 </TouchableOpacity>
               </View>
@@ -205,7 +204,7 @@ export default function SavedAddressesScreen() {
           ))
         ) : (
           <View style={styles.emptyState}>
-            <Ionicons name="map-outline" size={60} color={colors.border} />
+            <Ionicons name="map-outline" size={scale(60)} color={colors.border} />
             <Text style={[styles.emptyTitle, { color: colors.text }]}>
               No Addresses Saved
             </Text>
@@ -220,7 +219,7 @@ export default function SavedAddressesScreen() {
       <View style={[
         styles.bottomBar, 
         { 
-          paddingBottom: insets.bottom + 20, 
+          paddingBottom: insets.bottom + scale(20), 
           backgroundColor: isDark ? colors.surface : '#FFF', 
           borderTopColor: colors.border 
         }
@@ -230,7 +229,7 @@ export default function SavedAddressesScreen() {
           activeOpacity={0.8}
           onPress={openAddModal}
         >
-          <Ionicons name="add" size={20} color="#FFF" style={{ marginRight: 8 }} />
+          <Ionicons name="add" size={scale(20)} color="#FFF" style={{ marginRight: scale(8) }} />
           <Text style={styles.addBtnText}>Add New Address</Text>
         </TouchableOpacity>
       </View>
@@ -238,59 +237,59 @@ export default function SavedAddressesScreen() {
       <Modal visible={modalVisible} transparent animationType="slide" onRequestClose={() => setModalVisible(false)}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, justifyContent: 'flex-end' }}>
           <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setModalVisible(false)} />
-          <View style={{ backgroundColor: colors.background, borderTopLeftRadius: 25, borderTopRightRadius: 25, padding: 20, paddingBottom: insets.bottom + 20 }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 }}>
-              <Text style={{ fontSize: 18, fontWeight: 'bold', color: colors.text }}>
+          <View style={{ backgroundColor: colors.background, borderTopLeftRadius: scale(25), borderTopRightRadius: scale(25), padding: scale(20), paddingBottom: insets.bottom + scale(20) }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: scale(15) }}>
+              <Text style={{ fontSize: scale(18), fontWeight: 'bold', color: colors.text }}>
                 {editingId ? 'Edit Address' : 'New Address'}
               </Text>
               <TouchableOpacity onPress={() => setModalVisible(false)}>
-                <Ionicons name="close-circle" size={26} color={colors.textMuted} />
+                <Ionicons name="close-circle" size={scale(26)} color={colors.textMuted} />
               </TouchableOpacity>
             </View>
-            <View style={{ gap: 12 }}>
+            <View style={{ gap: scale(12) }}>
           <View>
-            <Text style={{ fontSize: 13, fontWeight: '600', marginBottom: 6, color: colors.text }}>Label (e.g. Home, Work)</Text>
+            <Text style={{ fontSize: scale(13), fontWeight: '600', marginBottom: scale(6), color: colors.text }}>Label (e.g. Home, Work)</Text>
             <TextInput
               value={label}
               onChangeText={setLabel}
               placeholder="Home"
               placeholderTextColor={colors.textMuted}
-              style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 12, padding: 12, color: colors.text }}
+              style={{ borderWidth: 1, borderColor: colors.border, borderRadius: scale(12), padding: scale(12), color: colors.text }}
             />
           </View>
           <View>
-            <Text style={{ fontSize: 13, fontWeight: '600', marginBottom: 6, color: colors.text }}>Street Address *</Text>
+            <Text style={{ fontSize: scale(13), fontWeight: '600', marginBottom: scale(6), color: colors.text }}>Street Address *</Text>
             <TextInput
               value={streetAddress}
               onChangeText={setStreetAddress}
               placeholder="No 6 Kuje Street"
               placeholderTextColor={colors.textMuted}
-              style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 12, padding: 12, color: colors.text }}
+              style={{ borderWidth: 1, borderColor: colors.border, borderRadius: scale(12), padding: scale(12), color: colors.text }}
             />
           </View>
           <View>
-            <Text style={{ fontSize: 13, fontWeight: '600', marginBottom: 6, color: colors.text }}>Landmark</Text>
+            <Text style={{ fontSize: scale(13), fontWeight: '600', marginBottom: scale(6), color: colors.text }}>Landmark</Text>
             <TextInput
               value={landmark}
               onChangeText={setLandmark}
               placeholder="Opposite the blue gate"
               placeholderTextColor={colors.textMuted}
-              style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 12, padding: 12, color: colors.text }}
+              style={{ borderWidth: 1, borderColor: colors.border, borderRadius: scale(12), padding: scale(12), color: colors.text }}
             />
           </View>
           <View>
-            <Text style={{ fontSize: 13, fontWeight: '600', marginBottom: 6, color: colors.text }}>Area</Text>
+            <Text style={{ fontSize: scale(13), fontWeight: '600', marginBottom: scale(6), color: colors.text }}>Area</Text>
             <TextInput
               value={area}
               onChangeText={setArea}
               placeholder="Kuje"
               placeholderTextColor={colors.textMuted}
-              style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 12, padding: 12, color: colors.text }}
+              style={{ borderWidth: 1, borderColor: colors.border, borderRadius: scale(12), padding: scale(12), color: colors.text }}
             />
           </View>
 
           {!editingId && (
-            <Text style={{ fontSize: 12, color: colors.textMuted, fontStyle: 'italic' }}>
+            <Text style={{ fontSize: scale(12), color: colors.textMuted, fontStyle: 'italic' }}>
               We&apos;ll use your device&apos;s current location to pinpoint this address for delivery.
             </Text>
           )}
@@ -298,12 +297,12 @@ export default function SavedAddressesScreen() {
           <TouchableOpacity
             onPress={handleSave}
             disabled={saving}
-            style={{ backgroundColor: Colors.primary, paddingVertical: 14, borderRadius: 20, alignItems: 'center', marginTop: 8, opacity: saving ? 0.7 : 1 }}
+            style={{ backgroundColor: Colors.primary, paddingVertical: scale(14), borderRadius: scale(20), alignItems: 'center', marginTop: scale(8), opacity: saving ? 0.7 : 1 }}
           >
             {saving ? (
               <ActivityIndicator color="#FFF" />
             ) : (
-              <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 15 }}>
+              <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: scale(15) }}>
                 {editingId ? 'Save Changes' : 'Use Current Location & Save'}
               </Text>
             )}
@@ -322,145 +321,145 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingTop: 20,
-    paddingHorizontal: 20,
+    paddingTop: scale(20),
+    paddingHorizontal: scale(20),
   },
   headerSection: {
-    marginBottom: 25,
-    paddingHorizontal: 5,
+    marginBottom: scale(25),
+    paddingHorizontal: scale(5),
   },
   titleText: {
-    fontSize: 24,
+    fontSize: scale(24),
     fontWeight: 'bold',
-    marginBottom: 8,
+    marginBottom: scale(8),
   },
   subText: {
-    fontSize: 14,
-    lineHeight: 22,
+    fontSize: scale(14),
+    lineHeight: scale(22),
   },
   addressCard: {
     borderWidth: 1,
-    borderRadius: 20,
-    padding: 20,
-    marginBottom: 20,
+    borderRadius: scale(20),
+    padding: scale(20),
+    marginBottom: scale(20),
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: scale(2) },
     shadowOpacity: 0.05,
-    shadowRadius: 5,
+    shadowRadius: scale(5),
   },
   defaultCardShadow: {
     elevation: 4,
     shadowOpacity: 0.1,
-    shadowRadius: 8,
+    shadowRadius: scale(8),
   },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 15,
+    marginBottom: scale(15),
   },
   headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   iconBox: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+    width: scale(40),
+    height: scale(40),
+    borderRadius: scale(12),
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: scale(12),
   },
   addressTitle: {
-    fontSize: 16,
+    fontSize: scale(16),
     fontWeight: 'bold',
   },
   defaultBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
+    paddingHorizontal: scale(10),
+    paddingVertical: scale(4),
+    borderRadius: scale(8),
   },
   defaultBadgeText: {
     color: '#FFF',
-    fontSize: 11,
+    fontSize: scale(11),
     fontWeight: 'bold',
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
   addressText: {
-    fontSize: 14,
-    lineHeight: 20,
-    paddingRight: 10,
+    fontSize: scale(14),
+    lineHeight: scale(20),
+    paddingRight: scale(10),
   },
   divider: {
     height: 1,
-    marginVertical: 15,
+    marginVertical: scale(15),
   },
   actionRow: {
     flexDirection: 'row',
     justifyContent: 'flex-start',
-    gap: 20,
+    gap: scale(20),
   },
   actionBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-    marginLeft: -10,
+    paddingVertical: scale(5),
+    paddingHorizontal: scale(10),
+    marginLeft: scale(-10),
   },
   actionBtnText: {
-    fontSize: 14,
+    fontSize: scale(14),
     fontWeight: '600',
-    marginLeft: 6,
+    marginLeft: scale(6),
   },
   emptyState: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 50,
+    marginTop: scale(50),
   },
   emptyTitle: {
-    fontSize: 20,
+    fontSize: scale(20),
     fontWeight: 'bold',
-    marginTop: 15,
-    marginBottom: 8,
+    marginTop: scale(15),
+    marginBottom: scale(8),
   },
   emptySub: {
-    fontSize: 14,
+    fontSize: scale(14),
     textAlign: 'center',
-    paddingHorizontal: 40,
+    paddingHorizontal: scale(40),
   },
   bottomBar: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    paddingHorizontal: 20,
-    paddingTop: 15,
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
+    paddingHorizontal: scale(20),
+    paddingTop: scale(15),
+    borderTopLeftRadius: scale(30),
+    borderTopRightRadius: scale(30),
     borderTopWidth: 1,
     elevation: 15,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -5 },
+    shadowOffset: { width: 0, height: scale(-5) },
     shadowOpacity: 0.1,
-    shadowRadius: 10,
+    shadowRadius: scale(10),
   },
   addBtn: {
     flexDirection: 'row',
-    paddingVertical: 16,
-    borderRadius: 20,
+    paddingVertical: scale(16),
+    borderRadius: scale(20),
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 4,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: scale(4) },
     shadowOpacity: 0.3,
-    shadowRadius: 5,
+    shadowRadius: scale(5),
   },
   addBtnText: {
     color: '#FFF',
-    fontSize: 16,
+    fontSize: scale(16),
     fontWeight: 'bold',
   },
 });

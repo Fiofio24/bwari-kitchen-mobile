@@ -15,6 +15,7 @@ import * as Haptics from 'expo-haptics';
 import { useTheme } from '../context/ThemeContext';
 import { Colors } from '../constants/Colors';
 import { useUser } from '../context/UserContext';
+import { scale } from '../constants/Sizes'; // <-- IMPORTED MASTER SCALE
 
 const PIN_LENGTH = 6;
 
@@ -55,9 +56,9 @@ export default function SetupPinScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     setIsError(true);
     Animated.sequence([
-      Animated.timing(shakeAnim, { toValue: 10, duration: 50, useNativeDriver: true }),
-      Animated.timing(shakeAnim, { toValue: -10, duration: 50, useNativeDriver: true }),
-      Animated.timing(shakeAnim, { toValue: 10, duration: 50, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: scale(10), duration: 50, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: scale(-10), duration: 50, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: scale(10), duration: 50, useNativeDriver: true }),
       Animated.timing(shakeAnim, { toValue: 0, duration: 50, useNativeDriver: true })
     ]).start(() => {
       // If confirm fails, reset back to step 1
@@ -117,7 +118,7 @@ export default function SetupPinScreen() {
       {/* Header Section */}
       <View style={styles.topSection}>
         <View style={styles.iconContainer}>
-          <Ionicons name="lock-closed" size={40} color={Colors.primary} />
+          <Ionicons name="lock-closed" size={scale(40)} color={Colors.primary} />
         </View>
         <Text style={styles.welcomeText}>App Security</Text>
         <Text style={styles.nameText}>
@@ -126,7 +127,7 @@ export default function SetupPinScreen() {
       </View>
 
       {/* Bottom Sheet Section */}
-      <View style={[styles.bottomSection, { backgroundColor: colors.background, paddingBottom: insets.bottom + 20 }]}>
+      <View style={[styles.bottomSection, { backgroundColor: colors.background, paddingBottom: insets.bottom + scale(20) }]}>
         <Text style={[styles.instructionText, { color: isError ? '#D32F2F' : colors.textMuted }]}>
           {isError 
             ? "PINs did not match. Try again." 
@@ -185,7 +186,7 @@ export default function SetupPinScreen() {
               onPress={handleDelete}
               activeOpacity={0.7}
             >
-              <Ionicons name="backspace-outline" size={28} color={colors.text} />
+              <Ionicons name="backspace-outline" size={scale(28)} color={colors.text} />
             </TouchableOpacity>
           </View>
         </View>
@@ -206,88 +207,88 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   iconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: scale(80),
+    height: scale(80),
+    borderRadius: scale(40),
     backgroundColor: '#FFF',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 15,
+    marginBottom: scale(15),
     elevation: 5,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: scale(4) },
     shadowOpacity: 0.3,
-    shadowRadius: 5,
+    shadowRadius: scale(5),
   },
   welcomeText: {
-    fontSize: 16,
+    fontSize: scale(16),
     color: '#FFD6D6',
-    marginBottom: 5,
+    marginBottom: scale(5),
     fontWeight: '500',
   },
   nameText: {
-    fontSize: 28,
+    fontSize: scale(28),
     fontWeight: 'bold',
     color: '#FFF',
   },
   bottomSection: {
-    borderTopLeftRadius: 40,
-    borderTopRightRadius: 40,
-    paddingTop: 35,
-    paddingHorizontal: 30,
+    borderTopLeftRadius: scale(40),
+    borderTopRightRadius: scale(40),
+    paddingTop: scale(35),
+    paddingHorizontal: scale(30),
     alignItems: 'center',
     elevation: 30,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -10 },
+    shadowOffset: { width: 0, height: scale(-10) },
     shadowOpacity: 0.2,
-    shadowRadius: 20,
+    shadowRadius: scale(20),
   },
   instructionText: {
-    fontSize: 15,
-    marginBottom: 25,
+    fontSize: scale(15),
+    marginBottom: scale(25),
     textAlign: 'center',
   },
   pinContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 15,
-    marginBottom: 40,
+    gap: scale(15),
+    marginBottom: scale(40),
   },
   pinDot: {
-    width: 13,
-    height: 13,
-    borderRadius: 9,
+    width: scale(13),
+    height: scale(13),
+    borderRadius: scale(9),
     borderWidth: 2,
   },
   numpadContainer: {
     width: '100%',
-    maxWidth: 350,
+    maxWidth: scale(350),
   },
   numpadRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 20,
+    marginBottom: scale(20),
   },
   numButton: {
-    width: 75,
-    height: 75,
-    borderRadius: 38,
+    width: scale(75),
+    height: scale(75),
+    borderRadius: scale(38),
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: scale(2) },
     shadowOpacity: 0.1,
-    shadowRadius: 3,
+    shadowRadius: scale(3),
   },
   numText: {
-    fontSize: 28,
+    fontSize: scale(28),
     fontWeight: '600',
   },
   actionButton: {
-    width: 75,
-    height: 75,
+    width: scale(75),
+    height: scale(75),
     justifyContent: 'center',
     alignItems: 'center',
   },

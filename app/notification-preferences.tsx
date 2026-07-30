@@ -14,6 +14,7 @@ import { Colors } from '../constants/Colors';
 import TopNav from '../components/TopNav';
 import api from './lib/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { scale } from '../constants/Sizes'; // <-- IMPORTED MASTER SCALE
 
 const DEVICE_PREFS_KEY = '@bwari_kitchen_device_prefs';
 
@@ -83,7 +84,7 @@ export default function NotificationPreferencesScreen() {
   const renderServerToggleRow = (title: string, description: string, key: keyof ServerPrefs, icon: string) => (
     <View style={[styles.preferenceRow, { borderBottomColor: colors.border }]}>
       <View style={[styles.iconContainer, { backgroundColor: isDark ? colors.surface : '#F5F5F5' }]}>
-        <Ionicons name={icon as any} size={20} color={Colors.primary} />
+        <Ionicons name={icon as any} size={scale(20)} color={Colors.primary} />
       </View>
       <View style={styles.textContainer}>
         <Text style={[styles.prefTitle, { color: colors.text }]}>{title}</Text>
@@ -102,7 +103,7 @@ export default function NotificationPreferencesScreen() {
   const renderDeviceToggleRow = (title: string, description: string, key: keyof DevicePrefs, icon: string) => (
     <View style={[styles.preferenceRow, { borderBottomColor: colors.border }]}>
       <View style={[styles.iconContainer, { backgroundColor: isDark ? colors.surface : '#F5F5F5' }]}>
-        <Ionicons name={icon as any} size={20} color={Colors.primary} />
+        <Ionicons name={icon as any} size={scale(20)} color={Colors.primary} />
       </View>
       <View style={styles.textContainer}>
         <Text style={[styles.prefTitle, { color: colors.text }]}>{title}</Text>
@@ -167,15 +168,14 @@ export default function NotificationPreferencesScreen() {
   );
 }
 
-// styles unchanged from your original
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scrollContent: { paddingHorizontal: 20, paddingTop: 10, paddingBottom: 40 },
-  sectionTitle: { fontSize: 12, fontWeight: 'bold', marginBottom: 12, marginTop: 25, marginLeft: 5, letterSpacing: 1.5 },
-  card: { borderRadius: 20, borderWidth: 1, overflow: 'hidden' },
-  preferenceRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 16, paddingHorizontal: 15, borderBottomWidth: StyleSheet.hairlineWidth },
-  iconContainer: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center', marginRight: 15 },
-  textContainer: { flex: 1, paddingRight: 10 },
-  prefTitle: { fontSize: 16, fontWeight: '600', marginBottom: 4 },
-  prefDescription: { fontSize: 12, lineHeight: 18 },
+  scrollContent: { paddingHorizontal: scale(20), paddingTop: scale(10), paddingBottom: scale(40) },
+  sectionTitle: { fontSize: scale(12), fontWeight: 'bold', marginBottom: scale(12), marginTop: scale(25), marginLeft: scale(5), letterSpacing: 1.5 },
+  card: { borderRadius: scale(20), borderWidth: 1, overflow: 'hidden' },
+  preferenceRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: scale(16), paddingHorizontal: scale(15), borderBottomWidth: StyleSheet.hairlineWidth },
+  iconContainer: { width: scale(40), height: scale(40), borderRadius: scale(20), justifyContent: 'center', alignItems: 'center', marginRight: scale(15) },
+  textContainer: { flex: 1, paddingRight: scale(10) },
+  prefTitle: { fontSize: scale(16), fontWeight: '600', marginBottom: scale(4) },
+  prefDescription: { fontSize: scale(12), lineHeight: scale(18) },
 });

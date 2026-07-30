@@ -18,6 +18,7 @@ import { Colors } from '../constants/Colors';
 import { StatusBar } from 'expo-status-bar';
 import { useUser } from '../context/UserContext';
 import TopNav from '../components/TopNav';
+import { scale } from '../constants/Sizes'; // <-- IMPORTED MASTER SCALE
 
 const FAQ_DATA = [
   {
@@ -87,7 +88,6 @@ export default function HelpScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar style="light" />
 
-      {/* UNIVERSAL TOPNAV WITH SHADOW */}
       <TopNav 
         title="Help & Support"
         leftIcon="arrow-back"
@@ -97,9 +97,8 @@ export default function HelpScreen() {
         showDivider={false}
       />
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 40 }]}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + scale(40) }]}>
         
-        {/* GREETING */}
         <View style={styles.greetingSection}>
           <Text style={[styles.greetingTitle, { color: colors.text }]}>
             Hi {userData.name.split(' ')[0]},
@@ -109,7 +108,6 @@ export default function HelpScreen() {
           </Text>
         </View>
 
-        {/* QUICK CONTACT CARDS */}
         <View style={styles.contactGrid}>
           <TouchableOpacity 
             style={[styles.contactCard, { backgroundColor: isDark ? colors.surface : '#FFF9E6', borderColor: '#FFC107' }]}
@@ -117,7 +115,7 @@ export default function HelpScreen() {
             onPress={() => handleContact('chat')}
           >
             <View style={[styles.contactIconBox, { backgroundColor: '#FFC107' }]}>
-              <Ionicons name="chatbubbles" size={24} color="#FFF" />
+              <Ionicons name="chatbubbles" size={scale(24)} color="#FFF" />
             </View>
             <Text style={[styles.contactTitle, { color: colors.text }]}>Chat us on WhatsApp</Text>
             <Text style={[styles.contactSub, { color: colors.textMuted }]}>Chat with our team</Text>
@@ -129,7 +127,7 @@ export default function HelpScreen() {
             onPress={() => handleContact('call')}
           >
             <View style={[styles.contactIconBox, { backgroundColor: '#4CAF50' }]}>
-              <Ionicons name="call" size={24} color="#FFF" />
+              <Ionicons name="call" size={scale(24)} color="#FFF" />
             </View>
             <Text style={[styles.contactTitle, { color: colors.text }]}>Call Us</Text>
             <Text style={[styles.contactSub, { color: colors.textMuted }]}>Toll-free line</Text>
@@ -142,16 +140,15 @@ export default function HelpScreen() {
           onPress={() => handleContact('email')}
         >
           <View style={[styles.emailIconBox, { backgroundColor: 'rgba(211, 47, 47, 0.1)' }]}>
-            <Ionicons name="mail" size={24} color={Colors.primary} />
+            <Ionicons name="mail" size={scale(24)} color={Colors.primary} />
           </View>
           <View style={styles.emailTextWrap}>
             <Text style={[styles.contactTitle, { color: colors.text }]}>Send an Email</Text>
             <Text style={[styles.contactSub, { color: colors.textMuted }]}>support@bwarikitchen.com</Text>
           </View>
-          <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+          <Ionicons name="chevron-forward" size={scale(20)} color={colors.textMuted} />
         </TouchableOpacity>
 
-        {/* FAQ SECTION */}
         <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>
           FREQUENTLY ASKED QUESTIONS
         </Text>
@@ -180,7 +177,7 @@ export default function HelpScreen() {
                   </Text>
                   <Ionicons 
                     name={isExpanded ? "chevron-up" : "chevron-down"} 
-                    size={20} 
+                    size={scale(20)} 
                     color={isExpanded ? Colors.primary : colors.textMuted} 
                   />
                 </View>
@@ -195,8 +192,7 @@ export default function HelpScreen() {
           })}
         </View>
 
-        {/* LEGAL LINKS */}
-        <Text style={[styles.sectionTitle, { color: colors.textMuted, marginTop: 10 }]}>
+        <Text style={[styles.sectionTitle, { color: colors.textMuted, marginTop: scale(10) }]}>
           LEGAL & POLICIES
         </Text>
         <View style={[styles.legalContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
@@ -204,17 +200,17 @@ export default function HelpScreen() {
             style={[styles.legalItem, { borderBottomWidth: 1, borderBottomColor: colors.border }]}
             onPress={() => Alert.alert('Coming Soon', 'Our Terms of Service will be available here shortly.')}
           >
-            <Ionicons name="document-text-outline" size={20} color={colors.textMuted} style={styles.legalIcon} />
+            <Ionicons name="document-text-outline" size={scale(20)} color={colors.textMuted} style={styles.legalIcon} />
             <Text style={[styles.legalText, { color: colors.text }]}>Terms of Service</Text>
-            <Ionicons name="chevron-forward" size={18} color={colors.border} />
+            <Ionicons name="chevron-forward" size={scale(18)} color={colors.border} />
           </TouchableOpacity>
           <TouchableOpacity 
             style={styles.legalItem}
             onPress={() => Alert.alert('Coming Soon', 'Our Privacy Policy will be available here shortly.')}
           >
-            <Ionicons name="shield-checkmark-outline" size={20} color={colors.textMuted} style={styles.legalIcon} />
+            <Ionicons name="shield-checkmark-outline" size={scale(20)} color={colors.textMuted} style={styles.legalIcon} />
             <Text style={[styles.legalText, { color: colors.text }]}>Privacy Policy</Text>
-            <Ionicons name="chevron-forward" size={18} color={colors.border} />
+            <Ionicons name="chevron-forward" size={scale(18)} color={colors.border} />
           </TouchableOpacity>
         </View>
 
@@ -228,99 +224,99 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingTop: 20,
-    paddingHorizontal: 20,
+    paddingTop: scale(20),
+    paddingHorizontal: scale(20),
   },
   greetingSection: {
-    marginBottom: 25,
-    paddingHorizontal: 5,
+    marginBottom: scale(25),
+    paddingHorizontal: scale(5),
   },
   greetingTitle: {
-    fontSize: 28,
+    fontSize: scale(28),
     fontWeight: '900',
-    marginBottom: 4,
+    marginBottom: scale(4),
   },
   greetingSub: {
-    fontSize: 16,
+    fontSize: scale(16),
   },
   contactGrid: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 15,
-    gap: 15,
+    marginBottom: scale(15),
+    gap: scale(15),
   },
   contactCard: {
     flex: 1,
     borderWidth: 1,
-    borderRadius: 20,
-    padding: 20,
+    borderRadius: scale(20),
+    padding: scale(20),
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: scale(2),
     },
     shadowOpacity: 0.05,
-    shadowRadius: 5,
+    shadowRadius: scale(5),
   },
   contactIconBox: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
+    width: scale(46),
+    height: scale(46),
+    borderRadius: scale(23),
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 15,
+    marginBottom: scale(15),
   },
   contactTitle: {
-    fontSize: 16,
+    fontSize: scale(16),
     fontWeight: 'bold',
-    marginBottom: 4,
+    marginBottom: scale(4),
   },
   contactSub: {
-    fontSize: 12,
+    fontSize: scale(12),
   },
   emailCard: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderRadius: 20,
-    padding: 20,
-    marginBottom: 30,
+    borderRadius: scale(20),
+    padding: scale(20),
+    marginBottom: scale(30),
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: scale(2),
     },
     shadowOpacity: 0.05,
-    shadowRadius: 5,
+    shadowRadius: scale(5),
   },
   emailIconBox: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
+    width: scale(46),
+    height: scale(46),
+    borderRadius: scale(23),
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 15,
+    marginRight: scale(15),
   },
   emailTextWrap: {
     flex: 1,
   },
   sectionTitle: {
-    fontSize: 12,
+    fontSize: scale(12),
     fontWeight: 'bold',
-    marginBottom: 15,
-    marginLeft: 5,
+    marginBottom: scale(15),
+    marginLeft: scale(5),
     letterSpacing: 1.5,
   },
   faqContainer: {
     borderWidth: 1,
-    borderRadius: 20,
+    borderRadius: scale(20),
     overflow: 'hidden',
-    marginBottom: 25,
+    marginBottom: scale(25),
   },
   faqItem: {
-    padding: 20,
+    padding: scale(20),
   },
   faqQuestionRow: {
     flexDirection: 'row',
@@ -328,33 +324,33 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   faqQuestionText: {
-    fontSize: 15,
+    fontSize: scale(15),
     fontWeight: '600',
     flex: 1,
-    paddingRight: 15,
+    paddingRight: scale(15),
   },
   faqAnswerText: {
-    fontSize: 14,
-    lineHeight: 22,
-    marginTop: 15,
-    paddingRight: 10,
+    fontSize: scale(14),
+    lineHeight: scale(22),
+    marginTop: scale(15),
+    paddingRight: scale(10),
   },
   legalContainer: {
     borderWidth: 1,
-    borderRadius: 20,
+    borderRadius: scale(20),
     overflow: 'hidden',
-    marginBottom: 20,
+    marginBottom: scale(20),
   },
   legalItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 18,
+    padding: scale(18),
   },
   legalIcon: {
-    marginRight: 15,
+    marginRight: scale(15),
   },
   legalText: {
-    fontSize: 15,
+    fontSize: scale(15),
     fontWeight: '500',
     flex: 1,
   },

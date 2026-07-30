@@ -12,6 +12,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext'; 
 import { Colors } from '../constants/Colors';
+import { scale } from '../constants/Sizes'; // <-- IMPORTED MASTER SCALE
 
 interface GridDishCardProps {
   name?: string;
@@ -104,7 +105,7 @@ export default function GridDishCard({
 
   const badgeWidth = expandAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [28, 140] 
+    outputRange: [scale(28), scale(140)] 
   });
 
   const shadowStyle = !isAvailable 
@@ -120,9 +121,9 @@ export default function GridDishCard({
           web: { boxShadow: 'none' } as any 
         })
       : Platform.select({
-          ios: { shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 5, shadowOffset: { width: 0, height: 2 } },
+          ios: { shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: scale(5), shadowOffset: { width: 0, height: scale(2) } },
           android: { elevation: 4, shadowColor: '#000' },
-          web: { boxShadow: '0px 2px 5px rgba(0, 0, 0, 0.1)' } as any 
+          web: { boxShadow: `0px ${scale(2)}px ${scale(5)}px rgba(0, 0, 0, 0.1)` } as any 
         });
 
   const handleCardPress = () => {
@@ -185,7 +186,7 @@ export default function GridDishCard({
         {!isAvailable && !isCompact && (
           <Animated.View style={[styles.floatingBadge, { width: badgeWidth }]}>
             <TouchableOpacity style={styles.badgeContent} onPress={toggleExpand} activeOpacity={0.9}>
-              <Ionicons name="alert" size={16} color="#FFF" style={styles.badgeIcon} />
+              <Ionicons name="alert" size={scale(16)} color="#FFF" style={styles.badgeIcon} />
               <Text style={styles.floatingBadgeText} numberOfLines={1}>Item sold out</Text>
             </TouchableOpacity>
           </Animated.View>
@@ -210,7 +211,7 @@ export default function GridDishCard({
           >
             <Ionicons 
               name={isFavorite ? "heart" : "heart-outline"} 
-              size={18} 
+              size={scale(18)} 
               color={isFavorite ? Colors.primary : "#000"} 
             />
           </TouchableOpacity>
@@ -219,7 +220,7 @@ export default function GridDishCard({
         {isSelected && isAvailable && (
           <View style={styles.gridOverlay}>
             <View style={styles.checkCircle}>
-              <Ionicons name="checkmark" size={14} color="#000" />
+              <Ionicons name="checkmark" size={scale(14)} color="#000" />
             </View>
           </View>
         )}
@@ -255,7 +256,7 @@ export default function GridDishCard({
                 <Text style={[styles.ratingText, { color: colors.text }]}>
                   {rating}
                 </Text>
-                <Ionicons name="star" size={14} color={colors.star} />
+                <Ionicons name="star" size={scale(14)} color={colors.star} />
               </View>
             )}
           </View>
@@ -263,8 +264,8 @@ export default function GridDishCard({
         
         <View style={[
           styles.priceRow, 
-          (!category || !name) && !isCompact && { marginTop: 8 },
-          isCompact && { marginTop: 2 } 
+          (!category || !name) && !isCompact && { marginTop: scale(8) },
+          isCompact && { marginTop: scale(2) } 
         ]}>
           <Text style={[styles.dishPrice, { color: colors.primary }]}>
             {price}
@@ -279,7 +280,7 @@ export default function GridDishCard({
               activeOpacity={0.8} 
               onPress={handleAddPress}
             >
-              <Ionicons name="add" size={16} color={isAvailable ? "#FFF" : colors.textMuted} />
+              <Ionicons name="add" size={scale(16)} color={isAvailable ? "#FFF" : colors.textMuted} />
               <Text style={[
                 styles.addButtonText, 
                 { color: isAvailable ? "#FFF" : colors.textMuted }
@@ -296,44 +297,44 @@ export default function GridDishCard({
 
 const styles = StyleSheet.create({
   cardContainer: { 
-    borderRadius: 15, 
-    marginBottom: 15, 
+    borderRadius: scale(15), 
+    marginBottom: scale(15), 
     width: '100%',
     overflow: 'hidden',
     borderWidth: 1, 
   },
   imagePlaceholder: { 
     width: '100%', 
-    padding: 10, 
+    padding: scale(10), 
     alignItems: 'flex-end', 
     justifyContent: 'flex-start', 
-    borderTopLeftRadius: 15, 
-    borderTopRightRadius: 15, 
+    borderTopLeftRadius: scale(15), 
+    borderTopRightRadius: scale(15), 
     overflow: 'hidden',
   },
   floatingBadge: { 
     position: 'absolute', 
-    top: 8, 
-    left: 8, 
-    height: 28, 
+    top: scale(8), 
+    left: scale(8), 
+    height: scale(28), 
     backgroundColor: '#D32F2F', 
-    borderRadius: 14, 
+    borderRadius: scale(14), 
     zIndex: 50, 
     overflow: 'hidden',
   },
   badgeContent: { 
     flexDirection: 'row', 
     alignItems: 'center', 
-    height: 28, 
-    width: 140,
+    height: scale(28), 
+    width: scale(140),
   },
   badgeIcon: { 
-    width: 28, 
+    width: scale(28), 
     textAlign: 'center',
   },
   floatingBadgeText: { 
     color: '#FFF', 
-    fontSize: 11, 
+    fontSize: scale(11), 
     fontWeight: 'bold', 
     flex: 1,
   },
@@ -345,26 +346,26 @@ const styles = StyleSheet.create({
   },
   soldOutText: {
     fontWeight: 'bold',
-    fontSize: 11,
+    fontSize: scale(11),
     color: '#FFFFFF',
     textTransform: 'uppercase',
-    letterSpacing: 2,
+    letterSpacing: scale(2),
     textShadowColor: 'rgba(0, 0, 0, 0.7)',
     textShadowOffset: { 
       width: 0, 
-      height: 1 
+      height: scale(1) 
     },
-    textShadowRadius: 4,
+    textShadowRadius: scale(4),
   },
   contentContainer: { 
-    padding: 12, 
-    paddingTop: 10,
+    padding: scale(12), 
+    paddingTop: scale(10),
   },
   favoriteButton: { 
     backgroundColor: '#ffffff95', 
-    width: 28, 
-    height: 28, 
-    borderRadius: 14, 
+    width: scale(28), 
+    height: scale(28), 
+    borderRadius: scale(14), 
     justifyContent: 'center', 
     alignItems: 'center', 
     elevation: 2, 
@@ -378,9 +379,9 @@ const styles = StyleSheet.create({
     zIndex: 5,
   },
   checkCircle: { 
-    width: 24, 
-    height: 24, 
-    borderRadius: 12, 
+    width: scale(24), 
+    height: scale(24), 
+    borderRadius: scale(12), 
     backgroundColor: '#FFF', 
     justifyContent: 'center', 
     alignItems: 'center',
@@ -392,9 +393,9 @@ const styles = StyleSheet.create({
   },
   dishName: { 
     fontWeight: 'bold', 
-    fontSize: 15,
+    fontSize: scale(15),
     flex: 1,
-    paddingRight: 5,
+    paddingRight: scale(5),
   },
   ratingRow: { 
     flexDirection: 'row', 
@@ -402,13 +403,13 @@ const styles = StyleSheet.create({
   },
   ratingText: { 
     fontWeight: 'bold', 
-    fontSize: 12, 
-    marginRight: 2,
+    fontSize: scale(12), 
+    marginRight: scale(2),
   },
   subText: { 
-    fontSize: 12, 
-    marginTop: 2, 
-    marginBottom: 4,
+    fontSize: scale(12), 
+    marginTop: scale(2), 
+    marginBottom: scale(4),
   },
   priceRow: { 
     flexDirection: 'row', 
@@ -417,18 +418,18 @@ const styles = StyleSheet.create({
   },
   dishPrice: { 
     fontWeight: 'bold', 
-    fontSize: 16,
+    fontSize: scale(16),
   },
   addButton: { 
     flexDirection: 'row', 
     alignItems: 'center', 
-    paddingVertical: 4, 
-    paddingHorizontal: 10, 
-    borderRadius: 12,
+    paddingVertical: scale(4), 
+    paddingHorizontal: scale(10), 
+    borderRadius: scale(12),
   },
   addButtonText: { 
     fontWeight: 'bold', 
-    fontSize: 12, 
-    marginLeft: 2,
+    fontSize: scale(12), 
+    marginLeft: scale(2),
   },
 });

@@ -17,6 +17,7 @@ import { Colors } from '../constants/Colors';
 import { StatusBar } from 'expo-status-bar';
 import { useNotifications, AppNotification } from '../context/NotificationContext'; 
 import TopNav from '../components/TopNav';
+import { scale } from '../constants/Sizes'; // <-- IMPORTED MASTER SCALE
 
 const formatTime = (isoString: string) => {
   const date = new Date(isoString);
@@ -110,7 +111,7 @@ export default function NotificationsScreen() {
       >
         <View style={styles.cardTopRow}>
           <View style={[styles.iconBox, { backgroundColor: config.bg }]}>
-            <Ionicons name={config.name as any} size={22} color={config.color} />
+            <Ionicons name={config.name as any} size={scale(22)} color={config.color} />
           </View>
           
           <View style={styles.contentBox}>
@@ -144,7 +145,7 @@ export default function NotificationsScreen() {
               activeOpacity={0.8}
             >
               <Text style={[styles.actionButtonText, { color: Colors.primary }]}>View Order</Text>
-              <Ionicons name="arrow-forward" size={16} color={Colors.primary} style={{ marginLeft: 5 }} />
+              <Ionicons name="arrow-forward" size={scale(16)} color={Colors.primary} style={{ marginLeft: scale(5) }} />
             </TouchableOpacity>
           </View>
         )}
@@ -170,7 +171,7 @@ export default function NotificationsScreen() {
               onPress={() => router.push('/notification-preferences')}
               activeOpacity={0.8}
             >
-              <Ionicons name="settings-outline" size={24} color="#FFF" />
+              <Ionicons name="settings-outline" size={scale(24)} color="#FFF" />
             </TouchableOpacity> 
             <TouchableOpacity 
               style={styles.actionIcon} 
@@ -180,7 +181,7 @@ export default function NotificationsScreen() {
             >
               <Ionicons 
                 name="checkmark-done-outline" 
-                size={26} 
+                size={scale(26)} 
                 color={unreadCount > 0 ? "#FFF" : "rgba(255,255,255,0.4)"} 
               />
             </TouchableOpacity> 
@@ -215,11 +216,11 @@ export default function NotificationsScreen() {
       </View>
 
       {loading ? (
-        <ActivityIndicator color={Colors.primary} style={{ marginTop: 60 }} />
+        <ActivityIndicator color={Colors.primary} style={{ marginTop: scale(60) }} />
       ) : (
         <ScrollView 
           showsVerticalScrollIndicator={false} 
-          contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 20 }]}
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + scale(20) }]}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} />}
         >
           {filteredNotifications.length > 0 ? (
@@ -240,7 +241,7 @@ export default function NotificationsScreen() {
           ) : (
             <View style={styles.emptyContainer}>
               <View style={[styles.emptyIconCircle, { backgroundColor: isDark ? colors.surface : '#F5F5F5' }]}>
-                <Ionicons name="notifications-off-outline" size={60} color={colors.textMuted} style={{ opacity: 0.5 }} />
+                <Ionicons name="notifications-off-outline" size={scale(60)} color={colors.textMuted} style={{ opacity: 0.5 }} />
               </View>
               <Text style={[styles.emptyTitle, { color: colors.text }]}>No notifications</Text>
               <Text style={[styles.emptySub, { color: colors.textMuted }]}>
@@ -254,33 +255,32 @@ export default function NotificationsScreen() {
   );
 }
 
-// styles unchanged from your original — reuse exactly as-is, minus richMediaContainer/richMediaImage (no longer used, safe to leave in file unused or remove)
 const styles = StyleSheet.create({
   container: { flex: 1 },
   headerRight: { flexDirection: 'row', alignItems: 'center' },
-  actionIcon: { marginLeft: 15 },
-  tabContainer: { marginTop: 15, marginBottom: 10 },
-  tabScrollContent: { paddingHorizontal: 20, gap: 10 },
-  tabButton: { paddingVertical: 8, paddingHorizontal: 20, borderRadius: 20 },
-  activeTab: { elevation: 2, shadowColor: Colors.primary, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 3 },
-  tabText: { fontSize: 14, fontWeight: '600' },
-  scrollContent: { paddingTop: 10, paddingHorizontal: 20 },
-  dateGroupWrapper: { marginBottom: 10 },
-  dateGroupHeader: { fontSize: 12, fontWeight: 'bold', letterSpacing: 1, marginBottom: 15, marginTop: 5, marginLeft: 5 },
-  notificationCard: { padding: 15, borderRadius: 20, borderWidth: 1, marginBottom: 15, elevation: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 5 },
+  actionIcon: { marginLeft: scale(15) },
+  tabContainer: { marginTop: scale(15), marginBottom: scale(10) },
+  tabScrollContent: { paddingHorizontal: scale(20), gap: scale(10) },
+  tabButton: { paddingVertical: scale(8), paddingHorizontal: scale(20), borderRadius: scale(20) },
+  activeTab: { elevation: 2, shadowColor: Colors.primary, shadowOffset: { width: 0, height: scale(2) }, shadowOpacity: 0.2, shadowRadius: scale(3) },
+  tabText: { fontSize: scale(14), fontWeight: '600' },
+  scrollContent: { paddingTop: scale(10), paddingHorizontal: scale(20) },
+  dateGroupWrapper: { marginBottom: scale(10) },
+  dateGroupHeader: { fontSize: scale(12), fontWeight: 'bold', letterSpacing: 1, marginBottom: scale(15), marginTop: scale(5), marginLeft: scale(5) },
+  notificationCard: { padding: scale(15), borderRadius: scale(20), borderWidth: 1, marginBottom: scale(15), elevation: 1, shadowColor: '#000', shadowOffset: { width: 0, height: scale(2) }, shadowOpacity: 0.05, shadowRadius: scale(5) },
   cardTopRow: { flexDirection: 'row', alignItems: 'flex-start' },
-  iconBox: { width: 46, height: 46, borderRadius: 23, justifyContent: 'center', alignItems: 'center', marginRight: 15 },
+  iconBox: { width: scale(46), height: scale(46), borderRadius: scale(23), justifyContent: 'center', alignItems: 'center', marginRight: scale(15) },
   contentBox: { flex: 1 },
-  titleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
-  notificationTitle: { flex: 1, fontSize: 15, fontWeight: '700', paddingRight: 10 },
-  timeText: { fontSize: 11, fontWeight: '600' },
-  messageText: { fontSize: 13, lineHeight: 20 },
-  unreadDot: { position: 'absolute', top: 0, right: 0, width: 10, height: 10, borderRadius: 5 },
-  actionRow: { marginTop: 15, paddingTop: 15, borderTopWidth: 1, flexDirection: 'row', justifyContent: 'flex-end' },
-  actionButton: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, paddingHorizontal: 16, borderRadius: 15 },
-  actionButtonText: { fontSize: 13, fontWeight: 'bold' },
-  emptyContainer: { alignItems: 'center', justifyContent: 'center', marginTop: 60 },
-  emptyIconCircle: { width: 120, height: 120, borderRadius: 60, justifyContent: 'center', alignItems: 'center', marginBottom: 20 },
-  emptyTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 10 },
-  emptySub: { fontSize: 14, textAlign: 'center', paddingHorizontal: 30, lineHeight: 22 },
+  titleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: scale(6) },
+  notificationTitle: { flex: 1, fontSize: scale(15), fontWeight: '700', paddingRight: scale(10) },
+  timeText: { fontSize: scale(11), fontWeight: '600' },
+  messageText: { fontSize: scale(13), lineHeight: scale(20) },
+  unreadDot: { position: 'absolute', top: 0, right: 0, width: scale(10), height: scale(10), borderRadius: scale(5) },
+  actionRow: { marginTop: scale(15), paddingTop: scale(15), borderTopWidth: 1, flexDirection: 'row', justifyContent: 'flex-end' },
+  actionButton: { flexDirection: 'row', alignItems: 'center', paddingVertical: scale(8), paddingHorizontal: scale(16), borderRadius: scale(15) },
+  actionButtonText: { fontSize: scale(13), fontWeight: 'bold' },
+  emptyContainer: { alignItems: 'center', justifyContent: 'center', marginTop: scale(60) },
+  emptyIconCircle: { width: scale(120), height: scale(120), borderRadius: scale(60), justifyContent: 'center', alignItems: 'center', marginBottom: scale(20) },
+  emptyTitle: { fontSize: scale(20), fontWeight: 'bold', marginBottom: scale(10) },
+  emptySub: { fontSize: scale(14), textAlign: 'center', paddingHorizontal: scale(30), lineHeight: scale(22) },
 });

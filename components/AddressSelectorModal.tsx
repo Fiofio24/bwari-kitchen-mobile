@@ -21,6 +21,7 @@ import { useTheme } from '../context/ThemeContext';
 import { BlurView } from 'expo-blur';
 import { useSafeRouter } from '../hooks/useSafeRouter';
 import { useAddresses } from '../context/AddressContext'; 
+import { scale } from '../constants/Sizes'; // <-- IMPORTED MASTER SCALE
 
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 
@@ -40,7 +41,8 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
   const [isCapturingLocation, setIsCapturingLocation] = useState(false);
   
   const fadeAnim = useRef(new Animated.Value(0)).current; 
-  const slideAnim = useRef(new Animated.Value(500)).current; 
+  // Scaled the initial off-screen distance so it translates properly on any device size
+  const slideAnim = useRef(new Animated.Value(scale(500))).current; 
 
   useEffect(() => {
     if (visible) {
@@ -54,7 +56,7 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
       Keyboard.dismiss();
       Animated.parallel([
         Animated.timing(fadeAnim, { toValue: 0, duration: 250, useNativeDriver: true }),
-        Animated.timing(slideAnim, { toValue: 500, duration: 250, useNativeDriver: true })
+        Animated.timing(slideAnim, { toValue: scale(500), duration: 250, useNativeDriver: true })
       ]).start(() => setIsRendering(false));
     }
   }, [visible, fadeAnim, slideAnim, isRendering]);
@@ -120,18 +122,18 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
         <Animated.View 
           style={[
             styles.modalSheet, 
-            { backgroundColor: colors.background, paddingBottom: Math.max(insets.bottom, 20), transform: [{ translateY: slideAnim }] }
+            { backgroundColor: colors.background, paddingBottom: Math.max(insets.bottom, scale(20)), transform: [{ translateY: slideAnim }] }
           ]}
         >
           <View style={styles.modalHeader}>
             <Text style={[styles.modalTitle, { color: colors.text }]}>Select Address</Text>
             <TouchableOpacity onPress={onClose}>
-              <Ionicons name="close-circle" size={28} color={colors.textMuted} />
+              <Ionicons name="close-circle" size={scale(28)} color={colors.textMuted} />
             </TouchableOpacity>
           </View>
           
           <View style={[styles.inputContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <Ionicons name="search" size={20} color={colors.textMuted} />
+            <Ionicons name="search" size={scale(20)} color={colors.textMuted} />
             <TextInput 
               style={[styles.input, { color: colors.text }]} 
               value={inputText} 
@@ -142,12 +144,12 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
             />
           </View>
           
-          <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 300 }}>
+          <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: scale(300) }}>
             <TouchableOpacity style={styles.currentLocationBtn} onPress={handleUseCurrentLocation} activeOpacity={0.7} disabled={isCapturingLocation}>
               {isCapturingLocation ? (
                 <ActivityIndicator size="small" color={Colors.primary} />
               ) : (
-                <Ionicons name="locate" size={22} color={Colors.primary} />
+                <Ionicons name="locate" size={scale(22)} color={Colors.primary} />
               )}
               <Text style={[styles.currentLocationText, { color: Colors.primary }]}>
                 {isCapturingLocation ? 'Getting your location...' : 'Use Current Location'}
@@ -163,11 +165,11 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
                 onPress={() => handleSelectAddress(item.id)}
               >
                 <View style={[styles.iconBox, { backgroundColor: 'rgba(150,150,150,0.1)' }]}>
-                  <Ionicons name={item.label?.toLowerCase() === 'home' ? 'home' : 'location'} size={20} color={colors.textMuted} />
+                  <Ionicons name={item.label?.toLowerCase() === 'home' ? 'home' : 'location'} size={scale(20)} color={colors.textMuted} />
                 </View>
                 <View style={styles.addressTextStack}>
                   <Text style={[styles.quickAddressTitle, { color: colors.text }]}>
-                    {item.label || 'Address'} {item.isDefault && <Text style={{ color: Colors.primary, fontSize: 12 }}>(Default)</Text>}
+                    {item.label || 'Address'} {item.isDefault && <Text style={{ color: Colors.primary, fontSize: scale(12) }}>(Default)</Text>}
                   </Text>
                   <Text style={[styles.quickAddressDetail, { color: colors.textMuted }]}>
                     {getAddressLine(item)}
@@ -185,7 +187,7 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
           
           <TouchableOpacity style={[styles.manageBtn, { borderTopColor: colors.border }]} onPress={handleManageAddresses} activeOpacity={0.7}>
             <Text style={[styles.manageBtnText, { color: colors.text }]}>Manage Addresses</Text>
-            <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+            <Ionicons name="chevron-forward" size={scale(20)} color={colors.textMuted} />
           </TouchableOpacity>
         </Animated.View>
       </View>
@@ -195,20 +197,20 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
 
 const styles = StyleSheet.create({
   modalContentWrapper: { flex: 1, justifyContent: 'flex-end' },
-  modalSheet: { borderTopLeftRadius: 30, borderTopRightRadius: 30, paddingHorizontal: 20, paddingTop: 25 },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-  modalTitle: { fontSize: 20, fontWeight: 'bold' },
-  inputContainer: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: 15, paddingHorizontal: 15, height: 50, marginBottom: 15 },
-  input: { flex: 1, marginLeft: 10, fontSize: 16 },
-  currentLocationBtn: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, marginBottom: 20 },
-  currentLocationText: { fontSize: 16, fontWeight: 'bold', marginLeft: 10 },
-  savedTitle: { fontSize: 14, fontWeight: 'bold', marginBottom: 5, letterSpacing: 0.5 },
-  quickAddressRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1 },
-  iconBox: { width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
-  addressTextStack: { marginLeft: 15, justifyContent: 'center', flex: 1 },
-  quickAddressTitle: { fontSize: 16, fontWeight: 'bold' },
-  quickAddressDetail: { fontSize: 12, marginTop: 2 },
-  noResultsText: { textAlign: 'center', marginTop: 20, fontStyle: 'italic' },
-  manageBtn: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 20, marginTop: 5, borderTopWidth: 1 },
-  manageBtnText: { fontSize: 16, fontWeight: 'bold' },
+  modalSheet: { borderTopLeftRadius: scale(30), borderTopRightRadius: scale(30), paddingHorizontal: scale(20), paddingTop: scale(25) },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: scale(20) },
+  modalTitle: { fontSize: scale(20), fontWeight: 'bold' },
+  inputContainer: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: scale(15), paddingHorizontal: scale(15), height: scale(50), marginBottom: scale(15) },
+  input: { flex: 1, marginLeft: scale(10), fontSize: scale(16) },
+  currentLocationBtn: { flexDirection: 'row', alignItems: 'center', paddingVertical: scale(10), marginBottom: scale(20) },
+  currentLocationText: { fontSize: scale(16), fontWeight: 'bold', marginLeft: scale(10) },
+  savedTitle: { fontSize: scale(14), fontWeight: 'bold', marginBottom: scale(5), letterSpacing: 0.5 },
+  quickAddressRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: scale(12), borderBottomWidth: 1 },
+  iconBox: { width: scale(36), height: scale(36), borderRadius: scale(18), justifyContent: 'center', alignItems: 'center' },
+  addressTextStack: { marginLeft: scale(15), justifyContent: 'center', flex: 1 },
+  quickAddressTitle: { fontSize: scale(16), fontWeight: 'bold' },
+  quickAddressDetail: { fontSize: scale(12), marginTop: scale(2) },
+  noResultsText: { textAlign: 'center', marginTop: scale(20), fontStyle: 'italic' },
+  manageBtn: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: scale(20), marginTop: scale(5), borderTopWidth: 1 },
+  manageBtnText: { fontSize: scale(16), fontWeight: 'bold' },
 });

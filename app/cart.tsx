@@ -21,6 +21,7 @@ import { useMenu } from '../context/MenuContext';
 import QuickEditPackage from '../components/QuickEditPackage';
 import TopNav from '../components/TopNav';
 import HomeIcon from '../components/HomeIcon';
+import { scale } from '../constants/Sizes'; // <-- IMPORTED MASTER SCALE
 
 const CartItemCard = ({ item, isSelected, onToggle, onIncrease, onDecrease, onRemove, onEdit, colors, isDark }: any) => {
   const { findItem } = useMenu();
@@ -96,7 +97,7 @@ const CartItemCard = ({ item, isSelected, onToggle, onIncrease, onDecrease, onRe
 
   const badgeWidth = expandAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [28, 210] 
+    outputRange: [scale(28), scale(210)] 
   });
 
   return (
@@ -108,10 +109,10 @@ const CartItemCard = ({ item, isSelected, onToggle, onIncrease, onDecrease, onRe
         shadowColor: '#000',
         shadowOffset: { 
           width: 0, 
-          height: 4 
+          height: scale(4) 
         },
         shadowOpacity: 0.15,
-        shadowRadius: 8,
+        shadowRadius: scale(8),
         elevation: 6,
       } : {
         borderColor: 'transparent',
@@ -121,7 +122,7 @@ const CartItemCard = ({ item, isSelected, onToggle, onIncrease, onDecrease, onRe
       {isLocked && (
         <Animated.View style={[styles.floatingBadge, { width: badgeWidth }]}>
           <TouchableOpacity style={styles.badgeContent} onPress={toggleExpand} activeOpacity={0.9}>
-            <Ionicons name="alert" size={16} color="#FFF" style={styles.badgeIcon} />
+            <Ionicons name="alert" size={scale(16)} color="#FFF" style={styles.badgeIcon} />
             <Text style={styles.floatingBadgeText} numberOfLines={1}>Item sold out. Please edit.</Text>
           </TouchableOpacity>
         </Animated.View>
@@ -144,7 +145,7 @@ const CartItemCard = ({ item, isSelected, onToggle, onIncrease, onDecrease, onRe
         {!isLocked && (
           <Animated.View style={[styles.selectedOverlay, { opacity: scaleAnim }]}>
             <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
-              <Ionicons name="checkmark-circle" size={36} color="#FFF" />
+              <Ionicons name="checkmark-circle" size={scale(36)} color="#FFF" />
             </Animated.View>
           </Animated.View>
         )}
@@ -156,7 +157,7 @@ const CartItemCard = ({ item, isSelected, onToggle, onIncrease, onDecrease, onRe
             {item.category || item.name}
           </Text>
           <TouchableOpacity onPress={() => onRemove(item.id)} style={styles.deleteBtn}>
-            <Ionicons name="trash-outline" size={20} color={isLocked ? colors.text : colors.primary} />
+            <Ionicons name="trash-outline" size={scale(20)} color={isLocked ? colors.text : Colors.primary} />
           </TouchableOpacity>
         </View>
 
@@ -199,13 +200,13 @@ const CartItemCard = ({ item, isSelected, onToggle, onIncrease, onDecrease, onRe
                 isLocked && { opacity: 0.3 }
               ]}>
                 <TouchableOpacity onPress={() => !isLocked && onDecrease(item.id)} style={styles.qtyBtn} disabled={isLocked}>
-                  <Ionicons name="remove" size={16} color={colors.text} />
+                  <Ionicons name="remove" size={scale(16)} color={colors.text} />
                 </TouchableOpacity>
                 <Text style={[styles.qtyText, { color: colors.text }]}>
                   {item.quantity || 1}
                 </Text>
                 <TouchableOpacity onPress={() => !isLocked && onIncrease(item.id)} style={styles.qtyBtn} disabled={isLocked}>
-                  <Ionicons name="add" size={16} color={colors.text} />
+                  <Ionicons name="add" size={scale(16)} color={colors.text} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -279,7 +280,6 @@ export default function CartScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar style="light" />
       
-      {/* UNIVERSAL TOPNAV WITH SHADOW APPLIED */}
       <TopNav 
         title="My Cart"
         leftIcon="arrow-back"
@@ -320,7 +320,7 @@ export default function CartScreen() {
             </View>
           </ScrollView>
 
-          <View style={[styles.stickyFooter, { paddingBottom: insets.bottom + 20, backgroundColor: isDark ? colors.surface : '#FFF', borderTopColor: colors.border }]}>
+          <View style={[styles.stickyFooter, { paddingBottom: insets.bottom + scale(20), backgroundColor: isDark ? colors.surface : '#FFF', borderTopColor: colors.border }]}>
             <View style={styles.summaryContainer}>
               
               <TouchableOpacity 
@@ -329,7 +329,7 @@ export default function CartScreen() {
                 activeOpacity={0.7}
               >
                 <Text style={[styles.summaryTitle, { color: colors.text }]}>Order Summary</Text>
-                <Ionicons name={isSummaryExpanded ? "chevron-up" : "chevron-down"} size={22} color={colors.text} />
+                <Ionicons name={isSummaryExpanded ? "chevron-up" : "chevron-down"} size={scale(22)} color={colors.text} />
               </TouchableOpacity>
 
               {isSummaryExpanded && (
@@ -350,7 +350,7 @@ export default function CartScreen() {
                     </View>
                   ))}
                   
-                  <View style={[styles.divider, { backgroundColor: colors.border, marginTop: 4, marginBottom: 15 }]} />
+                  <View style={[styles.divider, { backgroundColor: colors.border, marginTop: scale(4), marginBottom: scale(15) }]} />
                 </View>
               )}
 
@@ -372,7 +372,7 @@ export default function CartScreen() {
         </>
       ) : (
         <View style={styles.emptyContainer}>
-          <Ionicons name="cart-outline" size={100} color={colors.textMuted} style={{ opacity: 0.5 }} />
+          <Ionicons name="cart-outline" size={scale(100)} color={colors.textMuted} style={{ opacity: 0.5 }} />
           <Text style={[styles.emptyTitle, { color: colors.text }]}>Your cart is empty</Text>
           <Text style={[styles.emptySubtitle, { color: colors.textMuted }]}>Looks like you haven&apos;t added any delicious meals yet. Browse our menu to satisfy your cravings!</Text>
           <TouchableOpacity style={styles.browseBtn} onPress={() => router.push('/menu')}>
@@ -398,73 +398,73 @@ const styles = StyleSheet.create({
   },
   headerRight: { 
     flexDirection: 'row', 
-    gap: 10, 
+    gap: scale(10), 
     alignItems: 'center',
   },
   scrollContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 280,
+    paddingHorizontal: scale(20),
+    paddingBottom: scale(280),
   },
   sectionHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 25,
-    marginBottom: 10,
+    marginTop: scale(25),
+    marginBottom: scale(10),
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: scale(18),
     fontWeight: 'bold',
-    borderLeftWidth: 4,
+    borderLeftWidth: scale(4),
     borderLeftColor: Colors.primary,
-    paddingLeft: 10,
+    paddingLeft: scale(10),
   },
   selectAllText: {
     color: Colors.primary,
     fontWeight: 'bold',
-    fontSize: 14,
+    fontSize: scale(14),
   },
   itemsContainer: {
-    marginTop: 10,
+    marginTop: scale(10),
   },
   cartItem: {
     flexDirection: 'row',
-    borderRadius: 20,
-    marginBottom: 15,
+    borderRadius: scale(20),
+    marginBottom: scale(15),
     borderWidth: 1,
   },
   floatingBadge: {
     position: 'absolute',
-    top: 5,
-    left: 5,
-    height: 28,
+    top: scale(5),
+    left: scale(5),
+    height: scale(28),
     backgroundColor: '#D32F2F',
-    borderRadius: 14,
+    borderRadius: scale(14),
     zIndex: 50,
     overflow: 'hidden',
   },
   badgeContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 28,
-    width: 210,
+    height: scale(28),
+    width: scale(210),
   },
   badgeIcon: {
-    width: 28,
+    width: scale(28),
     textAlign: 'center',
   },
   floatingBadgeText: {
     color: '#FFF',
-    fontSize: 11,
+    fontSize: scale(11),
     fontWeight: 'bold',
     flex: 1,
   },
   imageWrapper: {
-    width: 105,
+    width: scale(105),
     position: 'relative',
     backgroundColor: '#EEE',
-    borderTopLeftRadius: 20,
-    borderBottomLeftRadius: 20,
+    borderTopLeftRadius: scale(20),
+    borderBottomLeftRadius: scale(20),
     overflow: 'hidden',
   },
   itemImage: {
@@ -474,10 +474,10 @@ const styles = StyleSheet.create({
   },
   detailsWrapper: {
     flex: 1,
-    padding: 15,
-    paddingTop: 10,
-    paddingBottom: 10,
-    minHeight: 120,
+    padding: scale(15),
+    paddingTop: scale(10),
+    paddingBottom: scale(10),
+    minHeight: scale(120),
   },
   topRow: {
     flexDirection: 'row',
@@ -492,32 +492,32 @@ const styles = StyleSheet.create({
   },
   itemDetails: {
     flex: 1,
-    marginTop: 5,
+    marginTop: scale(5),
   },
   itemName: {
-    fontSize: 16,
+    fontSize: scale(16),
     fontWeight: 'bold',
     flex: 1,
-    paddingRight: 10,
+    paddingRight: scale(10),
   },
   itemContents: {
-    fontSize: 13,
-    marginBottom: 10,
+    fontSize: scale(13),
+    marginBottom: scale(10),
   },
   expandedMissingBox: {
-    marginTop: 6,
-    marginBottom: 8,
+    marginTop: scale(6),
+    marginBottom: scale(8),
     backgroundColor: '#FFEBEE',
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 8,
+    paddingVertical: scale(6),
+    paddingHorizontal: scale(10),
+    borderRadius: scale(8),
   },
   missingItemText: {
     color: '#D32F2F',
-    fontSize: 12,
+    fontSize: scale(12),
     fontWeight: 'bold',
     textDecorationLine: 'line-through',
-    marginBottom: 2,
+    marginBottom: scale(2),
   },
   priceAndActionRow: {
     flexDirection: 'row',
@@ -526,7 +526,7 @@ const styles = StyleSheet.create({
     marginTop: 'auto',
   },
   itemPrice: {
-    fontSize: 16,
+    fontSize: scale(16),
     fontWeight: 'bold',
   },
   rightActions: {
@@ -534,67 +534,67 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   editBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-    marginRight: 10,
+    paddingHorizontal: scale(12),
+    paddingVertical: scale(6),
+    borderRadius: scale(12),
+    marginRight: scale(10),
   },
   editBtnText: {
-    fontSize: 12,
+    fontSize: scale(12),
     fontWeight: 'bold',
   },
   deleteBtn: {
-    padding: 5,
+    padding: scale(5),
   },
   quantityBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 20,
-    paddingHorizontal: 5,
-    paddingVertical: 5,
+    borderRadius: scale(20),
+    paddingHorizontal: scale(5),
+    paddingVertical: scale(5),
   },
   qtyBtn: {
-    width: 26,
-    height: 26,
+    width: scale(26),
+    height: scale(26),
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 13,
+    borderRadius: scale(13),
     backgroundColor: 'rgba(150,150,150,0.2)',
   },
   qtyText: {
-    fontSize: 14,
+    fontSize: scale(14),
     fontWeight: 'bold',
-    marginHorizontal: 8,
+    marginHorizontal: scale(8),
   },
   stickyFooter: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
+    borderTopLeftRadius: scale(30),
+    borderTopRightRadius: scale(30),
     borderTopWidth: 1,
     elevation: 20,
     shadowColor: '#000',
     shadowOffset: { 
       width: 0, 
-      height: -6 
+      height: scale(-6) 
     },
     shadowOpacity: 0.15,
-    shadowRadius: 15,
+    shadowRadius: scale(15),
   },
   summaryContainer: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
+    paddingHorizontal: scale(20),
+    paddingTop: scale(20),
   },
   summaryHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 15,
+    marginBottom: scale(15),
   },
   summaryTitle: {
-    fontSize: 18,
+    fontSize: scale(18),
     fontWeight: 'bold',
   },
   expandedSummaryContent: {
@@ -604,7 +604,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: scale(10),
   },
   summaryItemLeft: {
     flex: 1,
@@ -612,78 +612,78 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   snText: {
-    fontSize: 13,
+    fontSize: scale(13),
     fontWeight: '900',
-    marginRight: 8,
+    marginRight: scale(8),
   },
   summaryItemName: {
     flex: 1,
-    fontSize: 14,
-    paddingRight: 10,
+    fontSize: scale(14),
+    paddingRight: scale(10),
   },
   summaryItemPrice: {
-    fontSize: 14,
+    fontSize: scale(14),
     fontWeight: '600',
   },
   summaryRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    marginBottom: scale(12),
     alignItems: 'center',
   },
   divider: {
     height: 1,
-    marginVertical: 10,
+    marginVertical: scale(10),
   },
   totalLabel: {
-    fontSize: 16,
+    fontSize: scale(16),
     fontWeight: 'bold',
   },
   totalValue: {
-    fontSize: 22,
+    fontSize: scale(22),
     fontWeight: 'bold',
   },
   checkoutBtn: {
     backgroundColor: Colors.primary,
-    paddingVertical: 18,
-    borderRadius: 20,
-    marginTop: 15,
+    paddingVertical: scale(18),
+    borderRadius: scale(20),
+    marginTop: scale(15),
     alignItems: 'center',
   },
   checkoutText: {
     color: '#FFF',
-    fontSize: 18,
+    fontSize: scale(18),
     fontWeight: 'bold',
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 40,
-    marginTop: 40,
+    paddingHorizontal: scale(40),
+    marginTop: scale(40),
   },
   emptyTitle: {
-    fontSize: 24,
+    fontSize: scale(24),
     fontWeight: 'bold',
-    marginTop: 20,
-    marginBottom: 10,
+    marginTop: scale(20),
+    marginBottom: scale(10),
     textAlign: 'center',
   },
   emptySubtitle: {
-    fontSize: 16,
+    fontSize: scale(16),
     textAlign: 'center',
-    lineHeight: 24,
-    marginBottom: 35,
+    lineHeight: scale(24),
+    marginBottom: scale(35),
   },
   browseBtn: {
     backgroundColor: Colors.primary,
-    paddingVertical: 16,
-    paddingHorizontal: 35,
-    borderRadius: 30,
+    paddingVertical: scale(16),
+    paddingHorizontal: scale(35),
+    borderRadius: scale(30),
   },
   browseBtnText: {
     color: '#FFF',
-    fontSize: 18,
+    fontSize: scale(18),
     fontWeight: 'bold',
   },
 });

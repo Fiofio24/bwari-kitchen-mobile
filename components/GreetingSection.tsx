@@ -1,15 +1,16 @@
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/Colors';
-import { useSafeRouter } from '../hooks/useSafeRouter'; // 1. Added the router!
+import { useSafeRouter } from '../hooks/useSafeRouter'; 
 import { useUser } from '../context/UserContext'; 
+import { scale } from '../constants/Sizes'; // <-- IMPORTED MASTER SCALE
 
 interface GreetingProps {
   userName: string;
 }
 
 export default function GreetingSection({ userName }: GreetingProps) {
-  const router = useSafeRouter(); // 2. Initialized the router
+  const router = useSafeRouter(); 
   const { userData } = useUser(); 
 
   const getMealTime = () => {
@@ -39,9 +40,8 @@ export default function GreetingSection({ userName }: GreetingProps) {
           <Text style={styles.subGreetingText}>What would you like for {currentMeal}?</Text>
         </View>
         
-        {/* 3. Added the onPress event to route to the menu! */}
         <TouchableOpacity style={styles.menuButton} onPress={() => router.push('/menu')} activeOpacity={0.8}>
-          <Ionicons name="restaurant" size={16} color="#000" />
+          <Ionicons name="restaurant" size={scale(16)} color="#000" />
           <Text style={styles.menuButtonText}>Menu</Text>
         </TouchableOpacity>
         
@@ -53,48 +53,49 @@ export default function GreetingSection({ userName }: GreetingProps) {
 const styles = StyleSheet.create({
   greetingBackground: {
     backgroundColor: Colors.primary,
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-    marginBottom: 15,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
+    paddingHorizontal: scale(20),
+    paddingBottom: scale(20),
+    paddingTop: scale(30),
+    marginBottom: scale(15),
+    borderBottomLeftRadius: scale(30),
+    borderBottomRightRadius: scale(30),
   },
   greetingRow: {
-    marginTop: 70, 
+    marginTop: scale(70), 
     flexDirection: 'row',
     alignItems: 'center', 
   },
   chefImage: {
-    width: 90, 
-    height: 150,
-    marginRight: 15, 
+    width: scale(90), 
+    height: scale(150),
+    marginRight: scale(15), 
   },
   greetingTextContainer: {
     flex: 1, 
-    paddingRight: 10,
+    paddingRight: scale(10),
   },
   helloText: {
     color: '#FFFFFF',
-    fontSize: 20,
+    fontSize: scale(20),
     fontWeight: 'bold',
   },
   subGreetingText: {
     color: '#FFCCCC',
-    fontSize: 15,
-    marginTop: 2,
+    fontSize: scale(15),
+    marginTop: scale(2),
     textTransform: 'capitalize', 
   },
   menuButton: {
     backgroundColor: '#FFFFFF',
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 20,
+    paddingVertical: scale(8),
+    paddingHorizontal: scale(14),
+    borderRadius: scale(20),
   },
   menuButtonText: {
-    marginLeft: 5,
+    marginLeft: scale(5),
     fontWeight: 'bold',
-    fontSize: 14,
+    fontSize: scale(14),
   },
 });

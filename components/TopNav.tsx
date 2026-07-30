@@ -9,6 +9,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/Colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context'; 
+import { scale } from '../constants/Sizes'; // <-- IMPORTED MASTER SCALE
 
 export interface TopNavProps { 
   title?: string;
@@ -33,14 +34,15 @@ export default function TopNav({
 }: TopNavProps) {
   const insets = useSafeAreaInsets();
   
-  const paddingTop = Platform.OS === 'web' ? 50 : insets.top + 10;
-  const paddingBottom = 15;
+  // Applied scaling dynamically to all layout heights and paddings
+  const paddingTop = Platform.OS === 'web' ? scale(50) : insets.top + scale(10);
+  const paddingBottom = scale(15);
 
   const shadowStyle = isScrolled 
     ? Platform.select({ 
-        ios: { shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 5, shadowOffset: { width: 0, height: 4 } }, 
+        ios: { shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: scale(5), shadowOffset: { width: 0, height: scale(4) } }, 
         android: { elevation: 8 }, 
-        web: { boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.3)' } as any 
+        web: { boxShadow: `0px ${scale(4)}px ${scale(10)}px rgba(0, 0, 0, 0.3)` } as any 
       })
     : Platform.select({ ios: { shadowOpacity: 0 }, android: { elevation: 0 }, web: { boxShadow: 'none' } as any });
 
@@ -55,10 +57,11 @@ export default function TopNav({
       <View style={styles.leftWrapper}>
         {onLeftPress ? (
           <TouchableOpacity onPress={onLeftPress} activeOpacity={0.7} style={styles.iconButton}>
-            <Ionicons name={leftIcon} size={28} color="#ffffff" />
+            {/* Dynamic icon sizing */}
+            <Ionicons name={leftIcon} size={scale(28)} color="#ffffff" />
           </TouchableOpacity>
         ) : (
-          <View style={{ width: 28 }} />
+          <View style={{ width: scale(28) }} />
         )}
       </View>
       
@@ -73,7 +76,7 @@ export default function TopNav({
       </View>
 
       <View style={styles.rightWrapper}>
-        {rightComponent || <View style={{ width: 28 }} />}
+        {rightComponent || <View style={{ width: scale(28) }} />}
       </View>
 
       {showDivider && (
@@ -85,16 +88,15 @@ export default function TopNav({
   );
 }
 
-// PRO CSS COMPLIANCE: Every property strictly on its own line
 const styles = StyleSheet.create({
   topNavContainer: {
     backgroundColor: Colors.primary,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
+    paddingHorizontal: scale(20),
+    borderBottomLeftRadius: scale(30),
+    borderBottomRightRadius: scale(30),
     zIndex: 10,
   },
   absolutePosition: {
@@ -105,30 +107,30 @@ const styles = StyleSheet.create({
   },
   leftWrapper: {
     zIndex: 2,
-    minWidth: 40,
+    minWidth: scale(40),
     alignItems: 'flex-start',
   },
   rightWrapper: {
     zIndex: 2,
-    minWidth: 40,
+    minWidth: scale(40),
     alignItems: 'flex-end',
     flexDirection: 'row',
     justifyContent: 'flex-end',
   },
   centerWrapper: {
     position: 'absolute',
-    left: 65, // STRICT BOUNDARY: Prevents overlap with menu/back icon
-    right: 65, // STRICT BOUNDARY: Leaves room for cart/notification icons
+    left: scale(65), 
+    right: scale(65), 
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 1,
   },
   iconButton: {
-    padding: 5,
-    marginLeft: -5,
+    padding: scale(5),
+    marginLeft: scale(-5),
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: scale(20),
     fontWeight: 'bold',
     color: '#FFF',
   },

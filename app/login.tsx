@@ -24,6 +24,7 @@ import { useAddresses } from '../context/AddressContext';
 import { useFavorites } from '../context/FavoriteContext';
 import api from './lib/api';
 import * as SecureStore from 'expo-secure-store';
+import { scale } from '../constants/Sizes'; // <-- IMPORTED MASTER SCALE
 
 const { height } = Dimensions.get('window');
 
@@ -73,21 +74,20 @@ export default function LoginScreen() {
       style={styles.keyboardAvoid} 
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <View style={[styles.container, { backgroundColor: Colors.background }]}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
         <StatusBar style="light" />
         
         {/* REUSABLE HERO SECTION */}
         <HeroHeader 
           heightRatio={0.35}
-          logoPaddingBottom={35} 
-          // logoPath={require('../assets/splash.png')}
+          logoPaddingBottom={scale(35)} 
         />
 
         {/* WHITE FORM SECTION (Overlapping) */}
         <View style={[styles.formSection, { backgroundColor: colors.background }]}>
           <ScrollView
             showsVerticalScrollIndicator={false} 
-            contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 40 }]}
+            contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + scale(40) }]}
           >
             <Text style={[styles.header, { color: colors.text }]}>
               Welcome <Text style={{ color: Colors.primary }}>Back</Text> 
@@ -126,7 +126,7 @@ export default function LoginScreen() {
                   secureTextEntry={!showPassword}
                 />
                 <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
-                  <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={20} color={colors.textMuted} />
+                  <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={scale(20)} color={colors.textMuted} />
                 </TouchableOpacity>
               </View>
               
@@ -150,7 +150,7 @@ export default function LoginScreen() {
                 activeOpacity={0.8}
                 onPress={() => setAgreed(!agreed)}
               >
-                {agreed && <Ionicons name="checkmark" size={14} color="#FFF" />}
+                {agreed && <Ionicons name="checkmark" size={scale(14)} color="#FFF" />}
               </TouchableOpacity>
 
               <Text style={[styles.agreementText, { color: colors.textMuted }]}>
@@ -159,7 +159,7 @@ export default function LoginScreen() {
             </View>
 
              {errorMessage ? (
-              <Text style={{ color: '#D32F2F', fontSize: 12, marginBottom: 15, textAlign: 'center', fontWeight: '500' }}>{errorMessage}</Text>
+              <Text style={{ color: '#D32F2F', fontSize: scale(12), marginBottom: scale(15), textAlign: 'center', fontWeight: '500' }}>{errorMessage}</Text>
             ) : null}
             
             {/* SIGN IN BUTTON */}
@@ -183,21 +183,6 @@ export default function LoginScreen() {
                 </Text>
               )}
             </TouchableOpacity>
-
-            {/* SOCIAL LOGIN */}
-            {/* <View style={styles.socialSection}>
-              <Text style={[styles.socialDividerText, { color: colors.textMuted }]}>
-                other ways to sign in
-              </Text>
-              <View style={styles.socialButtonsRow}>
-                <TouchableOpacity style={[styles.socialBtn, { backgroundColor: isDark ? colors.surface : '#FFF' }]} activeOpacity={0.8}>
-                  <Ionicons name="logo-google" size={24} color="#DB4437" />
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.socialBtn, { backgroundColor: isDark ? colors.surface : '#FFF' }]} activeOpacity={0.8}>
-                  <Ionicons name="logo-facebook" size={24} color="#4267B2" />
-                </TouchableOpacity>
-              </View>
-            </View> */}
 
             {/* FOOTER LINK */}
             <View style={styles.footerContainer}>
@@ -232,141 +217,140 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   logoImage: {
-    width: 300,
-    height: 220,
+    width: scale(300),
+    height: scale(220),
   },
   formSection: {
     flex: 1,
-    paddingTop: -30,
-    marginTop: -100, 
+    paddingTop: scale(-30),
+    marginTop: scale(-100), 
     zIndex: 10,
     elevation: 30, 
   },
   scrollContent: {
-    paddingHorizontal: 25,
-    paddingTop: 120,
+    paddingHorizontal: scale(25),
+    paddingTop: scale(120),
     flexGrow: 1,
   },
   header: {
-    fontSize: 28,
-    // fontWeight: 'bold',
-    marginBottom: 30,
+    fontSize: scale(28),
+    marginBottom: scale(30),
   },
   inputGroup: {
-    marginBottom: 20,
+    marginBottom: scale(20),
   },
   inputLabel: {
-    fontSize: 14,
+    fontSize: scale(14),
     fontWeight: 'bold',
-    marginBottom: 10,
-    marginLeft: 5,
+    marginBottom: scale(10),
+    marginLeft: scale(5),
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderRadius: 30,
-    paddingHorizontal: 20,
-    height: 56,
+    borderRadius: scale(30),
+    paddingHorizontal: scale(20),
+    height: scale(56),
   },
   textInput: {
     flex: 1,
-    fontSize: 15,
+    fontSize: scale(15),
     height: '100%',
   },
   eyeIcon: {
-    padding: 5,
+    padding: scale(5),
   },
   forgotPasswordBtn: {
     alignSelf: 'flex-end',
-    marginTop: 10,
-    marginRight: 5,
+    marginTop: scale(10),
+    marginRight: scale(5),
   },
   forgotPasswordText: {
-    fontSize: 12,
+    fontSize: scale(12),
     fontWeight: '600',
   },
   agreementRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: 30,
-    paddingHorizontal: 5,
+    marginBottom: scale(30),
+    paddingHorizontal: scale(5),
   },
   checkbox: {
-    width: 20,
-    height: 20,
-    borderRadius: 6,
-    borderWidth: 2,
+    width: scale(20),
+    height: scale(20),
+    borderRadius: scale(6),
+    borderWidth: scale(2),
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 10,
-    marginTop: 2,
+    marginRight: scale(10),
+    marginTop: scale(2),
   },
   agreementText: {
     flex: 1,
-    fontSize: 12,
-    lineHeight: 18,
+    fontSize: scale(12),
+    lineHeight: scale(18),
   },
   primaryBtn: {
-    height: 56,
-    borderRadius: 30,
+    height: scale(56),
+    borderRadius: scale(30),
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 4,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 4,
+      height: scale(4),
     },
     shadowOpacity: 0.2,
-    shadowRadius: 5,
-    marginBottom: 30,
+    shadowRadius: scale(5),
+    marginBottom: scale(30),
   },
   primaryBtnText: {
-    fontSize: 16,
+    fontSize: scale(16),
     fontWeight: 'bold',
   },
   socialSection: {
     alignItems: 'center',
-    marginBottom: 30,
+    marginBottom: scale(30),
   },
   socialDividerText: {
-    fontSize: 12,
-    marginBottom: 20,
+    fontSize: scale(12),
+    marginBottom: scale(20),
   },
   socialButtonsRow: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 20,
+    gap: scale(20),
   },
   socialBtn: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: scale(50),
+    height: scale(50),
+    borderRadius: scale(25),
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 3,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: scale(2),
     },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowRadius: scale(4),
   },
   footerContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 'auto',
-    paddingTop: 20,
+    paddingTop: scale(20),
   },
   footerText: {
-    fontSize: 14,
+    fontSize: scale(14),
   },
   footerLink: {
-    fontSize: 14,
+    fontSize: scale(14),
     fontWeight: 'bold',
-    marginLeft: 5,
+    marginLeft: scale(5),
   },
 });

@@ -19,6 +19,7 @@ import { Colors } from '../constants/Colors';
 import { StatusBar } from 'expo-status-bar';
 import TopNav from '../components/TopNav';
 import api from './lib/api';
+import { scale } from '../constants/Sizes'; // <-- IMPORTED MASTER SCALE
 
 interface OrderPackageItem {
   itemName: string;
@@ -242,7 +243,7 @@ export default function MyOrdersScreen() {
                       : { backgroundColor: isDark ? colors.background : '#FFF', borderColor: isDark ? '#333' : '#EAEAEC' }
                   ]}
                 >
-                  {isActive && <Ionicons name="checkmark" size={14} color="#FFF" />}
+                  {isActive && <Ionicons name="checkmark" size={scale(14)} color="#FFF" />}
                 </View>
                 <Text 
                   style={[
@@ -279,7 +280,7 @@ export default function MyOrdersScreen() {
                 <View style={styles.cardHeader}>
                   <View style={styles.headerLeft}>
                     <View style={[styles.iconBox, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F5F5F5' }]}>
-                      <Ionicons name="bag-handle" size={20} color={Colors.primary} />
+                      <Ionicons name="bag-handle" size={scale(20)} color={Colors.primary} />
                     </View>
                     <View style={styles.orderIdBox}>
                       <Text style={[styles.orderIdText, { color: colors.text }]}>{order.orderNumber}</Text>
@@ -297,7 +298,7 @@ export default function MyOrdersScreen() {
                   <Text style={[styles.itemSummaryText, { color: colors.text }]} numberOfLines={1}>{getOrderSummaryText(order)}</Text>
                   <View style={styles.expandRow}>
                     <Text style={[styles.totalText, { color: colors.text }]}>₦{order.totalAmount.toLocaleString()}</Text>
-                    <Ionicons name={isExpanded ? "chevron-up" : "chevron-down"} size={20} color={colors.textMuted} style={{ marginLeft: 10 }} />
+                    <Ionicons name={isExpanded ? "chevron-up" : "chevron-down"} size={scale(20)} color={colors.textMuted} style={{ marginLeft: scale(10) }} />
                   </View>
                 </View>
               </TouchableOpacity>
@@ -370,9 +371,9 @@ export default function MyOrdersScreen() {
                             >
                               <Ionicons 
                                 name={star <= (review?.rating || 0) ? "star" : "star-outline"} 
-                                size={26} 
+                                size={scale(26)} 
                                 color={Colors.primary} 
-                                style={{ marginHorizontal: 2 }}
+                                style={{ marginHorizontal: scale(2) }}
                               />
                             </TouchableOpacity>
                           ))
@@ -383,7 +384,7 @@ export default function MyOrdersScreen() {
 
                   <View style={styles.actionFooterRow}>
                     <TouchableOpacity style={[styles.helpBtn, { borderColor: colors.border }]} onPress={() => router.push('/help')}>
-                      <Ionicons name="chatbubble-ellipses-outline" size={16} color={colors.text} />
+                      <Ionicons name="chatbubble-ellipses-outline" size={scale(16)} color={colors.text} />
                       <Text style={[styles.helpBtnText, { color: colors.text }]}>Get Help</Text>
                     </TouchableOpacity>
                     
@@ -410,7 +411,7 @@ export default function MyOrdersScreen() {
         })
       ) : (
         <View style={styles.emptyContainer}>
-          <Ionicons name="receipt-outline" size={80} color={colors.border} />
+          <Ionicons name="receipt-outline" size={scale(80)} color={colors.border} />
           <Text style={[styles.emptyTitle, { color: colors.text }]}>{emptyTitle}</Text>
           <Text style={[styles.emptySub, { color: colors.textMuted }]}>{emptySub}</Text>
         </View>
@@ -435,7 +436,7 @@ export default function MyOrdersScreen() {
             onPress={() => router.push('/help')}
             activeOpacity={0.8}
           >
-            <Ionicons name="chatbubbles-outline" size={24} color="#FFF" />
+            <Ionicons name="chatbubbles-outline" size={scale(24)} color="#FFF" />
           </TouchableOpacity> 
         }
       />
@@ -458,7 +459,7 @@ export default function MyOrdersScreen() {
       </View>
 
       {loading ? (
-        <ActivityIndicator color={Colors.primary} style={{ marginTop: 60 }} />
+        <ActivityIndicator color={Colors.primary} style={{ marginTop: scale(60) }} />
       ) : (
         <ScrollView
           ref={scrollViewRef}
@@ -467,6 +468,7 @@ export default function MyOrdersScreen() {
           showsHorizontalScrollIndicator={false}
           onMomentumScrollEnd={handleHorizontalScroll}
         >
+          {/* Note: View width is bound to window dimension here for exact paging */}
           <View style={{ width }}>
             {renderOrderList(activeOrders, 'No active orders', "You don't have any ongoing orders at the moment.")}
           </View>
@@ -481,57 +483,57 @@ export default function MyOrdersScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  iconButton: { padding: 5, justifyContent: 'center', alignItems: 'center' },
-  tabContainer: { flexDirection: 'row', paddingHorizontal: 20, marginTop: 15, marginBottom: 5 },
-  tabButton: { flex: 1, alignItems: 'center', paddingVertical: 12, borderBottomWidth: 2, borderBottomColor: 'transparent' },
-  activeTab: { borderBottomWidth: 2 },
-  tabText: { fontSize: 15, fontWeight: 'bold' },
-  scrollContent: { paddingTop: 15, paddingHorizontal: 20, paddingBottom: 40 },
-  orderCard: { borderWidth: 1, borderRadius: 20, padding: 15, marginBottom: 20, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 5, overflow: 'hidden' },
+  iconButton: { padding: scale(5), justifyContent: 'center', alignItems: 'center' },
+  tabContainer: { flexDirection: 'row', paddingHorizontal: scale(20), marginTop: scale(15), marginBottom: scale(5) },
+  tabButton: { flex: 1, alignItems: 'center', paddingVertical: scale(12), borderBottomWidth: scale(2), borderBottomColor: 'transparent' },
+  activeTab: { borderBottomWidth: scale(2) },
+  tabText: { fontSize: scale(15), fontWeight: 'bold' },
+  scrollContent: { paddingTop: scale(15), paddingHorizontal: scale(20), paddingBottom: scale(40) },
+  orderCard: { borderWidth: 1, borderRadius: scale(20), padding: scale(15), marginBottom: scale(20), elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: scale(2) }, shadowOpacity: 0.05, shadowRadius: scale(5), overflow: 'hidden' },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   headerLeft: { flexDirection: 'row', alignItems: 'center' },
-  iconBox: { width: 44, height: 44, borderRadius: 15, justifyContent: 'center', alignItems: 'center', marginRight: 15 },
+  iconBox: { width: scale(44), height: scale(44), borderRadius: scale(15), justifyContent: 'center', alignItems: 'center', marginRight: scale(15) },
   orderIdBox: { justifyContent: 'center' },
-  orderIdText: { fontSize: 16, fontWeight: 'bold', marginBottom: 2 },
-  orderDate: { fontSize: 12 },
-  statusBadge: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12 },
-  statusText: { fontSize: 12, fontWeight: 'bold' },
-  divider: { height: 1, marginVertical: 15 },
+  orderIdText: { fontSize: scale(16), fontWeight: 'bold', marginBottom: scale(2) },
+  orderDate: { fontSize: scale(12) },
+  statusBadge: { paddingHorizontal: scale(12), paddingVertical: scale(6), borderRadius: scale(12) },
+  statusText: { fontSize: scale(12), fontWeight: 'bold' },
+  divider: { height: 1, marginVertical: scale(15) },
   cardBody: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  itemSummaryText: { fontSize: 14, flex: 1, paddingRight: 10, fontWeight: '500' },
+  itemSummaryText: { fontSize: scale(14), flex: 1, paddingRight: scale(10), fontWeight: '500' },
   expandRow: { flexDirection: 'row', alignItems: 'center' },
-  totalText: { fontSize: 16, fontWeight: 'bold' },
-  expandedSection: { marginTop: 20 },
-  progressContainer: { marginBottom: 25, paddingTop: 10, position: 'relative' },
-  progressLineBg: { position: 'absolute', top: 21, left: '12.5%', right: '12.5%', height: 4, borderRadius: 2, zIndex: 1 },
-  progressLineFill: { height: '100%', borderRadius: 2 },
+  totalText: { fontSize: scale(16), fontWeight: 'bold' },
+  expandedSection: { marginTop: scale(20) },
+  progressContainer: { marginBottom: scale(25), paddingTop: scale(10), position: 'relative' },
+  progressLineBg: { position: 'absolute', top: scale(21), left: '12.5%', right: '12.5%', height: scale(4), borderRadius: scale(2), zIndex: 1 },
+  progressLineFill: { height: '100%', borderRadius: scale(2) },
   progressNodesContainer: { flexDirection: 'row', justifyContent: 'space-between', zIndex: 2 },
   nodeWrapper: { width: '25%', alignItems: 'center' },
-  nodeCircle: { width: 26, height: 26, borderRadius: 13, borderWidth: 2, justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
-  stepText: { fontSize: 11, fontWeight: '600' },
+  nodeCircle: { width: scale(26), height: scale(26), borderRadius: scale(13), borderWidth: scale(2), justifyContent: 'center', alignItems: 'center', marginBottom: scale(8) },
+  stepText: { fontSize: scale(11), fontWeight: '600' },
   stepTextActive: { fontWeight: 'bold', color: Colors.primary },
-  receiptBox: { padding: 15, borderRadius: 15, marginBottom: 20 },
-  receiptTitle: { fontSize: 11, fontWeight: 'bold', letterSpacing: 1, marginBottom: 15 },
+  receiptBox: { padding: scale(15), borderRadius: scale(15), marginBottom: scale(20) },
+  receiptTitle: { fontSize: scale(11), fontWeight: 'bold', letterSpacing: 1, marginBottom: scale(15) },
   
-  packageGroupContainer: { marginBottom: 15 },
-  packageGroupName: { fontSize: 14, fontWeight: 'bold', marginBottom: 8 },
-  receiptItemRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
-  receiptItemName: { flex: 1, fontSize: 13, paddingRight: 10 },
-  receiptItemPrice: { fontSize: 13, fontWeight: '500' },
+  packageGroupContainer: { marginBottom: scale(15) },
+  packageGroupName: { fontSize: scale(14), fontWeight: 'bold', marginBottom: scale(8) },
+  receiptItemRow: { flexDirection: 'row', alignItems: 'center', marginBottom: scale(6) },
+  receiptItemName: { flex: 1, fontSize: scale(13), paddingRight: scale(10) },
+  receiptItemPrice: { fontSize: scale(13), fontWeight: '500' },
   
-  dashedDivider: { borderTopWidth: 1, borderStyle: 'dashed', marginVertical: 10 },
-  receiptSubText: { fontSize: 14, flex: 1 },
-  receiptTotalText: { fontSize: 16, fontWeight: 'bold', flex: 1 },
-  receiptTotalValue: { fontSize: 18, fontWeight: '900' },
-  ratingSection: { alignItems: 'center', marginBottom: 20, paddingVertical: 10, borderRadius: 15 },
-  ratingLabel: { fontSize: 14, fontWeight: 'bold', marginBottom: 8 },
-  starsRow: { flexDirection: 'row', minHeight: 30, alignItems: 'center' },
-  actionFooterRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 15 },
-  helpBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderWidth: 1, borderRadius: 15 },
-  helpBtnText: { fontWeight: 'bold', fontSize: 14, marginLeft: 6 },
-  primaryActionBtn: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderRadius: 15 },
-  primaryActionText: { color: '#FFF', fontWeight: 'bold', fontSize: 14 },
-  emptyContainer: { alignItems: 'center', justifyContent: 'center', marginTop: 80 },
-  emptyTitle: { fontSize: 18, fontWeight: 'bold', marginTop: 15, marginBottom: 5 },
-  emptySub: { fontSize: 14, textAlign: 'center', paddingHorizontal: 30 },
+  dashedDivider: { borderTopWidth: 1, borderStyle: 'dashed', marginVertical: scale(10) },
+  receiptSubText: { fontSize: scale(14), flex: 1 },
+  receiptTotalText: { fontSize: scale(16), fontWeight: 'bold', flex: 1 },
+  receiptTotalValue: { fontSize: scale(18), fontWeight: '900' },
+  ratingSection: { alignItems: 'center', marginBottom: scale(20), paddingVertical: scale(10), borderRadius: scale(15) },
+  ratingLabel: { fontSize: scale(14), fontWeight: 'bold', marginBottom: scale(8) },
+  starsRow: { flexDirection: 'row', minHeight: scale(30), alignItems: 'center' },
+  actionFooterRow: { flexDirection: 'row', justifyContent: 'space-between', gap: scale(15) },
+  helpBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: scale(12), borderWidth: 1, borderRadius: scale(15) },
+  helpBtnText: { fontWeight: 'bold', fontSize: scale(14), marginLeft: scale(6) },
+  primaryActionBtn: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: scale(12), borderRadius: scale(15) },
+  primaryActionText: { color: '#FFF', fontWeight: 'bold', fontSize: scale(14) },
+  emptyContainer: { alignItems: 'center', justifyContent: 'center', marginTop: scale(80) },
+  emptyTitle: { fontSize: scale(18), fontWeight: 'bold', marginTop: scale(15), marginBottom: scale(5) },
+  emptySub: { fontSize: scale(14), textAlign: 'center', paddingHorizontal: scale(30) },
 });

@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, useWindowDimensions } from 'react-native';
-import { useSafeRouter } from '../hooks/useSafeRouter'; // <-- Added to allow routing to Details
+import { useSafeRouter } from '../hooks/useSafeRouter'; 
 import GridDishCard from './GridDishCard';
 import { Colors } from '../constants/Colors';
 import { useTheme } from '../context/ThemeContext';
 import { useFavorites } from '../context/FavoriteContext'; 
 import { useMenu } from '../context/MenuContext';
+import { scale } from '../constants/Sizes'; // <-- IMPORTED MASTER SCALE
 
 interface ForYouCardProps { onAddToCart: (dish: any) => void; }
 
-const MAX_SLIDER_WIDTH = 280; 
+const MAX_SLIDER_WIDTH = scale(280); 
 
 export default function ForYouCard({ onAddToCart }: ForYouCardProps) {
   const { colors } = useTheme();
@@ -24,7 +25,7 @@ export default function ForYouCard({ onAddToCart }: ForYouCardProps) {
     name: pkg.name,
     category: pkg.items[0]?.menuItem.category.name || 'Combo',
     price: pkg.totalPrice,
-    image: pkg.imageUrl || undefined,
+    image: pkg.imageUrl || '',
     isAvailable: true,
     subItems: pkg.items.map(i => ({
       id: i.menuItem.id,
@@ -72,7 +73,7 @@ export default function ForYouCard({ onAddToCart }: ForYouCardProps) {
       <View style={styles.headerRow}>
         <Text style={[styles.sectionTitle, { color: colors.text }]}>{mealTime} For You</Text>
       </View>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scrollArea} snapToInterval={SLIDER_CARD_WIDTH + 15} decelerationRate="fast">
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scrollArea} snapToInterval={SLIDER_CARD_WIDTH + scale(15)} decelerationRate="fast">
         {currentDishes.map((dish) => {
           const isAvail = isComboAvailable(dish);
           return (
@@ -87,7 +88,6 @@ export default function ForYouCard({ onAddToCart }: ForYouCardProps) {
                 isAvailable={isAvail} 
                 isFavorite={isFavorite(dish.id)} 
                 onToggleFavorite={() => toggleFavorite(dish)} 
-                // PRO UX FIX: Tapping routes to details page!
                 onPress={() => router.push({ pathname: '/details', params: { id: dish.id } })}
                 onAdd={() => onAddToCart(dish)} 
               />
@@ -101,28 +101,28 @@ export default function ForYouCard({ onAddToCart }: ForYouCardProps) {
 
 const styles = StyleSheet.create({
   container: {
-    paddingTop: 10,
-    paddingBottom: 20,
+    paddingTop: scale(10),
+    paddingBottom: scale(20),
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: scale(18),
     fontWeight: 'bold',
-    marginBottom: 15,
-    borderLeftWidth: 3.5,
+    marginBottom: scale(15),
+    borderLeftWidth: scale(3.5),
     borderLeftColor: Colors.primary,
-    paddingLeft: 5,
+    paddingLeft: scale(5),
   },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 20,
-    marginHorizontal: 20,
+    marginTop: scale(20),
+    marginHorizontal: scale(20),
   },
   scrollArea: {
-    paddingLeft: 20,
+    paddingLeft: scale(20),
   },
   cardWrapper: {
-    marginRight: 15,
+    marginRight: scale(15),
   }
 });

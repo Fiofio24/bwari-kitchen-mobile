@@ -12,13 +12,15 @@ import {
   ActivityIndicator,
   DeviceEventEmitter,
   useWindowDimensions,
-  Modal
+  Modal,
+  Linking
 } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useSafeRouter } from '../hooks/useSafeRouter';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context'; 
-import { WebView } from 'react-native-webview'; // <-- NEW IN-APP BROWSER
+import { WebView } from 'react-native-webview';
+import * as WebBrowser from 'expo-web-browser';
 import { useTheme } from '../context/ThemeContext';
 import { Colors } from '../constants/Colors';
 import { StatusBar } from 'expo-status-bar';
@@ -28,6 +30,7 @@ import AddressSelectorModal from '../components/AddressSelectorModal';
 import TopNav from '../components/TopNav';
 import HomeIcon from '../components/HomeIcon';
 import api from './lib/api';
+import { scale } from '../constants/Sizes'; // <-- IMPORTED MASTER SCALE
 
 const buildOrderPackagesPayload = (items: any[]) => {
   return items.map((item: any) => {
@@ -73,11 +76,10 @@ export default function CheckoutScreen() {
   const [promoResult, setPromoResult] = useState<{ discountAmount: number; message: string } | null>(null);
   const [applyingPromo, setApplyingPromo] = useState(false);
 
-  // NEW: State to control the In-App Browser Modal
   const [paymentModalData, setPaymentModalData] = useState<{ url: string; reference: string } | null>(null);
 
   const { width } = useWindowDimensions();
-  const cardWidth = width - 40; 
+  const cardWidth = width - scale(40); 
   const scrollViewRef = useRef<ScrollView>(null);
 
   const handleTabPress = (method: 'delivery' | 'pickup') => {
@@ -109,7 +111,7 @@ export default function CheckoutScreen() {
     }
   };
 
-  const bottomNavHeight = 70 + Math.max(insets.bottom, 15);
+  const bottomNavHeight = scale(70) + Math.max(insets.bottom, scale(15));
 
   const checkoutItems = useMemo(() => {
     if (params.instantReorder) {
@@ -171,15 +173,13 @@ export default function CheckoutScreen() {
 
   const total = subtotal + estimatedDeliveryFee - (promoResult?.discountAmount || 0); 
 
-  // --- NEW PAYMENT VERIFICATION LOGIC ---
   const verifyPayment = async (reference: string, isAutoDetect: boolean = false) => {
-    setPaymentModalData(null); // Instantly close the WebView modal
-    setIsProcessing(true);     // Show loading spinner on main screen
+    setPaymentModalData(null); 
+    setIsProcessing(true);     
     
     const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
     let verified = false;
 
-    // Ping the backend 4 times to check if Paystack confirmed the payment
     for (let attempt = 0; attempt < 4; attempt++) {
       try {
         const verifyRes = await api.get(`/api/payments/verify/${reference}`);
@@ -188,7 +188,6 @@ export default function CheckoutScreen() {
           break;
         }
       } catch {
-        // keep retrying
       }
       if (attempt < 3) await wait(2500); 
     }
@@ -196,7 +195,6 @@ export default function CheckoutScreen() {
     setIsProcessing(false);
 
     if (verified) {
-      // SUCCESS! Clear the cart and navigate away
       if (!params.instantReorder) {
         removeMultipleFromCart(checkoutItems.map((item: any) => item.id));
       }
@@ -204,7 +202,6 @@ export default function CheckoutScreen() {
       Alert.alert('Payment Successful!', 'Your food is confirmed and processing.');
       router.replace('/my-orders');
     } else {
-      // FAILED / PENDING! Leave them on the checkout screen with items intact
       DeviceEventEmitter.emit('ORDER_PLACED');
       Alert.alert(
         isAutoDetect ? 'Verifying Payment...' : 'Payment Incomplete', 
@@ -214,7 +211,6 @@ export default function CheckoutScreen() {
     }
   };
 
-  // --- INITIALIZE ORDER LOGIC ---
   const handlePlaceOrder = async () => {
     if (checkoutItems.length === 0) return;
 
@@ -241,7 +237,6 @@ export default function CheckoutScreen() {
         orderPayload.promoCode = promoCode.trim();
       }
 
-      // 1. Send Order to Backend
       const orderRes = await api.post('/api/orders', orderPayload);
       const order = orderRes.data.order || orderRes.data.data || orderRes.data;
 
@@ -251,7 +246,6 @@ export default function CheckoutScreen() {
 
       const actualOrderId = order.id || order._id;
 
-      // 2. Initialize Paystack Payment
       const paymentRes = await api.post('/api/payments/initialize', { orderId: actualOrderId });
       
       const paymentUrl = paymentRes.data.paymentUrl || paymentRes.data.data?.authorization_url || paymentRes.data.authorization_url;
@@ -261,8 +255,12 @@ export default function CheckoutScreen() {
         throw new Error(`Missing Paystack URL. Response: ${JSON.stringify(paymentRes.data)}`);
       }
 
-      // 3. Open the custom WebView Modal!
-      setPaymentModalData({ url: paymentUrl, reference: reference });
+      try {
+        setPaymentModalData({ url: paymentUrl, reference: reference });
+      } catch (browserError) {
+        console.warn("WebBrowser rejected, falling back to Native Linking:", browserError);
+        await Linking.openURL(paymentUrl);
+      }
       
     } catch (err: any) {
       console.log("CHECKOUT ERROR:", err);
@@ -299,7 +297,7 @@ export default function CheckoutScreen() {
         isScrolled={true}
       />
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomNavHeight + 60 }]}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomNavHeight + scale(60) }]}>
         
         <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>ORDER FULFILLMENT</Text>
         
@@ -312,7 +310,7 @@ export default function CheckoutScreen() {
             onPress={() => handleTabPress('delivery')}
             activeOpacity={0.8}
           >
-            <Ionicons name="bicycle" size={18} color={deliveryMethod === 'delivery' ? '#FFF' : colors.textMuted} />
+            <Ionicons name="bicycle" size={scale(18)} color={deliveryMethod === 'delivery' ? '#FFF' : colors.textMuted} />
             <Text style={[styles.methodToggleText, { color: deliveryMethod === 'delivery' ? '#FFF' : colors.textMuted }]}>Delivery</Text>
           </TouchableOpacity>
 
@@ -324,12 +322,11 @@ export default function CheckoutScreen() {
             onPress={() => handleTabPress('pickup')}
             activeOpacity={0.8}
           >
-            <Ionicons name="storefront" size={18} color={deliveryMethod === 'pickup' ? '#FFF' : colors.textMuted} />
+            <Ionicons name="storefront" size={scale(18)} color={deliveryMethod === 'pickup' ? '#FFF' : colors.textMuted} />
             <Text style={[styles.methodToggleText, { color: deliveryMethod === 'pickup' ? '#FFF' : colors.textMuted }]}>Pick Up</Text>
           </TouchableOpacity>
         </View>
 
-        {/* SWIPEABLE FULFILLMENT CARD */}
         <View style={[styles.card, { padding: 0, overflow: 'hidden', backgroundColor: colors.surface, borderColor: colors.border }]}>
           
           <ScrollView
@@ -339,11 +336,10 @@ export default function CheckoutScreen() {
             showsHorizontalScrollIndicator={false}
             onMomentumScrollEnd={handleHorizontalScroll}
           >
-            {/* --- PAGE 1: DELIVERY --- */}
-            <View style={{ width: cardWidth, padding: 15 }}>
+            <View style={{ width: cardWidth, padding: scale(15) }}>
               <View style={styles.addressRow}>
                 <View style={[styles.iconBox, { backgroundColor: 'rgba(229, 57, 53, 0.1)' }]}>
-                  <Ionicons name="location" size={24} color={Colors.primary} />
+                  <Ionicons name="location" size={scale(24)} color={Colors.primary} />
                 </View>
                 <View style={styles.addressTextContainer}>
                   <Text style={[styles.addressTitle, { color: colors.text }]} numberOfLines={1}>
@@ -358,7 +354,7 @@ export default function CheckoutScreen() {
                 </TouchableOpacity>
               </View>
               
-              <View style={[styles.divider, { backgroundColor: colors.border, marginVertical: 15 }]} />
+              <View style={[styles.divider, { backgroundColor: colors.border, marginVertical: scale(15) }]} />
               
               <TextInput
                 style={[styles.noteInput, { backgroundColor: isDark ? colors.background : '#F5F5F5', color: colors.text, borderColor: colors.border }]}
@@ -369,11 +365,10 @@ export default function CheckoutScreen() {
               />
             </View>
 
-            {/* --- PAGE 2: PICK UP --- */}
-            <View style={{ width: cardWidth, padding: 15 }}>
+            <View style={{ width: cardWidth, padding: scale(15) }}>
               <View style={styles.addressRow}>
                 <View style={[styles.iconBox, { backgroundColor: 'rgba(76, 175, 80, 0.1)' }]}>
-                  <Ionicons name="storefront" size={24} color="#4CAF50" />
+                  <Ionicons name="storefront" size={scale(24)} color="#4CAF50" />
                 </View>
                 <View style={styles.addressTextContainer}>
                   <Text style={[styles.addressTitle, { color: colors.text }]}>Bwari Kitchen Main Branch</Text>
@@ -381,7 +376,7 @@ export default function CheckoutScreen() {
                 </View>
               </View>
 
-              <View style={[styles.divider, { backgroundColor: colors.border, marginVertical: 15 }]} />
+              <View style={[styles.divider, { backgroundColor: colors.border, marginVertical: scale(15) }]} />
               
               <TextInput
                 style={[styles.noteInput, { backgroundColor: isDark ? colors.background : '#F5F5F5', color: colors.text, borderColor: colors.border }]}
@@ -393,9 +388,8 @@ export default function CheckoutScreen() {
             </View>
           </ScrollView>
 
-          {/* SHARED BOTTOM SECTION (Cutlery Toggle) */}
-          <View style={{ paddingHorizontal: 15, paddingBottom: 15 }}>
-            <View style={[styles.divider, { backgroundColor: colors.border, marginBottom: 15 }]} />
+          <View style={{ paddingHorizontal: scale(15), paddingBottom: scale(15) }}>
+            <View style={[styles.divider, { backgroundColor: colors.border, marginBottom: scale(15) }]} />
             <View style={styles.ecoRow}>
               <View style={styles.ecoTextWrap}>
                 <Text style={[styles.ecoTitle, { color: colors.text }]}>No Cutlery Required</Text>
@@ -415,18 +409,18 @@ export default function CheckoutScreen() {
         <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <View style={styles.paymentOption}>
             <View style={[styles.paymentIconBox, { backgroundColor: '#F3E5F5' }]}>
-              <Ionicons name="card" size={20} color="#9C27B0" />
+              <Ionicons name="card" size={scale(20)} color="#9C27B0" />
             </View>
             <View style={styles.paymentTextContainer}>
               <Text style={[styles.paymentTitle, { color: colors.text }]}>Card, Bank Transfer or USSD</Text>
               <Text style={[styles.paymentSub, { color: colors.textMuted }]}>Choose your preferred option on the next screen — secured by Paystack</Text>
             </View>
-            <Ionicons name="radio-button-on" size={24} color={Colors.primary} />
+            <Ionicons name="radio-button-on" size={scale(24)} color={Colors.primary} />
           </View>
         </View>
 
         <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>PROMO CODE</Text>
-        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border, flexDirection: 'row', alignItems: 'center', gap: 10 }]}>
+        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border, flexDirection: 'row', alignItems: 'center', gap: scale(10) }]}>
           <TextInput
             style={[styles.noteInput, { flex: 1, backgroundColor: isDark ? colors.background : '#F5F5F5', color: colors.text, borderColor: colors.border }]}
             placeholder="Enter promo code"
@@ -435,12 +429,12 @@ export default function CheckoutScreen() {
             onChangeText={(text) => { setPromoCode(text); setPromoResult(null); }}
             autoCapitalize="characters"
           />
-          <TouchableOpacity onPress={handleApplyPromo} disabled={applyingPromo || !promoCode.trim()} style={{ backgroundColor: Colors.primary, paddingHorizontal: 18, paddingVertical: 12, borderRadius: 12, opacity: applyingPromo || !promoCode.trim() ? 0.5 : 1 }}>
+          <TouchableOpacity onPress={handleApplyPromo} disabled={applyingPromo || !promoCode.trim()} style={{ backgroundColor: Colors.primary, paddingHorizontal: scale(18), paddingVertical: scale(12), borderRadius: scale(12), opacity: applyingPromo || !promoCode.trim() ? 0.5 : 1 }}>
             {applyingPromo ? <ActivityIndicator color="#FFF" size="small" /> : <Text style={{ color: '#FFF', fontWeight: 'bold' }}>Apply</Text>}
           </TouchableOpacity>
         </View>
         {promoResult && (
-          <Text style={{ color: '#4CAF50', fontSize: 13, marginTop: -18, marginBottom: 20, marginLeft: 5, fontWeight: '600' }}>
+          <Text style={{ color: '#4CAF50', fontSize: scale(13), marginTop: -scale(18), marginBottom: scale(20), marginLeft: scale(5), fontWeight: '600' }}>
             ✓ {promoResult.message} — ₦{promoResult.discountAmount.toLocaleString()} off
           </Text>
         )}
@@ -491,7 +485,7 @@ export default function CheckoutScreen() {
       <View style={[
         styles.stickyFooter, 
         { 
-          paddingBottom: insets.bottom + 20, 
+          paddingBottom: insets.bottom + scale(20), 
           backgroundColor: isDark ? colors.surface : '#FFF', 
           borderTopColor: colors.border 
         }
@@ -516,7 +510,6 @@ export default function CheckoutScreen() {
         onClose={() => setIsAddressModalVisible(false)} 
       />
 
-      {/* --- NEW: IN-APP BROWSER MODAL FOR PAYSTACK --- */}
       <Modal 
         visible={!!paymentModalData} 
         animationType="slide" 
@@ -546,7 +539,6 @@ export default function CheckoutScreen() {
                 </View>
               )}
               onNavigationStateChange={(navState) => {
-                // Auto-detect if Paystack tries to redirect to a success or callback URL
                 if (
                   navState.url.includes('payment-complete') || 
                   navState.url.includes('callback') || 
@@ -566,55 +558,54 @@ export default function CheckoutScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  headerRight: { flexDirection: 'row', gap: 10, alignItems: 'center' },
-  scrollContent: { paddingTop: 20, paddingHorizontal: 20 },
-  sectionTitle: { fontSize: 12, fontWeight: 'bold', marginBottom: 10, marginLeft: 5, letterSpacing: 1 },
-  methodToggleContainer: { flexDirection: 'row', borderRadius: 15, padding: 5, marginBottom: 15 },
-  methodToggleBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderRadius: 12 },
-  methodToggleBtnActive: { elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4 },
-  methodToggleText: { fontSize: 14, fontWeight: 'bold', marginLeft: 8 },
-  card: { borderRadius: 20, borderWidth: 1, padding: 15, marginBottom: 25, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 5 },
+  headerRight: { flexDirection: 'row', gap: scale(10), alignItems: 'center' },
+  scrollContent: { paddingTop: scale(20), paddingHorizontal: scale(20) },
+  sectionTitle: { fontSize: scale(12), fontWeight: 'bold', marginBottom: scale(10), marginLeft: scale(5), letterSpacing: 1 },
+  methodToggleContainer: { flexDirection: 'row', borderRadius: scale(15), padding: scale(5), marginBottom: scale(15) },
+  methodToggleBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: scale(12), borderRadius: scale(12) },
+  methodToggleBtnActive: { elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: scale(2) }, shadowOpacity: 0.1, shadowRadius: scale(4) },
+  methodToggleText: { fontSize: scale(14), fontWeight: 'bold', marginLeft: scale(8) },
+  card: { borderRadius: scale(20), borderWidth: 1, padding: scale(15), marginBottom: scale(25), elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: scale(2) }, shadowOpacity: 0.1, shadowRadius: scale(5) },
   addressRow: { flexDirection: 'row', alignItems: 'center' },
-  iconBox: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center', marginRight: 15 },
-  addressTextContainer: { flex: 1, paddingRight: 10 },
-  addressTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 2 },
-  addressDetail: { fontSize: 13 },
-  editText: { color: Colors.primary, fontWeight: 'bold', fontSize: 14, padding: 5 },
-  noteInput: { borderWidth: 1, borderRadius: 12, padding: 12, fontSize: 14, minHeight: 45 },
+  iconBox: { width: scale(44), height: scale(44), borderRadius: scale(22), justifyContent: 'center', alignItems: 'center', marginRight: scale(15) },
+  addressTextContainer: { flex: 1, paddingRight: scale(10) },
+  addressTitle: { fontSize: scale(16), fontWeight: 'bold', marginBottom: scale(2) },
+  addressDetail: { fontSize: scale(13) },
+  editText: { color: Colors.primary, fontWeight: 'bold', fontSize: scale(14), padding: scale(5) },
+  noteInput: { borderWidth: 1, borderRadius: scale(12), padding: scale(12), fontSize: scale(14), minHeight: scale(45) },
   ecoRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   ecoTextWrap: { flex: 1 },
-  ecoTitle: { fontSize: 15, fontWeight: '600' },
-  ecoSub: { fontSize: 12, marginTop: 2 },
-  paymentOption: { flexDirection: 'row', alignItems: 'center', paddingVertical: 15 },
-  paymentIconBox: { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginRight: 15 },
+  ecoTitle: { fontSize: scale(15), fontWeight: '600' },
+  ecoSub: { fontSize: scale(12), marginTop: scale(2) },
+  paymentOption: { flexDirection: 'row', alignItems: 'center', paddingVertical: scale(15) },
+  paymentIconBox: { width: scale(40), height: scale(40), borderRadius: scale(12), justifyContent: 'center', alignItems: 'center', marginRight: scale(15) },
   paymentTextContainer: { flex: 1 },
-  paymentTitle: { fontSize: 16, fontWeight: '600', marginBottom: 2 },
-  paymentSub: { fontSize: 12 },
-  summaryItemRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12 },
+  paymentTitle: { fontSize: scale(16), fontWeight: '600', marginBottom: scale(2) },
+  paymentSub: { fontSize: scale(12) },
+  summaryItemRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: scale(12) },
   summaryItemLeft: { flex: 1, flexDirection: 'row', alignItems: 'center' },
-  snText: { fontSize: 14, fontWeight: '900', marginRight: 8 },
-  summaryItemName: { flex: 1, fontSize: 15, fontWeight: '500', paddingRight: 10 },
-  summaryItemPrice: { fontSize: 15, fontWeight: 'bold' },
-  totalsContainer: { marginTop: 15 },
-  summaryRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
-  summaryLabel: { fontSize: 15 }, 
-  summaryValue: { fontSize: 15, fontWeight: '600' },
-  divider: { height: 1, marginVertical: 10 },
-  totalLabel: { fontSize: 16, fontWeight: 'bold' },
-  totalValue: { fontSize: 18, fontWeight: 'bold' },
-  stickyFooter: { position: 'absolute', bottom: 0, left: 0, right: 0, borderTopLeftRadius: 30, borderTopRightRadius: 30, borderTopWidth: 1, paddingTop: 20, paddingHorizontal: 20, elevation: 20, shadowColor: '#000', shadowOffset: { width: 0, height: -6 }, shadowOpacity: 0.15, shadowRadius: 15 },
+  snText: { fontSize: scale(14), fontWeight: '900', marginRight: scale(8) },
+  summaryItemName: { flex: 1, fontSize: scale(15), fontWeight: '500', paddingRight: scale(10) },
+  summaryItemPrice: { fontSize: scale(15), fontWeight: 'bold' },
+  totalsContainer: { marginTop: scale(15) },
+  summaryRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: scale(12) },
+  summaryLabel: { fontSize: scale(15) }, 
+  summaryValue: { fontSize: scale(15), fontWeight: '600' },
+  divider: { height: 1, marginVertical: scale(10) },
+  totalLabel: { fontSize: scale(16), fontWeight: 'bold' },
+  totalValue: { fontSize: scale(18), fontWeight: 'bold' },
+  stickyFooter: { position: 'absolute', bottom: 0, left: 0, right: 0, borderTopLeftRadius: scale(30), borderTopRightRadius: scale(30), borderTopWidth: 1, paddingTop: scale(20), paddingHorizontal: scale(20), elevation: 20, shadowColor: '#000', shadowOffset: { width: 0, height: scale(-6) }, shadowOpacity: 0.15, shadowRadius: scale(15) },
   footerContent: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   footerTextContainer: { flex: 1 },
-  footerTotalLabel: { fontSize: 13, marginBottom: 2 },
-  footerTotalValue: { fontSize: 22, fontWeight: 'bold' },
-  placeOrderBtn: { backgroundColor: Colors.primary, paddingVertical: 15, paddingHorizontal: 30, borderRadius: 20, elevation: 4, shadowColor: Colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 5, minWidth: 140, alignItems: 'center' },
-  placeOrderText: { color: '#FFF', fontSize: 16, fontWeight: 'bold' },
+  footerTotalLabel: { fontSize: scale(13), marginBottom: scale(2) },
+  footerTotalValue: { fontSize: scale(22), fontWeight: 'bold' },
+  placeOrderBtn: { backgroundColor: Colors.primary, paddingVertical: scale(15), paddingHorizontal: scale(30), borderRadius: scale(20), elevation: 4, shadowColor: Colors.primary, shadowOffset: { width: 0, height: scale(4) }, shadowOpacity: 0.3, shadowRadius: scale(5), minWidth: scale(140), alignItems: 'center' },
+  placeOrderText: { color: '#FFF', fontSize: scale(16), fontWeight: 'bold' },
   
-  // WEBVIEW STYLES
   webViewContainer: { flex: 1 },
-  webViewHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 15, borderBottomWidth: 1 },
-  webViewTitle: { fontSize: 16, fontWeight: 'bold' },
-  webViewCloseBtn: { backgroundColor: 'rgba(211, 47, 47, 0.1)', paddingHorizontal: 15, paddingVertical: 8, borderRadius: 15 },
+  webViewHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: scale(15), borderBottomWidth: 1 },
+  webViewTitle: { fontSize: scale(16), fontWeight: 'bold' },
+  webViewCloseBtn: { backgroundColor: 'rgba(211, 47, 47, 0.1)', paddingHorizontal: scale(15), paddingVertical: scale(8), borderRadius: scale(15) },
   webViewCloseText: { color: Colors.primary, fontWeight: 'bold' },
   webView: { flex: 1 },
   webViewLoader: { ...StyleSheet.absoluteFillObject, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.8)' },

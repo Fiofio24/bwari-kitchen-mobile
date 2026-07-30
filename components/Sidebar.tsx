@@ -19,9 +19,10 @@ import { useTheme } from '../context/ThemeContext';
 import { useUser } from '../context/UserContext'; 
 import { useSafeAreaInsets } from 'react-native-safe-area-context'; 
 import { useSafeRouter } from '../hooks/useSafeRouter'; 
-import api from '../app/lib/api'; // <-- Imported API
+import api from '../app/lib/api'; 
 import * as SecureStore from 'expo-secure-store';
 import ActionModal from './ActionModal';
+import { scale } from '../constants/Sizes'; // <-- IMPORTED MASTER SCALE
 
 const { width } = Dimensions.get('window');
 const SIDEBAR_WIDTH = width * 0.75; 
@@ -52,10 +53,7 @@ export default function Sidebar({ visible, onClose, menuItems, profileOverride }
   const fadeAnim = useRef(new Animated.Value(0)).current; 
   const [isRendering, setIsRendering] = useState(visible);
   
-  // NEW: State for the Sign Out Modal
   const [isSignOutModalVisible, setIsSignOutModalVisible] = useState(false);
-  
-  // NEW: State to hold the dynamic order count
   const [activeOrderCount, setActiveOrderCount] = useState(0);
   
   const { colors, mode, setThemeMode, isDark } = useTheme();
@@ -63,11 +61,10 @@ export default function Sidebar({ visible, onClose, menuItems, profileOverride }
   const insets = useSafeAreaInsets();
   const router = useSafeRouter(); 
   
-  const safeTop = Platform.OS === 'web' ? 50 : insets.top + 20;
+  const safeTop = Platform.OS === 'web' ? scale(50) : insets.top + scale(20);
 
   const profileToDisplay = profileOverride || userData;
 
-  // NEW: Fetch active orders silently every time the sidebar opens
   useEffect(() => {
     if (visible) {
       const fetchActiveOrders = async () => {
@@ -119,7 +116,6 @@ export default function Sidebar({ visible, onClose, menuItems, profileOverride }
     }
   }, [visible, slideAnim, fadeAnim]);
 
-  // NEW: Replaced the hardcoded '4' with our dynamic state
   const defaultMenuItems: SidebarMenuItem[] = [
     { name: 'Account & Settings', icon: 'person-outline', route: '/profile' },
     { name: 'My Orders', icon: 'bag-handle-outline', route: '/my-orders', badge: activeOrderCount > 0 ? activeOrderCount.toString() : undefined },
@@ -130,20 +126,17 @@ export default function Sidebar({ visible, onClose, menuItems, profileOverride }
 
   const itemsToRender = menuItems || defaultMenuItems;
 
-  // NEW: Dedicated, bulletproof navigation handlers that instantly kill the Modal
   const executeNavigation = (route: string) => {
-    setIsRendering(false); // Instantly vaporize the Modal!
-    onClose(); // Update parent state
-    
-    // Wait just 50ms for React to clear the UI tree, then route safely
+    setIsRendering(false); 
+    onClose(); 
     setTimeout(() => {
       router.push(route as any);
     }, 50);
   };
 
   const executeLogout = async () => {
-    setIsSignOutModalVisible(false); // Close the sign out modal
-    setIsRendering(false); // Instantly vaporize the Sidebar!
+    setIsSignOutModalVisible(false); 
+    setIsRendering(false); 
     onClose();
     
     await SecureStore.deleteItemAsync('authToken');
@@ -193,7 +186,7 @@ export default function Sidebar({ visible, onClose, menuItems, profileOverride }
             colors={[colors.primary, colors.primary]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            style={[styles.header, { paddingTop: safeTop + 10 }]}
+            style={[styles.header, { paddingTop: safeTop + scale(10) }]}
           >
             <View style={styles.brandContainer}>
               <Image 
@@ -208,7 +201,7 @@ export default function Sidebar({ visible, onClose, menuItems, profileOverride }
             </View>
             
             <TouchableOpacity onPress={onClose} style={styles.closeBtn} activeOpacity={0.7}>
-              <Ionicons name="close" size={26} color="#FFF" />
+              <Ionicons name="close" size={scale(26)} color="#FFF" />
             </TouchableOpacity>
           </LinearGradient>
           
@@ -227,7 +220,7 @@ export default function Sidebar({ visible, onClose, menuItems, profileOverride }
                   {profileToDisplay.avatarUri ? (
                     <Image source={{ uri: profileToDisplay.avatarUri }} style={styles.avatarImage} />
                   ) : (
-                    <Ionicons name="person" size={36} color={colors.primary} />
+                    <Ionicons name="person" size={scale(36)} color={colors.primary} />
                   )}
                 </View>
                 
@@ -248,7 +241,7 @@ export default function Sidebar({ visible, onClose, menuItems, profileOverride }
                   ]} 
                   onPress={() => setThemeMode('system')}
                 >
-                  <Ionicons name="phone-portrait-outline" size={20} color={mode === 'system' ? '#FFF' : colors.text} />
+                  <Ionicons name="phone-portrait-outline" size={scale(20)} color={mode === 'system' ? '#FFF' : colors.text} />
                   <Text style={[styles.themeBtnText, { color: mode === 'system' ? '#FFF' : colors.text }]}>System</Text>
                 </TouchableOpacity>
                 <TouchableOpacity 
@@ -258,7 +251,7 @@ export default function Sidebar({ visible, onClose, menuItems, profileOverride }
                   ]} 
                   onPress={() => setThemeMode('light')}
                 >
-                  <Ionicons name="sunny-outline" size={20} color={mode === 'light' ? '#FFF' : colors.text} />
+                  <Ionicons name="sunny-outline" size={scale(20)} color={mode === 'light' ? '#FFF' : colors.text} />
                   <Text style={[styles.themeBtnText, { color: mode === 'light' ? '#FFF' : colors.text }]}>Light</Text>
                 </TouchableOpacity>
                 <TouchableOpacity 
@@ -268,7 +261,7 @@ export default function Sidebar({ visible, onClose, menuItems, profileOverride }
                   ]} 
                   onPress={() => setThemeMode('dark')}
                 >
-                  <Ionicons name="moon-outline" size={20} color={mode === 'dark' ? '#FFF' : colors.text} />
+                  <Ionicons name="moon-outline" size={scale(20)} color={mode === 'dark' ? '#FFF' : colors.text} />
                   <Text style={[styles.themeBtnText, { color: mode === 'dark' ? '#FFF' : colors.text }]}>Dark</Text>
                 </TouchableOpacity>
               </View>
@@ -289,7 +282,7 @@ export default function Sidebar({ visible, onClose, menuItems, profileOverride }
                   }}
                 >
                   <View style={[styles.iconBox, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : '#FFEEEE' }]}>
-                    <Ionicons name={item.icon as any} size={22} color={colors.primary} />
+                    <Ionicons name={item.icon as any} size={scale(22)} color={colors.primary} />
                   </View>
                   <Text style={[styles.menuItemText, { color: colors.text }]}>{item.name}</Text>
                   
@@ -299,7 +292,7 @@ export default function Sidebar({ visible, onClose, menuItems, profileOverride }
                     </View>
                   )}
 
-                  <Ionicons name="chevron-forward" size={18} color={colors.textMuted} style={styles.chevron} />
+                  <Ionicons name="chevron-forward" size={scale(18)} color={colors.textMuted} style={styles.chevron} />
                 </TouchableOpacity>
               ))}
             </View>
@@ -314,16 +307,15 @@ export default function Sidebar({ visible, onClose, menuItems, profileOverride }
             styles.logoutWrapper, 
             { 
               borderTopColor: colors.border,
-              // FIX: This ensures the button perfectly adapts to the device's navigation bar
-              paddingBottom: insets.bottom > 0 ? insets.bottom + 10 : 25 
+              paddingBottom: insets.bottom > 0 ? insets.bottom + scale(10) : scale(25) 
             }
           ]}>
             <TouchableOpacity 
               style={styles.logoutBtn} 
               activeOpacity={0.8}
-              onPress={() => setIsSignOutModalVisible(true)} // NEW: Trigger custom modal
+              onPress={() => setIsSignOutModalVisible(true)} 
             >
-              <Ionicons name="log-out-outline" size={22} color="#D32F2F" />
+              <Ionicons name="log-out-outline" size={scale(22)} color="#D32F2F" />
               <Text style={styles.logoutText}>
                 Sign Out
               </Text>
@@ -331,7 +323,6 @@ export default function Sidebar({ visible, onClose, menuItems, profileOverride }
           </View>
         </Animated.View>
         
-        {/* Render the confirmation modal on top of the Sidebar */}
         <ActionModal 
           visible={isSignOutModalVisible} 
           onClose={() => setIsSignOutModalVisible(false)} 
@@ -356,17 +347,17 @@ const styles = StyleSheet.create({
   sidebarContainer: { 
     width: SIDEBAR_WIDTH, 
     height: '100%', 
-    borderTopRightRadius: 30, 
-    borderBottomRightRadius: 30, 
+    borderTopRightRadius: scale(30), 
+    borderBottomRightRadius: scale(30), 
     overflow: 'hidden', 
     elevation: 20, 
     shadowColor: '#000', 
     shadowOpacity: 0.3, 
-    shadowRadius: 10,
+    shadowRadius: scale(10),
   },
   header: { 
-    paddingBottom: 25, 
-    paddingHorizontal: 20,
+    paddingBottom: scale(25), 
+    paddingHorizontal: scale(20),
     borderBottomRightRadius: 0,
     flexDirection: 'row',
     alignItems: 'center',
@@ -377,48 +368,48 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   brandLogo: {
-    width: 85,
-    height: 56,
-    marginRight: 10,
-    borderRadius: 8,
+    width: scale(85),
+    height: scale(56),
+    marginRight: scale(10),
+    borderRadius: scale(8),
   },
   brandTextContainer: {
     justifyContent: 'center',
   },
   brandTextMain: {
     color: '#FFF',
-    fontSize: 28,
+    fontSize: scale(28),
     fontWeight: '900',
     letterSpacing: 1,
-    marginBottom: -4,
+    marginBottom: scale(-4),
   },
   brandTextSub: {
     color: '#FFF',
-    fontSize: 13,
+    fontSize: scale(13),
     fontWeight: 'bold',
     letterSpacing: 0.5,
   },
   closeBtn: { 
-    padding: 5, 
+    padding: scale(5), 
   },
   scrollContent: {
     flexGrow: 1,
-    paddingBottom: 20,
+    paddingBottom: scale(20),
   },
   bodyProfileSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 25,
+    paddingHorizontal: scale(20),
+    paddingVertical: scale(25),
     borderBottomWidth: 1,
   },
   profileCircle: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
+    width: scale(70),
+    height: scale(70),
+    borderRadius: scale(35),
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 15,
+    marginRight: scale(15),
     overflow: 'hidden',
   },
   avatarImage: {
@@ -431,74 +422,74 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   bodyUserName: {
-    fontSize: 20,
+    fontSize: scale(20),
     fontWeight: 'bold',
-    marginBottom: 4,
+    marginBottom: scale(4),
   },
   bodyUserEmail: {
-    fontSize: 14,
+    fontSize: scale(14),
   },
   themeSection: { 
-    paddingTop: 25, 
-    paddingHorizontal: 20,
+    paddingTop: scale(25), 
+    paddingHorizontal: scale(20),
   },
   sectionTitle: { 
-    fontSize: 12, 
+    fontSize: scale(12), 
     fontWeight: 'bold', 
-    marginBottom: 15, 
+    marginBottom: scale(15), 
     letterSpacing: 1,
   },
   themeRow: { 
     flexDirection: 'row', 
     justifyContent: 'space-between', 
     backgroundColor: 'rgba(150, 150, 150, 0.1)', 
-    borderRadius: 20, 
-    padding: 5,
+    borderRadius: scale(20), 
+    padding: scale(5),
   },
   themeBtn: { 
     flex: 1, 
     flexDirection: 'row', 
     alignItems: 'center', 
     justifyContent: 'center', 
-    paddingVertical: 10, 
-    borderRadius: 15,
+    paddingVertical: scale(10), 
+    borderRadius: scale(15),
   },
   themeBtnText: { 
-    fontSize: 14, 
+    fontSize: scale(14), 
     fontWeight: '600', 
-    marginLeft: 5,
+    marginLeft: scale(5),
   },
   menuItemsContainer: { 
-    paddingTop: 20, 
-    paddingHorizontal: 20,
+    paddingTop: scale(20), 
+    paddingHorizontal: scale(20),
   },
   menuItem: { 
     flexDirection: 'row', 
     alignItems: 'center', 
-    paddingVertical: 15, 
+    paddingVertical: scale(15), 
     borderBottomWidth: 1,
   },
   iconBox: { 
-    width: 40, 
-    height: 40, 
-    borderRadius: 12, 
+    width: scale(40), 
+    height: scale(40), 
+    borderRadius: scale(12), 
     justifyContent: 'center', 
     alignItems: 'center', 
-    marginRight: 15,
+    marginRight: scale(15),
   },
   menuItemText: { 
-    fontSize: 16, 
+    fontSize: scale(16), 
     fontWeight: '600',
   },
   badgeContainer: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 10,
-    marginLeft: 10,
+    paddingHorizontal: scale(8),
+    paddingVertical: scale(3),
+    borderRadius: scale(10),
+    marginLeft: scale(10),
   },
   badgeText: {
     color: '#FFF',
-    fontSize: 10,
+    fontSize: scale(10),
     fontWeight: '900',
   },
   chevron: { 
@@ -506,19 +497,19 @@ const styles = StyleSheet.create({
   },
   versionContainer: {
     alignItems: 'center',
-    marginTop: 40,
-    marginBottom: 20,
+    marginTop: scale(40),
+    marginBottom: scale(20),
   },
   versionText: {
-    fontSize: 12,
+    fontSize: scale(12),
     fontWeight: 'bold',
   },
   legalText: {
-    fontSize: 10,
-    marginTop: 4,
+    fontSize: scale(10),
+    marginTop: scale(4),
   },
   logoutWrapper: {
-    paddingTop: 15,
+    paddingTop: scale(15),
     borderTopWidth: 1,
   },
   logoutBtn: { 
@@ -526,16 +517,16 @@ const styles = StyleSheet.create({
     alignItems: 'center', 
     justifyContent: 'center', 
     backgroundColor: 'rgba(211, 47, 47, 0.1)', 
-    marginHorizontal: 20, 
-    paddingVertical: 15, 
-    borderRadius: 25,
+    marginHorizontal: scale(20), 
+    paddingVertical: scale(15), 
+    borderRadius: scale(25),
     borderWidth: 1,
     borderColor: 'rgba(211, 47, 47, 0.3)',
   },
   logoutText: { 
     color: '#D32F2F', 
     fontWeight: 'bold', 
-    fontSize: 16, 
-    marginLeft: 10,
+    fontSize: scale(16), 
+    marginLeft: scale(10),
   },
 });

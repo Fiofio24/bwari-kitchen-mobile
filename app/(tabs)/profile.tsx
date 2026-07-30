@@ -20,9 +20,9 @@ import { StatusBar } from 'expo-status-bar';
 import Sidebar from '../../components/Sidebar';
 import { useSafeRouter } from '../../hooks/useSafeRouter'; 
 import TopNav from '../../components/TopNav';
-import CartBadgeIcon from '../../components/CartBadgeIcon';
 import * as SecureStore from 'expo-secure-store';
 import ActionModal from '../../components/ActionModal';
+import { scale } from '../../constants/Sizes'; // <-- IMPORTED MASTER SCALE
 
 export default function ProfileScreen() {
   const { colors, isDark, setThemeMode } = useTheme();
@@ -32,7 +32,6 @@ export default function ProfileScreen() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isBiometricEnabled, setIsBiometricEnabled] = useState(true);
   
-  // States for the Modals
   const [isSignOutModalVisible, setIsSignOutModalVisible] = useState(false);
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
 
@@ -79,7 +78,7 @@ export default function ProfileScreen() {
       onPress={onPress}
     >
       <View style={[styles.iconBox, { backgroundColor: isDestructive ? '#FFEBEE' : (isDark ? 'rgba(255,255,255,0.05)' : '#F5F5F5') }]}>
-        <Ionicons name={icon} size={22} color={isDestructive ? '#D32F2F' : colors.primary} />
+        <Ionicons name={icon} size={scale(22)} color={isDestructive ? '#D32F2F' : colors.primary} />
       </View>
       <View style={styles.menuTextContainer}>
         <Text style={[styles.menuLabel, { color: isDestructive ? '#D32F2F' : colors.text }]}>
@@ -91,7 +90,7 @@ export default function ProfileScreen() {
           </Text>
         )}
       </View>
-      {rightElement ? rightElement : <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />}
+      {rightElement ? rightElement : <Ionicons name="chevron-forward" size={scale(18)} color={colors.textMuted} />}
     </TouchableOpacity>
   );
 
@@ -105,13 +104,13 @@ export default function ProfileScreen() {
         onLeftPress={() => setIsSidebarOpen(true)}
         rightComponent={
           <TouchableOpacity style={styles.iconButton} onPress={() => {}}>
-            <Ionicons name="settings-outline" size={24} color="#FFF" />
+            <Ionicons name="settings-outline" size={scale(24)} color="#FFF" />
           </TouchableOpacity>
         }
         isAbsolute={false} 
       />
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.scrollContent, { paddingBottom: 140 }]}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.scrollContent, { paddingBottom: scale(140) }]}>
         
         <View style={[styles.profileCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <View style={styles.profileHeader}>
@@ -120,11 +119,11 @@ export default function ProfileScreen() {
                 {userData.avatarUri ? (
                   <Image source={{ uri: userData.avatarUri }} style={styles.avatarImage} />
                 ) : (
-                  <Ionicons name="person" size={40} color={colors.primary} />
+                  <Ionicons name="person" size={scale(40)} color={colors.primary} />
                 )}
               </View>
               <TouchableOpacity style={styles.editBadge} activeOpacity={0.8} onPress={handlePickImage}>
-                <Ionicons name="camera" size={14} color="#FFF" />
+                <Ionicons name="camera" size={scale(14)} color="#FFF" />
               </TouchableOpacity>
             </View>
 
@@ -160,7 +159,7 @@ export default function ProfileScreen() {
           onPress={onShareReferral}
         >
           <View style={styles.referralIconBox}>
-            <Ionicons name="gift" size={30} color="#FFD700" />
+            <Ionicons name="gift" size={scale(30)} color="#FFD700" />
           </View>
           <View style={styles.referralTextContainer}>
             <Text style={[styles.referralTitle, { color: colors.text }]}>
@@ -170,7 +169,7 @@ export default function ProfileScreen() {
               Invite friends to get free meals!
             </Text>
           </View>
-          <Ionicons name="share-social-outline" size={24} color={colors.primary} />
+          <Ionicons name="share-social-outline" size={scale(24)} color={colors.primary} />
         </TouchableOpacity>
 
         <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>ACCOUNT SETTINGS</Text>
@@ -208,6 +207,7 @@ export default function ProfileScreen() {
           <ProfileMenuItem 
             icon="notifications-outline" 
             label="Notification Preferences" 
+            onPress={() => router.push('/notification-preferences')} 
           />
         </View>
 
@@ -238,10 +238,10 @@ export default function ProfileScreen() {
 
         <View style={styles.socialRow}>
           <TouchableOpacity style={[styles.socialIcon, { backgroundColor: colors.border }]}>
-            <Ionicons name="logo-instagram" size={20} color={colors.text} />
+            <Ionicons name="logo-instagram" size={scale(20)} color={colors.text} />
           </TouchableOpacity>
           <TouchableOpacity style={[styles.socialIcon, { backgroundColor: colors.border }]}>
-            <Ionicons name="logo-twitter" size={20} color={colors.text} />
+            <Ionicons name="logo-twitter" size={scale(20)} color={colors.text} />
           </TouchableOpacity>
         </View>
         <Text style={[styles.versionText, { color: colors.textMuted }]}>Version 2.4.0 (Build 102)</Text>
@@ -249,7 +249,6 @@ export default function ProfileScreen() {
 
       <Sidebar visible={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
       
-      {/* Reusable Modal for Sign Out */}
       <ActionModal 
         visible={isSignOutModalVisible} 
         onClose={() => setIsSignOutModalVisible(false)} 
@@ -266,13 +265,11 @@ export default function ProfileScreen() {
         cancelText="Cancel"
       />
 
-      {/* Reusable Modal for Delete Account */}
       <ActionModal 
         visible={isDeleteModalVisible} 
         onClose={() => setIsDeleteModalVisible(false)} 
         onConfirm={async () => {
           setIsDeleteModalVisible(false);
-          // Future API call to delete account goes here
           await SecureStore.deleteItemAsync('authToken'); 
           resetToDefault(); 
           router.replace('/welcome'); 
@@ -293,41 +290,38 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   iconButton: { 
-    padding: 5,
+    padding: scale(5),
   },
   scrollContent: { 
-    paddingTop: 20,
+    paddingTop: scale(20),
   },
   profileCard: { 
-    marginHorizontal: 20, 
-    borderRadius: 25, 
+    marginHorizontal: scale(20), 
+    borderRadius: scale(25), 
     borderWidth: 1, 
-    padding: 20, 
-    marginBottom: 20, 
+    padding: scale(20), 
+    marginBottom: scale(20), 
     elevation: 4, 
     shadowColor: '#000', 
-    shadowOffset: { 
-      width: 0, 
-      height: 4 
-    }, 
+    shadowOffset: { width: 0, height: scale(4) }, 
     shadowOpacity: 0.1, 
-    shadowRadius: 10,
+    shadowRadius: scale(10),
   },
   profileHeader: { 
     flexDirection: 'row', 
     alignItems: 'center', 
-    marginBottom: 20,
+    marginBottom: scale(20),
   },
   avatarContainer: { 
-    width: 80, 
-    height: 80, 
-    borderRadius: 40, 
-    borderWidth: 3, 
-    padding: 3,
+    width: scale(80), 
+    height: scale(80), 
+    borderRadius: scale(40), 
+    borderWidth: scale(3), 
+    padding: scale(3),
   },
   avatarInner: { 
     flex: 1, 
-    borderRadius: 40, 
+    borderRadius: scale(40), 
     justifyContent: 'center', 
     alignItems: 'center', 
     overflow: 'hidden',
@@ -342,130 +336,130 @@ const styles = StyleSheet.create({
     bottom: 0, 
     right: 0, 
     backgroundColor: Colors.primary, 
-    width: 26, 
-    height: 26, 
-    borderRadius: 13, 
+    width: scale(26), 
+    height: scale(26), 
+    borderRadius: scale(13), 
     justifyContent: 'center', 
     alignItems: 'center', 
-    borderWidth: 2, 
+    borderWidth: scale(2), 
     borderColor: '#FFF',
     zIndex: 5,
   },
   userInfo: { 
-    marginLeft: 15, 
+    marginLeft: scale(15), 
     flex: 1,
   },
   userName: { 
-    fontSize: 20, 
+    fontSize: scale(20), 
     fontWeight: 'bold',
   },
   userEmail: { 
-    fontSize: 14, 
-    marginTop: 2,
+    fontSize: scale(14), 
+    marginTop: scale(2),
   },
   statsRow: { 
     flexDirection: 'row', 
     borderTopWidth: 1, 
     borderTopColor: 'rgba(150,150,150,0.1)', 
-    paddingTop: 15,
+    paddingTop: scale(15),
   },
   statItem: { 
     flex: 1, 
     alignItems: 'center',
   },
   statValue: { 
-    fontSize: 16, 
+    fontSize: scale(16), 
     fontWeight: 'bold',
   },
   statLabel: { 
-    fontSize: 12, 
-    marginTop: 2,
+    fontSize: scale(12), 
+    marginTop: scale(2),
   },
   referralCard: { 
-    marginHorizontal: 20, 
-    padding: 15, 
-    borderRadius: 20, 
+    marginHorizontal: scale(20), 
+    padding: scale(15), 
+    borderRadius: scale(20), 
     borderWidth: 1, 
     borderStyle: 'dashed', 
     flexDirection: 'row', 
     alignItems: 'center', 
-    marginBottom: 25,
+    marginBottom: scale(25),
   },
   referralIconBox: { 
-    width: 50, 
-    height: 50, 
-    borderRadius: 25, 
+    width: scale(50), 
+    height: scale(50), 
+    borderRadius: scale(25), 
     backgroundColor: '#FFF', 
     justifyContent: 'center', 
     alignItems: 'center', 
-    marginRight: 15, 
+    marginRight: scale(15), 
     elevation: 2,
   },
   referralTextContainer: { 
     flex: 1,
   },
   referralTitle: { 
-    fontSize: 16, 
+    fontSize: scale(16), 
     fontWeight: 'bold',
   },
   referralSub: { 
-    fontSize: 12,
+    fontSize: scale(12),
   },
   sectionTitle: { 
-    fontSize: 12, 
+    fontSize: scale(12), 
     fontWeight: 'bold', 
-    marginHorizontal: 25, 
-    marginBottom: 10, 
+    marginHorizontal: scale(25), 
+    marginBottom: scale(10), 
     letterSpacing: 1,
   },
   menuBox: { 
-    marginHorizontal: 20, 
-    borderRadius: 25, 
+    marginHorizontal: scale(20), 
+    borderRadius: scale(25), 
     borderWidth: 1, 
-    marginBottom: 25, 
+    marginBottom: scale(25), 
     overflow: 'hidden',
   },
   menuItem: { 
     flexDirection: 'row', 
     alignItems: 'center', 
-    padding: 15, 
+    padding: scale(15), 
     borderBottomWidth: 1,
   },
   iconBox: { 
-    width: 40, 
-    height: 40, 
-    borderRadius: 12, 
+    width: scale(40), 
+    height: scale(40), 
+    borderRadius: scale(12), 
     justifyContent: 'center', 
     alignItems: 'center', 
-    marginRight: 15,
+    marginRight: scale(15),
   },
   menuTextContainer: { 
     flex: 1,
   },
   menuLabel: { 
-    fontSize: 16, 
+    fontSize: scale(16), 
     fontWeight: '600',
   },
   menuSubLabel: { 
-    fontSize: 12, 
-    marginTop: 2,
+    fontSize: scale(12), 
+    marginTop: scale(2),
   },
   socialRow: { 
     flexDirection: 'row', 
     justifyContent: 'center', 
-    gap: 15, 
-    marginBottom: 20,
+    gap: scale(15), 
+    marginBottom: scale(20),
   },
   socialIcon: { 
-    width: 40, 
-    height: 40, 
-    borderRadius: 20, 
+    width: scale(40), 
+    height: scale(40), 
+    borderRadius: scale(20), 
     justifyContent: 'center', 
     alignItems: 'center',
   },
   versionText: { 
     textAlign: 'center', 
-    fontSize: 11, 
-    marginBottom: 30,
+    fontSize: scale(11), 
+    marginBottom: scale(30),
   },
 });

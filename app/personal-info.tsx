@@ -20,6 +20,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useUser } from '../context/UserContext';
 import TopNav from '../components/TopNav';
 import api from './lib/api';
+import { scale } from '../constants/Sizes'; // <-- IMPORTED MASTER SCALE
 
 export default function PersonalInfoScreen() {
   const router = useSafeRouter();
@@ -101,7 +102,7 @@ export default function PersonalInfoScreen() {
           showDivider={false}
         />
 
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 40 }]}>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + scale(40) }]}>
           
           <View style={styles.headerSection}>
             <Text style={[styles.titleText, { color: colors.text }]}>
@@ -119,7 +120,7 @@ export default function PersonalInfoScreen() {
                 Full Name
               </Text>
               <View style={[styles.inputWrapper, { backgroundColor: isDark ? colors.background : '#F9F9F9', borderColor: colors.border }]}>
-                <Ionicons name="person-outline" size={20} color={colors.textMuted} style={styles.inputIcon} />
+                <Ionicons name="person-outline" size={scale(20)} color={colors.textMuted} style={styles.inputIcon} />
                 <TextInput
                   style={[styles.textInput, { color: colors.text }]}
                   value={name}
@@ -135,7 +136,7 @@ export default function PersonalInfoScreen() {
                 Email Address
               </Text>
               <View style={[styles.inputWrapper, { backgroundColor: isDark ? colors.background : '#F9F9F9', borderColor: colors.border }]}>
-                <Ionicons name="mail-outline" size={20} color={colors.textMuted} style={styles.inputIcon} />
+                <Ionicons name="mail-outline" size={scale(20)} color={colors.textMuted} style={styles.inputIcon} />
                 <TextInput
                   style={[styles.textInput, { color: colors.text }]}
                   value={email}
@@ -153,14 +154,14 @@ export default function PersonalInfoScreen() {
                 Phone Number
               </Text>
               <View style={[styles.inputWrapper, { backgroundColor: isDark ? colors.background : '#F9F9F9', borderColor: colors.border, opacity: 0.6 }]}>
-                <Ionicons name="call-outline" size={20} color={colors.textMuted} style={styles.inputIcon} />
+                <Ionicons name="call-outline" size={scale(20)} color={colors.textMuted} style={styles.inputIcon} />
                 <TextInput
                   style={[styles.textInput, { color: colors.text }]}
                   value={phone}
                   editable={false}
                   placeholderTextColor={colors.textMuted}
                 />
-                <Ionicons name="lock-closed" size={16} color={colors.textMuted} />
+                <Ionicons name="lock-closed" size={scale(16)} color={colors.textMuted} />
               </View>
               <Text style={[styles.helperText, { color: colors.textMuted }]}>
                 Phone number cannot be changed. Contact support if you need to update it.
@@ -171,7 +172,7 @@ export default function PersonalInfoScreen() {
 
         </ScrollView>
 
-        <View style={[styles.bottomBar, { paddingBottom: insets.bottom + 20, backgroundColor: isDark ? colors.surface : '#FFF', borderTopColor: colors.border }]}>
+        <View style={[styles.bottomBar, { paddingBottom: insets.bottom + scale(20), backgroundColor: isDark ? colors.surface : '#FFF', borderTopColor: colors.border }]}>
           <TouchableOpacity 
             style={[styles.saveBtn, { backgroundColor: Colors.primary, opacity: isSaving ? 0.7 : 1 }]} 
             activeOpacity={0.8}
@@ -189,21 +190,20 @@ export default function PersonalInfoScreen() {
   );
 }
 
-// styles unchanged — reuse exactly what you already have, plus this one addition:
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scrollContent: { paddingTop: 20, paddingHorizontal: 20 },
-  headerSection: { marginBottom: 25, paddingHorizontal: 5 },
-  titleText: { fontSize: 24, fontWeight: 'bold', marginBottom: 8 },
-  subText: { fontSize: 14, lineHeight: 22 },
-  formContainer: { borderWidth: 1, borderRadius: 25, padding: 20, marginBottom: 30, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 5 },
-  inputGroup: { marginBottom: 20 },
-  inputLabel: { fontSize: 13, fontWeight: 'bold', marginBottom: 8, marginLeft: 5, letterSpacing: 0.5 },
-  inputWrapper: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: 15, paddingHorizontal: 15, height: 54 },
-  inputIcon: { marginRight: 10 },
-  textInput: { flex: 1, fontSize: 15, fontWeight: '500', height: '100%' },
-  helperText: { fontSize: 12, marginTop: 6, marginLeft: 5 },
-  bottomBar: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 20, paddingTop: 15, borderTopLeftRadius: 30, borderTopRightRadius: 30, borderTopWidth: 1, elevation: 15, shadowColor: '#000', shadowOffset: { width: 0, height: -5 }, shadowOpacity: 0.1, shadowRadius: 10 },
-  saveBtn: { paddingVertical: 18, borderRadius: 20, justifyContent: 'center', alignItems: 'center', elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 5 },
-  saveBtnText: { color: '#FFF', fontSize: 16, fontWeight: 'bold' },
+  scrollContent: { paddingTop: scale(20), paddingHorizontal: scale(20) },
+  headerSection: { marginBottom: scale(25), paddingHorizontal: scale(5) },
+  titleText: { fontSize: scale(24), fontWeight: 'bold', marginBottom: scale(8) },
+  subText: { fontSize: scale(14), lineHeight: scale(22) },
+  formContainer: { borderWidth: 1, borderRadius: scale(25), padding: scale(20), marginBottom: scale(30), elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: scale(2) }, shadowOpacity: 0.05, shadowRadius: scale(5) },
+  inputGroup: { marginBottom: scale(20) },
+  inputLabel: { fontSize: scale(13), fontWeight: 'bold', marginBottom: scale(8), marginLeft: scale(5), letterSpacing: 0.5 },
+  inputWrapper: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: scale(15), paddingHorizontal: scale(15), height: scale(54) },
+  inputIcon: { marginRight: scale(10) },
+  textInput: { flex: 1, fontSize: scale(15), fontWeight: '500', height: '100%' },
+  helperText: { fontSize: scale(12), marginTop: scale(6), marginLeft: scale(5) },
+  bottomBar: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: scale(20), paddingTop: scale(15), borderTopLeftRadius: scale(30), borderTopRightRadius: scale(30), borderTopWidth: 1, elevation: 15, shadowColor: '#000', shadowOffset: { width: 0, height: scale(-5) }, shadowOpacity: 0.1, shadowRadius: scale(10) },
+  saveBtn: { paddingVertical: scale(18), borderRadius: scale(20), justifyContent: 'center', alignItems: 'center', elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: scale(4) }, shadowOpacity: 0.3, shadowRadius: scale(5) },
+  saveBtnText: { color: '#FFF', fontSize: scale(16), fontWeight: 'bold' },
 });

@@ -1,5 +1,6 @@
 // import React from 'react';
 // import { View, Image, StyleSheet, Dimensions } from 'react-native';
+// import { scale } from '../constants/Sizes'; // <-- IMPORTED MASTER SCALE
 
 // const { width, height } = Dimensions.get('window');
 
@@ -28,8 +29,8 @@
 //     elevation: 9999,
 //   },
 //   logo: {
-//     width: 150, // TWEAK THIS: Make it bigger or smaller
-//     height: 150, 
-//     // marginTop: -50, // Uncomment and tweak this if you want to push the logo slightly up or down from true center
+//     width: scale(150), // TWEAK THIS: Make it bigger or smaller
+//     height: scale(150), 
+//     // marginTop: scale(-50), // Uncomment and tweak this if you want to push the logo slightly up or down from true center
 //   }
 // });

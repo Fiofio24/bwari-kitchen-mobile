@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
+import { scale } from '../constants/Sizes'; // <-- IMPORTED MASTER SCALE
 
 interface ActionModalProps {
   visible: boolean;
@@ -75,7 +76,7 @@ export default function ActionModal({
         }
       ]}>
         <View style={[styles.iconCircle, { backgroundColor: `${iconColor}15` }]}>
-          <Ionicons name={iconName} size={32} color={iconColor} />
+          <Ionicons name={iconName} size={scale(32)} color={iconColor} />
         </View>
         
         <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
@@ -117,45 +118,45 @@ const styles = StyleSheet.create({
   },
   card: {
     width: '80%',
-    maxWidth: 320,
-    borderRadius: 25,
-    padding: 25,
+    maxWidth: scale(320),
+    borderRadius: scale(25),
+    padding: scale(25),
     alignItems: 'center',
     borderWidth: 1,
     elevation: 10,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: scale(4) },
     shadowOpacity: 0.2,
-    shadowRadius: 10,
+    shadowRadius: scale(10),
   },
   iconCircle: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: scale(60),
+    height: scale(60),
+    borderRadius: scale(30),
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 15,
+    marginBottom: scale(15),
   },
   title: {
-    fontSize: 20,
+    fontSize: scale(20),
     fontWeight: 'bold',
-    marginBottom: 8,
+    marginBottom: scale(8),
   },
   message: {
-    fontSize: 15,
+    fontSize: scale(15),
     textAlign: 'center',
-    marginBottom: 25,
-    lineHeight: 22,
+    marginBottom: scale(25),
+    lineHeight: scale(22),
   },
   buttonRow: {
     flexDirection: 'row',
     width: '100%',
-    gap: 15,
+    gap: scale(15),
   },
   btn: {
     flex: 1,
-    paddingVertical: 14,
-    borderRadius: 35,
+    paddingVertical: scale(14),
+    borderRadius: scale(35),
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -164,12 +165,12 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   btnText: {
-    fontSize: 15,
+    fontSize: scale(15),
     fontWeight: 'bold',
   },
   confirmText: {
     color: '#FFF',
-    fontSize: 15,
+    fontSize: scale(15),
     fontWeight: 'bold',
   },
 });

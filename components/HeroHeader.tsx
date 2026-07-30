@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { Colors } from '../constants/Colors';
+import { scale } from '../constants/Sizes'; // <-- IMPORTED MASTER SCALE
 
 interface HeroHeaderProps {
   heightRatio?: number;
@@ -20,7 +21,7 @@ export default function HeroHeader({
   heightRatio = 0.55,
   logoPath = require('../assets/splash.png'),
   bgImagePath = require('../assets/RicePack.jpg'),
-  logoPaddingBottom = 25
+  logoPaddingBottom = scale(25) // Scaled default
 }: HeroHeaderProps) {
   const { width, height } = useWindowDimensions();
   const { isDark } = useTheme();
@@ -46,7 +47,7 @@ export default function HeroHeader({
         styles.imageCurveShape, 
         { 
           width: width * 1.5, 
-          height: heroHeight - 15, 
+          height: heroHeight - scale(15), 
           borderBottomLeftRadius: width * 0.75, 
           borderBottomRightRadius: width * 0.75 
         }
@@ -106,7 +107,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logoImage: {
-    width: 200,
-    height: 110,
+    width: scale(200),
+    height: scale(110),
   },
 });

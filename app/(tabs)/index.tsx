@@ -29,11 +29,11 @@ import { useCart } from '../../context/CartContext';
 import { useFavorites } from '../../context/FavoriteContext'; 
 import { useMenu } from '../../context/MenuContext'; 
 
-// Imported components for the TopNav slots
 import CartBadgeIcon from '../../components/CartBadgeIcon';
 import AddressSelectorModal from '../../components/AddressSelectorModal';
 import { useNotifications } from '../../context/NotificationContext';
 import { useAddresses } from '../../context/AddressContext';
+import { scale } from '../../constants/Sizes'; // <-- IMPORTED MASTER SCALE
 
 const USER_PROFILE = { name: "User" };
 
@@ -69,25 +69,23 @@ export default function HomeScreen() {
   const [isAddressModalVisible, setIsAddressModalVisible] = useState(false);
   
   const insets = useSafeAreaInsets();
-  const shadowTripwire = 100 + insets.top; 
+  const shadowTripwire = scale(100) + insets.top; 
   const { colors, isDark } = useTheme();
-  const toastAnim = useRef(new Animated.Value(-100)).current;
+  const toastAnim = useRef(new Animated.Value(-scale(100))).current;
   
   const { width } = useWindowDimensions();
-  const MAX_GRID_WIDTH = 200; 
-  const GRID_PADDING = 20; 
-  const GRID_GAP = 15;     
+  const MAX_GRID_WIDTH = scale(200); 
+  const GRID_PADDING = scale(20); 
+  const GRID_GAP = scale(15);     
   const AVAILABLE_WIDTH = width - (GRID_PADDING * 2);
   const NUM_COLUMNS = Math.max(2, Math.ceil(AVAILABLE_WIDTH / (MAX_GRID_WIDTH + GRID_GAP)));
   const CARD_WIDTH = Math.floor((AVAILABLE_WIDTH - (GRID_GAP * (NUM_COLUMNS - 1))) / NUM_COLUMNS);
 
-  // THE POINT OF NO RETURN: Force app exit if they press the hardware back button here
-  // We do not want users pressing back to return to the lock screen or login!
   useFocusEffect(
     useCallback(() => {
       const onBackPress = () => {
         BackHandler.exitApp();
-        return true; // Prevents default back navigation
+        return true; 
       };
 
       const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
@@ -126,9 +124,9 @@ export default function HomeScreen() {
     addToCart(newItem);
 
     Animated.sequence([
-      Animated.spring(toastAnim, { toValue: insets.top + 20, useNativeDriver: true, friction: 6 }),
+      Animated.spring(toastAnim, { toValue: insets.top + scale(20), useNativeDriver: true, friction: 6 }),
       Animated.delay(2500),
-      Animated.timing(toastAnim, { toValue: -100, duration: 300, useNativeDriver: true })
+      Animated.timing(toastAnim, { toValue: -scale(100), duration: 300, useNativeDriver: true })
     ]).start();
   };
 
@@ -153,7 +151,7 @@ export default function HomeScreen() {
       
       <ScrollView 
         showsVerticalScrollIndicator={false} 
-        contentContainerStyle={{ paddingBottom: 100 }}
+        contentContainerStyle={{ paddingBottom: scale(100) }}
         onScroll={handleScroll}
         scrollEventThrottle={16} 
         refreshControl={
@@ -163,7 +161,7 @@ export default function HomeScreen() {
             tintColor={Colors.primary} 
             colors={[Colors.primary]} 
             progressBackgroundColor={isDark ? colors.surface : '#FFF'} 
-            progressViewOffset={insets.top + 60} 
+            progressViewOffset={insets.top + scale(60)} 
           />
         }
       >
@@ -224,7 +222,7 @@ export default function HomeScreen() {
         </View>
       </ScrollView>
 
-      {/* USING THE NEW UNIVERSAL TOPNAV - Placed below ScrollView so it renders on top! */}
+      {}
       <TopNav 
         leftIcon="menu"
         onLeftPress={() => setIsSidebarOpen(true)}
@@ -234,11 +232,11 @@ export default function HomeScreen() {
           <TouchableOpacity style={styles.locationContainer} onPress={() => setIsAddressModalVisible(true)} activeOpacity={0.8}>
             <Text style={styles.deliverToText}>Deliver to</Text>
             <View style={styles.addressRow}>
-              <Ionicons name="location" size={14} color="#FFC107" />
+              <Ionicons name="location" size={scale(14)} color="#FFC107" />
               <Text style={styles.addressText} numberOfLines={1} ellipsizeMode="tail">
                 {(activeAddress as any)?.address || "Select Location"}
               </Text>
-              <Ionicons name="chevron-down" size={14} color="#FFF" style={styles.chevronIcon} />
+              <Ionicons name="chevron-down" size={scale(14)} color="#FFF" style={styles.chevronIcon} />
             </View>
           </TouchableOpacity>
         }
@@ -250,7 +248,7 @@ export default function HomeScreen() {
               activeOpacity={0.7}
               onPress={() => router.push('/notifications')}
             >
-              <Ionicons name="notifications-outline" size={26} color="#FFF" />
+              <Ionicons name="notifications-outline" size={scale(26)} color="#FFF" />
               {unreadCount > 0 && (
                 <View style={styles.badge}>
                   <Text style={styles.badgeText}>
@@ -264,7 +262,7 @@ export default function HomeScreen() {
       />
 
       <Animated.View style={[styles.toastContainer, { transform: [{ translateY: toastAnim }], backgroundColor: isDark ? '#333' : '#222' }]}>
-        <Ionicons name="checkmark-circle" size={24} color="#4CAF50" />
+        <Ionicons name="checkmark-circle" size={scale(24)} color="#4CAF50" />
         <Text style={styles.toastText}>Successfully added to cart!</Text>
       </Animated.View>
    
@@ -278,107 +276,106 @@ export default function HomeScreen() {
   );
 }
 
-// PRO CSS COMPLIANCE: Every property strictly on its own line
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    paddingBottom: scale(20),
   },
   topLayoutContainer: {
-    marginBottom: 20,
+    marginBottom: scale(20),
     zIndex: 5,
-    marginTop: Platform.OS === 'web' ? 80 : 50, 
+    marginTop: Platform.OS === 'web' ? scale(80) : scale(50), 
   },
   searchBarWrapper: {
-    paddingHorizontal: 20,
-    marginTop: 10,
+    paddingHorizontal: scale(20),
+    marginTop: scale(10),
     zIndex: 1,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: scale(18),
     fontWeight: 'bold',
-    marginBottom: 15,
-    borderLeftWidth: 3.5,
+    marginBottom: scale(15),
+    borderLeftWidth: scale(3.5),
     borderLeftColor: Colors.primary,
-    paddingLeft: 5,
+    paddingLeft: scale(5),
   },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 20,
-    marginHorizontal: 20,
+    marginTop: scale(20),
+    marginHorizontal: scale(20),
   },
   seeMoreText: {
     color: Colors.primary,
     fontWeight: 'bold',
-    fontSize: 14,
+    fontSize: scale(14),
   },
   scrollContainer: {
     flexDirection: 'row',
-    paddingLeft: 20,
+    paddingLeft: scale(20),
   },
   gridContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 15,
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-    marginTop: 5,
+    gap: scale(15),
+    paddingHorizontal: scale(20),
+    paddingBottom: scale(20),
+    marginTop: scale(5),
   },
   emptyText: {
     width: '100%',
     textAlign: 'center',
-    marginTop: 20,
+    marginTop: scale(20),
   },
   toastContainer: {
     position: 'absolute',
-    left: 20,
-    right: 20,
+    left: scale(20),
+    right: scale(20),
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderRadius: 30,
+    paddingVertical: scale(14),
+    paddingHorizontal: scale(20),
+    borderRadius: scale(30),
     elevation: 10,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 5 },
+    shadowOffset: { width: 0, height: scale(5) },
     shadowOpacity: 0.3,
-    shadowRadius: 8,
+    shadowRadius: scale(8),
     zIndex: 100,
     justifyContent: 'center',
-    gap: 10,
+    gap: scale(10),
   },
   toastText: {
     color: '#FFF',
-    fontSize: 16,
+    fontSize: scale(16),
     fontWeight: 'bold',
   },
   
-  // Custom Home Header Styles passed to TopNav slots
   locationContainer: {
     alignItems: 'center',
     width: '70%', 
   },
   deliverToText: {
     color: '#FFCCCC',
-    fontSize: 12,
+    fontSize: scale(12),
     textAlign: 'center',
   },
   addressRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 2,
+    marginTop: scale(2),
     maxWidth: '100%',
   },
   addressText: {
     color: '#FFFFFF',
     fontWeight: 'bold',
-    fontSize: 14,
-    marginLeft: 4,
+    fontSize: scale(14),
+    marginLeft: scale(4),
     flexShrink: 1, 
   },
   chevronIcon: {
-    marginLeft: 4,
+    marginLeft: scale(4),
   },
   headerIcons: {
     flexDirection: 'row',
@@ -386,25 +383,25 @@ const styles = StyleSheet.create({
   },
   iconWrapper: {
     position: 'relative',
-    padding: 4,
+    padding: scale(4),
   },
   bellIcon: {
-    marginLeft: 10,
+    marginLeft: scale(10),
   },
   badge: {
     position: 'absolute',
-    top: -2,
-    right: -2,
+    top: scale(-2),
+    right: scale(-2),
     backgroundColor: '#FFFFFF',
-    borderRadius: 10,
-    minWidth: 16,
-    height: 16,
+    borderRadius: scale(10),
+    minWidth: scale(16),
+    height: scale(16),
     justifyContent: 'center',
     alignItems: 'center',
   },
   badgeText: {
     color: Colors.primary,
-    fontSize: 10,
+    fontSize: scale(10),
     fontWeight: 'bold',
   },
 });

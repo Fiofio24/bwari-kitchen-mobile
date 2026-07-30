@@ -27,6 +27,7 @@ import CartBadgeIcon from '../../components/CartBadgeIcon';
 import GridDishCard from '../../components/GridDishCard';
 import TopNav from '../../components/TopNav';
 import ItemVariantModal from '../../components/ItemVariantModal';
+import { scale } from '../../constants/Sizes'; // <-- IMPORTED MASTER SCALE
 
 export const CUSTOM_PACKAGE_IMAGE = require('../../assets/images/custom-plate.png');
 
@@ -39,29 +40,26 @@ export default function MenuScreen() {
   
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { addToCart } = useCart();
-  const toastAnim = useRef(new Animated.Value(-100)).current;
+  const toastAnim = useRef(new Animated.Value(-scale(100))).current;
 
   const floatingButtonAnim = useRef(new Animated.Value(0)).current;
 
   const [activeCategory, setActiveCategory] = useState('All');
-  
-  // customPlate now stores composite keys! e.g., 'r3::1 Scoop / Half::0.5' -> quantity
   const [customPlate, setCustomPlate] = useState<Record<string, number>>({});
   const [refreshing, setRefreshing] = useState(false); 
-  
   const [variantModalItem, setVariantModalItem] = useState<any>(null);
 
   const { width } = useWindowDimensions();
-  const GRID_PADDING = 20; 
-  const GRID_GAP = 10; 
+  const GRID_PADDING = scale(20); 
+  const GRID_GAP = scale(10); 
   const AVAILABLE_WIDTH = width - (GRID_PADDING * 2);
   
-  const MIN_CARD_WIDTH = 105; 
+  const MIN_CARD_WIDTH = scale(105); 
   const NUM_COLUMNS = Math.max(3, Math.floor((AVAILABLE_WIDTH + GRID_GAP) / (MIN_CARD_WIDTH + GRID_GAP)));
   const CARD_WIDTH = Math.floor((AVAILABLE_WIDTH - (GRID_GAP * (NUM_COLUMNS - 1))) / NUM_COLUMNS);
 
   const filteredItems = items.filter(item => item.category.name === activeCategory || activeCategory === 'All');
-  const bottomNavHeight = 70 + Math.max(insets.bottom, 15);
+  const bottomNavHeight = scale(70) + Math.max(insets.bottom, scale(15));
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -72,22 +70,18 @@ export default function MenuScreen() {
     } finally {
       setRefreshing(false); 
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [refresh]);
 
   const handleCardPress = (item: any) => {
-    // 1. Check if ANY variant of this item is already in the custom plate
     const existingKeys = Object.keys(customPlate).filter(key => key.startsWith(item.id + '::'));
 
     if (existingKeys.length > 0) {
-      // 2. If it is already selected, DESELECT IT by completely removing it
       setCustomPlate(prev => {
         const newState = { ...prev };
         existingKeys.forEach(key => delete newState[key]);
         return newState;
       });
     } else {
-      // 3. If it is NOT selected, proceed to add it or open the portion modal
       if (item.variants && item.variants.length > 0) {
         setVariantModalItem(item);
       } else {
@@ -122,9 +116,7 @@ export default function MenuScreen() {
   const selectedItemsList = Object.keys(customPlate).map(compositeKey => {
     const { id, variantLabel, variantPrice } = parseCompositeKey(compositeKey);
     const dbItem = findItem(id);
-    
     const finalPrice = variantPrice !== null ? variantPrice : (dbItem?.basePrice || 0);
-    
     const finalName = variantLabel && variantLabel !== 'Base' 
       ? `${dbItem?.name} (${variantLabel})` 
       : (dbItem?.name || 'Unknown Item');
@@ -180,9 +172,9 @@ export default function MenuScreen() {
     addToCart(newItem);
 
     Animated.sequence([
-      Animated.spring(toastAnim, { toValue: insets.top + 10, useNativeDriver: true, friction: 6 }),
+      Animated.spring(toastAnim, { toValue: insets.top + scale(10), useNativeDriver: true, friction: 6 }),
       Animated.delay(2000),
-      Animated.timing(toastAnim, { toValue: -100, duration: 300, useNativeDriver: true })
+      Animated.timing(toastAnim, { toValue: -scale(100), duration: 300, useNativeDriver: true })
     ]).start();
 
     setCustomPlate({});
@@ -202,9 +194,9 @@ export default function MenuScreen() {
     addToCart(newItem);
     
     Animated.sequence([
-      Animated.spring(toastAnim, { toValue: insets.top + 10, useNativeDriver: true, friction: 6 }),
+      Animated.spring(toastAnim, { toValue: insets.top + scale(10), useNativeDriver: true, friction: 6 }),
       Animated.delay(2000),
-      Animated.timing(toastAnim, { toValue: -100, duration: 300, useNativeDriver: true })
+      Animated.timing(toastAnim, { toValue: -scale(100), duration: 300, useNativeDriver: true })
     ]).start();
   }
 
@@ -228,7 +220,7 @@ export default function MenuScreen() {
         rightComponent={
           <View style={menuStyles.headerRight}>
             <TouchableOpacity style={menuStyles.iconButton}>
-              <Ionicons name="help-circle-outline" size={26} color="#FFF" />
+              <Ionicons name="help-circle-outline" size={scale(26)} color="#FFF" />
             </TouchableOpacity>
             <CartBadgeIcon onPress={() => router.push('/cart')} />
           </View>
@@ -239,7 +231,7 @@ export default function MenuScreen() {
 
       <ScrollView 
         showsVerticalScrollIndicator={false} 
-        contentContainerStyle={[menuStyles.scrollContent, { paddingBottom: bottomNavHeight + 90 }]}
+        contentContainerStyle={[menuStyles.scrollContent, { paddingBottom: bottomNavHeight + scale(90) }]}
         refreshControl={
           <RefreshControl 
             refreshing={refreshing} 
@@ -288,13 +280,13 @@ export default function MenuScreen() {
                   { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F5F5F5' }
                 ]}>
                   <TouchableOpacity onPress={() => decreaseQuantity(item.compositeKey)} style={menuStyles.qtyBtn}>
-                    <Ionicons name="remove" size={16} color={colors.text} />
+                    <Ionicons name="remove" size={scale(16)} color={colors.text} />
                   </TouchableOpacity>
                   <Text style={[menuStyles.qtyText, { color: colors.text }]}>
                     {item.qty}
                   </Text>
                   <TouchableOpacity onPress={() => increaseQuantity(item.compositeKey)} style={menuStyles.qtyBtn}>
-                    <Ionicons name="add" size={16} color={colors.text} />
+                    <Ionicons name="add" size={scale(16)} color={colors.text} />
                   </TouchableOpacity>
                 </View>
 
@@ -302,7 +294,7 @@ export default function MenuScreen() {
                   ₦{(item.price * item.qty).toLocaleString()}
                 </Text>
                 <TouchableOpacity onPress={() => removeItem(item.compositeKey)} style={menuStyles.trashBtn}>
-                  <Ionicons name="trash-outline" size={18} color="#D30000" />
+                  <Ionicons name="trash-outline" size={scale(18)} color="#D30000" />
                 </TouchableOpacity>
               </View>
             ))}
@@ -317,7 +309,7 @@ export default function MenuScreen() {
         <View style={menuStyles.menuTitleRow}>
           <View style={menuStyles.redLine} />
           <Text style={[menuStyles.menuTitle, { color: colors.text }]}>Menu</Text>
-          <Ionicons name="chevron-forward" size={18} color={colors.text} />
+          <Ionicons name="chevron-forward" size={scale(18)} color={colors.text} />
         </View>
 
         <View style={menuStyles.searchContainer}>
@@ -353,20 +345,20 @@ export default function MenuScreen() {
 
       </ScrollView>
 
-      <Animated.View pointerEvents={isPackageEmpty ? 'none' : 'auto'} style={[menuStyles.floatingButtonContainer, { bottom: bottomNavHeight + 15, opacity: floatingButtonAnim, transform: [{ translateY: floatingButtonAnim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }] }]}>
+      {}
+      <Animated.View pointerEvents={isPackageEmpty ? 'none' : 'auto'} style={[menuStyles.floatingButtonContainer, { bottom: bottomNavHeight + scale(15), opacity: floatingButtonAnim, transform: [{ translateY: floatingButtonAnim.interpolate({ inputRange: [0, 1], outputRange: [scale(20), 0] }) }] }]}>
         <TouchableOpacity style={[menuStyles.mainAddButton, { backgroundColor: Colors.primary }]} activeOpacity={0.8} onPress={handleAddCustomPlateToCart}>
           <Text style={[menuStyles.mainAddButtonText, { color: '#FFF' }]}>{`Add To Cart - ₦${plateTotal.toLocaleString()}`}</Text>
         </TouchableOpacity>
       </Animated.View>
     
       <Animated.View style={[menuStyles.toastContainer, { transform: [{ translateY: toastAnim }], backgroundColor: isDark ? '#333' : '#222' }]}>
-        <Ionicons name="checkmark-circle" size={24} color="#4CAF50" />
+        <Ionicons name="checkmark-circle" size={scale(24)} color="#4CAF50" />
         <Text style={menuStyles.toastText}>Custom Package added to cart!</Text>
       </Animated.View>
 
       <Sidebar visible={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
       
-      {/* OUR NEW VARIANT MODAL */}
       <ItemVariantModal 
         item={variantModalItem} 
         visible={!!variantModalItem} 
@@ -383,235 +375,226 @@ export const menuStyles = StyleSheet.create({
     flex: 1,
   },
   iconButton: { 
-    padding: 5,
+    padding: scale(5),
   },
   headerRight: { 
     flexDirection: 'row', 
-    gap: 10, 
+    gap: scale(10), 
     alignItems: 'center',
   },
   scrollContent: { 
   },
   titlesWrapper: { 
-    marginTop: 20, 
-    marginBottom: 15, 
-    paddingHorizontal: 20,
+    marginTop: scale(20), 
+    marginBottom: scale(15), 
+    paddingHorizontal: scale(20),
   },
   specialsText: { 
-    fontSize: 14, 
+    fontSize: scale(14), 
     fontWeight: '600', 
-    marginBottom: 2,
+    marginBottom: scale(2),
   },
   mainTitle: { 
-    fontSize: 24, 
+    fontSize: scale(24), 
     fontWeight: '900',
   },
   searchContainer: { 
-    marginBottom: 20, 
-    paddingHorizontal: 20,
+    marginBottom: scale(20), 
+    paddingHorizontal: scale(20),
   },
   sectionTitle: {
-    fontSize: 12,
+    fontSize: scale(12),
     fontWeight: 'bold',
     letterSpacing: 1,
-    marginBottom: 10,
-    marginTop: 5,
-    paddingHorizontal: 20,
+    marginBottom: scale(10),
+    marginTop: scale(5),
+    paddingHorizontal: scale(20),
   },
   emptyBox: { 
-    borderWidth: 2, 
+    borderWidth: scale(2), 
     borderStyle: 'dashed', 
-    borderRadius: 20, 
-    padding: 30, 
+    borderRadius: scale(20), 
+    padding: scale(30), 
     alignItems: 'center', 
-    marginBottom: 25, 
-    marginHorizontal: 20,
+    marginBottom: scale(25), 
+    marginHorizontal: scale(20),
   },
   emptyPackageIcon: {
-    width: 110,
-    height: 110,
+    width: scale(110),
+    height: scale(110),
     marginBottom: 0,
   },
   emptyBoxTitle: { 
-    fontSize: 18, 
+    fontSize: scale(18), 
     fontWeight: 'bold', 
-    marginTop: 5, 
-    marginBottom: 5,
+    marginTop: scale(5), 
+    marginBottom: scale(5),
   },
   emptyBoxSub: { 
-    fontSize: 13, 
+    fontSize: scale(13), 
     textAlign: 'center', 
     opacity: 0.8,
   },
   filledBox: { 
     borderWidth: 1, 
-    borderRadius: 20, 
-    padding: 20, 
-    marginBottom: 25, 
-    marginHorizontal: 20, 
+    borderRadius: scale(20), 
+    padding: scale(20), 
+    marginBottom: scale(25), 
+    marginHorizontal: scale(20), 
     elevation: 2, 
     shadowColor: '#000', 
-    shadowOffset: { 
-      width: 0, 
-      height: 2 
-    }, 
+    shadowOffset: { width: 0, height: scale(2) }, 
     shadowOpacity: 0.1, 
-    shadowRadius: 4,
+    shadowRadius: scale(4),
   },
   filledBoxHeader: { 
     flexDirection: 'row', 
     justifyContent: 'space-between', 
-    marginBottom: 15,
+    marginBottom: scale(15),
   },
   filledBoxTitle: { 
-    fontSize: 16, 
+    fontSize: scale(16), 
     fontWeight: 'bold',
   },
   deleteAllText: { 
     color: Colors.primary, 
     fontWeight: 'bold', 
-    fontSize: 14,
+    fontSize: scale(14),
   },
   receiptRow: { 
     flexDirection: 'row', 
     alignItems: 'center', 
-    marginBottom: 15,
+    marginBottom: scale(15),
   },
   receiptInfo: {
     flex: 1,
-    paddingRight: 5,
+    paddingRight: scale(5),
   },
   receiptName: { 
-    fontSize: 14, 
+    fontSize: scale(14), 
     fontWeight: '500',
   },
   soldOutWarningText: {
-    fontSize: 11,
+    fontSize: scale(11),
     fontWeight: 'bold',
     color: '#D32F2F',
-    marginTop: 2,
+    marginTop: scale(2),
   },
   quantityBox: { 
     flexDirection: 'row', 
     alignItems: 'center', 
-    borderRadius: 20, 
-    paddingHorizontal: 5, 
-    paddingVertical: 5, 
-    marginHorizontal: 10,
+    borderRadius: scale(20), 
+    paddingHorizontal: scale(5), 
+    paddingVertical: scale(5), 
+    marginHorizontal: scale(10),
   },
   qtyBtn: { 
-    width: 26, 
-    height: 26, 
+    width: scale(26), 
+    height: scale(26), 
     justifyContent: 'center', 
     alignItems: 'center', 
-    borderRadius: 13, 
+    borderRadius: scale(13), 
     backgroundColor: 'rgba(150,150,150,0.2)',
   },
   qtyText: { 
-    fontSize: 14, 
+    fontSize: scale(14), 
     fontWeight: 'bold', 
-    marginHorizontal: 8,
+    marginHorizontal: scale(8),
   },
   receiptPrice: { 
-    fontSize: 14, 
+    fontSize: scale(14), 
     fontWeight: 'bold', 
-    minWidth: 60, 
+    minWidth: scale(60), 
     textAlign: 'right',
   },
   trashBtn: { 
-    marginLeft: 15, 
-    padding: 5,
+    marginLeft: scale(15), 
+    padding: scale(5),
   },
   totalRow: { 
     flexDirection: 'row', 
     justifyContent: 'space-between', 
     borderTopWidth: 1, 
-    paddingTop: 15, 
-    marginTop: 5,
+    paddingTop: scale(15), 
+    marginTop: scale(5),
   },
   totalText: { 
-    fontSize: 18, 
+    fontSize: scale(18), 
     fontWeight: 'bold',
   },
   totalPrice: { 
-    fontSize: 18, 
+    fontSize: scale(18), 
     fontWeight: 'bold',
   },
   menuTitleRow: { 
     flexDirection: 'row', 
     alignItems: 'center', 
-    marginBottom: 15, 
-    paddingHorizontal: 20,
+    marginBottom: scale(15), 
+    paddingHorizontal: scale(20),
   },
   redLine: { 
-    width: 4, 
-    height: 18, 
+    width: scale(4), 
+    height: scale(18), 
     backgroundColor: Colors.primary, 
-    marginRight: 8, 
-    borderRadius: 2,
+    marginRight: scale(8), 
+    borderRadius: scale(2),
   },
   menuTitle: { 
-    fontSize: 18, 
+    fontSize: scale(18), 
     fontWeight: 'bold', 
-    marginRight: 5,
+    marginRight: scale(5),
   },
   categoryScroll: { 
-    marginBottom: 20, 
-    paddingLeft: 20,
+    marginBottom: scale(20), 
+    paddingLeft: scale(20),
   },
   gridContainer: { 
     flexDirection: 'row', 
     flexWrap: 'wrap', 
-    marginBottom: 10, 
-    paddingHorizontal: 20,
+    marginBottom: scale(10), 
+    paddingHorizontal: scale(20),
   },
   floatingButtonContainer: { 
     position: 'absolute', 
-    left: 20, 
-    right: 20, 
+    left: scale(20), 
+    right: scale(20), 
     zIndex: 90,
   },
   mainAddButton: { 
-    paddingVertical: 18, 
-    borderRadius: 25, 
+    paddingVertical: scale(18), 
+    borderRadius: scale(25), 
     alignItems: 'center', 
     elevation: 6, 
     shadowColor: '#000', 
-    shadowOffset: { 
-      width: 0, 
-      height: 4 
-    }, 
+    shadowOffset: { width: 0, height: scale(4) }, 
     shadowOpacity: 0.3, 
-    shadowRadius: 6,
+    shadowRadius: scale(6),
   },
   mainAddButtonText: { 
-    fontSize: 16, 
+    fontSize: scale(16), 
     fontWeight: 'bold',
   },
   toastContainer: { 
     position: 'absolute', 
-    left: 20, 
-    right: 20, 
+    left: scale(20), 
+    right: scale(20), 
     flexDirection: 'row', 
     alignItems: 'center', 
-    paddingVertical: 14, 
-    paddingHorizontal: 20, 
-    borderRadius: 30, 
+    paddingVertical: scale(14), 
+    paddingHorizontal: scale(20), 
+    borderRadius: scale(30), 
     elevation: 10, 
     shadowColor: '#000', 
-    shadowOffset: { 
-      width: 0, 
-      height: 5 
-    }, 
+    shadowOffset: { width: 0, height: scale(5) }, 
     shadowOpacity: 0.3, 
-    shadowRadius: 8, 
+    shadowRadius: scale(8), 
     zIndex: 100, 
     justifyContent: 'center', 
-    gap: 10,
+    gap: scale(10),
   },
   toastText: { 
     color: '#FFF', 
-    fontSize: 16, 
+    fontSize: scale(16), 
     fontWeight: 'bold',
   }
 });

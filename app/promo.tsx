@@ -17,6 +17,7 @@ import { Colors } from '../constants/Colors';
 import { StatusBar } from 'expo-status-bar';
 import TopNav from '../components/TopNav';
 import api from './lib/api';
+import { scale } from '../constants/Sizes'; // <-- IMPORTED MASTER SCALE
 
 interface Promo {
   id: string;
@@ -95,19 +96,18 @@ export default function PromoScreen() {
       />
 
       {loading ? (
-        <ActivityIndicator color={Colors.primary} style={{ marginTop: 60 }} />
+        <ActivityIndicator color={Colors.primary} style={{ marginTop: scale(60) }} />
       ) : (
         <ScrollView 
           showsVerticalScrollIndicator={false} 
-          contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 40 }]}
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + scale(40) }]}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} />}
         >
           <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>AVAILABLE OFFERS</Text>
 
-          {}
           {promos.length === 0 ? (
             <View style={styles.emptyState}>
-              <Ionicons name="notifications-off-outline" size={40} color={colors.textMuted} style={{ opacity: 0.3 }} />
+              <Ionicons name="notifications-off-outline" size={scale(40)} color={colors.textMuted} style={{ opacity: 0.3 }} />
               <Text style={[styles.emptyText, { color: colors.textMuted }]}>No offers available right now. Check back soon!</Text>
             </View>
           ) : (
@@ -120,7 +120,7 @@ export default function PromoScreen() {
                   <View style={styles.promoContent}>
                     <View style={styles.promoHeader}>
                       <View style={[styles.iconBox, { backgroundColor: `${meta.color}20` }]}>
-                        <Ionicons name={meta.icon as any} size={20} color={meta.color} />
+                        <Ionicons name={meta.icon as any} size={scale(20)} color={meta.color} />
                       </View>
                       <View style={styles.titleWrap}>
                         <Text style={[styles.promoTitle, { color: colors.text }]}>{formatValue(promo)}</Text>
@@ -158,7 +158,7 @@ export default function PromoScreen() {
                       >
                         <Ionicons 
                           name={copiedId === promo.id ? "checkmark" : "copy-outline"} 
-                          size={20} 
+                          size={scale(20)} 
                           color="#FFF" 
                         />
                       </TouchableOpacity>
@@ -176,23 +176,23 @@ export default function PromoScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scrollContent: { paddingTop: 20, paddingHorizontal: 20 },
-  sectionTitle: { fontSize: 12, fontWeight: 'bold', marginBottom: 15, marginLeft: 5, letterSpacing: 1.5 },
-  promoCard: { flexDirection: 'row', borderRadius: 20, borderWidth: 1, marginBottom: 20, overflow: 'hidden', elevation: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 6 },
-  colorBar: { width: 8, height: '100%' },
-  promoContent: { flex: 1, padding: 20 },
-  promoHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  iconBox: { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginRight: 15 },
+  scrollContent: { paddingTop: scale(20), paddingHorizontal: scale(20) },
+  sectionTitle: { fontSize: scale(12), fontWeight: 'bold', marginBottom: scale(15), marginLeft: scale(5), letterSpacing: 1.5 },
+  promoCard: { flexDirection: 'row', borderRadius: scale(20), borderWidth: 1, marginBottom: scale(20), overflow: 'hidden', elevation: 3, shadowColor: '#000', shadowOffset: { width: 0, height: scale(4) }, shadowOpacity: 0.1, shadowRadius: scale(6) },
+  colorBar: { width: scale(8), height: '100%' },
+  promoContent: { flex: 1, padding: scale(20) },
+  promoHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: scale(12) },
+  iconBox: { width: scale(40), height: scale(40), borderRadius: scale(12), justifyContent: 'center', alignItems: 'center', marginRight: scale(15) },
   titleWrap: { flex: 1 },
-  promoTitle: { fontSize: 17, fontWeight: 'bold', marginBottom: 2 },
-  validText: { fontSize: 12 },
-  promoDesc: { fontSize: 14, lineHeight: 20, marginBottom: 10 },
-  minOrderText: { fontSize: 12, fontWeight: '600', marginBottom: 10 },
-  dashedLine: { borderBottomWidth: 1, borderStyle: 'dashed', marginBottom: 20 },
+  promoTitle: { fontSize: scale(17), fontWeight: 'bold', marginBottom: scale(2) },
+  validText: { fontSize: scale(12) },
+  promoDesc: { fontSize: scale(14), lineHeight: scale(20), marginBottom: scale(10) },
+  minOrderText: { fontSize: scale(12), fontWeight: '600', marginBottom: scale(10) },
+  dashedLine: { borderBottomWidth: 1, borderStyle: 'dashed', marginBottom: scale(20) },
   bottomRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  codeBox: { flex: 1, marginRight: 15, paddingVertical: 12, paddingHorizontal: 15, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)' },
-  codeText: { fontSize: 15, fontWeight: '900', letterSpacing: 2 },
-  copyIconBtn: { width: 46, height: 46, backgroundColor: Colors.primary, justifyContent: 'center', alignItems: 'center', borderRadius: 12 },
-  emptyState: { alignItems: 'center', justifyContent: 'center', paddingVertical: 40 },
-  emptyText: { fontSize: 14, marginTop: 10, textAlign: 'center', paddingHorizontal: 30 },
+  codeBox: { flex: 1, marginRight: scale(15), paddingVertical: scale(12), paddingHorizontal: scale(15), borderRadius: scale(12), borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)' },
+  codeText: { fontSize: scale(15), fontWeight: '900', letterSpacing: 2 },
+  copyIconBtn: { width: scale(46), height: scale(46), backgroundColor: Colors.primary, justifyContent: 'center', alignItems: 'center', borderRadius: scale(12) },
+  emptyState: { alignItems: 'center', justifyContent: 'center', paddingVertical: scale(40) },
+  emptyText: { fontSize: scale(14), marginTop: scale(10), textAlign: 'center', paddingHorizontal: scale(30) },
 });

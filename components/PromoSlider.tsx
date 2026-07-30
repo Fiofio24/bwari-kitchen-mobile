@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, Dimensions, ImageBackground, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useTheme } from '../context/ThemeContext'; // <-- 1. Import the hook
+import { useTheme } from '../context/ThemeContext'; 
+import { scale } from '../constants/Sizes'; // <-- IMPORTED MASTER SCALE
 
 const { width } = Dimensions.get('window');
 
@@ -15,7 +16,6 @@ export default function PromoSlider() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
   
-  // 2. Grab dynamic colors
   const { colors, isDark } = useTheme(); 
 
   useEffect(() => {
@@ -90,7 +90,6 @@ export default function PromoSlider() {
               styles.dot,
               currentIndex === index 
                 ? [styles.activeDot, { backgroundColor: colors.primary }] 
-                // Dynamically dim the inactive dots based on the theme
                 : [styles.inactiveDot, { backgroundColor: isDark ? colors.border : '#FFCCCC' }],
             ]}
           />
@@ -101,24 +100,24 @@ export default function PromoSlider() {
 }
 
 const styles = StyleSheet.create({
-  container: { marginTop: 10, marginBottom: 20 },
-  slideContainer: { width: width, paddingHorizontal: 20 },
-  cardImage: { width: '100%', height: 200, justifyContent: 'flex-end' },
-  imageStyle: { borderRadius: 20 },
-  gradientOverlay: { ...StyleSheet.absoluteFillObject, borderRadius: 20, justifyContent: 'space-between' },
-  badge: { paddingVertical: 6, paddingHorizontal: 15, borderTopLeftRadius: 20, borderBottomRightRadius: 20, alignSelf: 'flex-start' },
-  badgeText: { color: '#FFF', fontWeight: 'bold', fontSize: 12 },
-  bottomContent: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', padding: 15 },
-  textColumn: { flex: 1, paddingRight: 10 },
-  title: { color: '#FFF', fontSize: 22, fontWeight: 'bold' },
-  description: { color: '#E0E0E0', fontSize: 12, marginTop: 2, marginBottom: 5 },
+  container: { marginTop: scale(10), marginBottom: scale(20) },
+  slideContainer: { width: width, paddingHorizontal: scale(20) }, // Kept width exact for paging
+  cardImage: { width: '100%', height: scale(200), justifyContent: 'flex-end' },
+  imageStyle: { borderRadius: scale(20) },
+  gradientOverlay: { ...StyleSheet.absoluteFillObject, borderRadius: scale(20), justifyContent: 'space-between' },
+  badge: { paddingVertical: scale(6), paddingHorizontal: scale(15), borderTopLeftRadius: scale(20), borderBottomRightRadius: scale(20), alignSelf: 'flex-start' },
+  badgeText: { color: '#FFF', fontWeight: 'bold', fontSize: scale(12) },
+  bottomContent: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', padding: scale(15) },
+  textColumn: { flex: 1, paddingRight: scale(10) },
+  title: { color: '#FFF', fontSize: scale(22), fontWeight: 'bold' },
+  description: { color: '#E0E0E0', fontSize: scale(12), marginTop: scale(2), marginBottom: scale(5) },
   priceRow: { flexDirection: 'row', alignItems: 'baseline' },
-  price: { color: '#FFF', fontSize: 18, fontWeight: 'bold' },
-  originalPrice: { color: '#A0A0A0', fontSize: 14, textDecorationLine: 'line-through' },
-  orderButton: { paddingVertical: 10, paddingHorizontal: 20, borderRadius: 25 },
-  orderButtonText: { color: '#FFF', fontWeight: 'bold', fontSize: 14 },
-  paginationContainer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 15 },
-  dot: { width: 6, height: 6, borderRadius: 3, marginHorizontal: 4 },
-  activeDot: { width: 8, height: 8, borderRadius: 4 },
+  price: { color: '#FFF', fontSize: scale(18), fontWeight: 'bold' },
+  originalPrice: { color: '#A0A0A0', fontSize: scale(14), textDecorationLine: 'line-through' },
+  orderButton: { paddingVertical: scale(10), paddingHorizontal: scale(20), borderRadius: scale(25) },
+  orderButtonText: { color: '#FFF', fontWeight: 'bold', fontSize: scale(14) },
+  paginationContainer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: scale(15) },
+  dot: { width: scale(6), height: scale(6), borderRadius: scale(3), marginHorizontal: scale(4) },
+  activeDot: { width: scale(8), height: scale(8), borderRadius: scale(4) },
   inactiveDot: {},
 });

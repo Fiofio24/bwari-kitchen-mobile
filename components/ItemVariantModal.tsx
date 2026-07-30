@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { Colors } from '../constants/Colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { scale } from '../constants/Sizes'; // <-- IMPORTED MASTER SCALE
 
 const { height } = Dimensions.get('window');
 
@@ -25,7 +26,7 @@ interface ItemVariantModalProps {
 }
 
 export default function ItemVariantModal({ item, visible, onClose, onAddVariant }: ItemVariantModalProps) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   
   const [isRendering, setIsRendering] = useState(false);
@@ -67,7 +68,7 @@ export default function ItemVariantModal({ item, visible, onClose, onAddVariant 
           <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} />
         </Animated.View>
 
-        <Animated.View style={[styles.sheet, { backgroundColor: colors.background, paddingBottom: Math.max(insets.bottom, 20), transform: [{ translateY: slideAnim }] }]}>
+        <Animated.View style={[styles.sheet, { backgroundColor: colors.background, paddingBottom: Math.max(insets.bottom, scale(20)), transform: [{ translateY: slideAnim }] }]}>
           <View style={styles.handleWrapper}>
             <View style={[styles.handle, { backgroundColor: colors.border }]} />
           </View>
@@ -105,7 +106,7 @@ export default function ItemVariantModal({ item, visible, onClose, onAddVariant 
                     </View>
                     <Ionicons 
                       name={isSelected ? "radio-button-on" : "radio-button-off"} 
-                      size={24} 
+                      size={scale(24)} 
                       color={isSelected ? Colors.primary : colors.textMuted} 
                     />
                   </TouchableOpacity>
@@ -128,22 +129,22 @@ export default function ItemVariantModal({ item, visible, onClose, onAddVariant 
 }
 
 const styles = StyleSheet.create({
-  overlayContainer: { zIndex: 2000, elevation: 2000, justifyContent: 'flex-end' },
+  overlayContainer: { zIndex: 2000, elevation: 2000, justifyContent: 'flex-end', paddingBottom: scale(20) },
   backdrop: { ...StyleSheet.absoluteFillObject },
-  sheet: { width: '100%', borderTopLeftRadius: 30, borderTopRightRadius: 30, paddingHorizontal: 20, elevation: 25, shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 20, shadowOffset: { width: 0, height: -5 } },
-  handleWrapper: { width: '100%', alignItems: 'center', paddingVertical: 12 },
-  handle: { width: 40, height: 5, borderRadius: 3 },
-  itemHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 25 },
-  itemImage: { width: 60, height: 60, borderRadius: 15, marginRight: 15, backgroundColor: '#EAEAEC' },
+  sheet: { width: '100%', borderTopLeftRadius: scale(30), borderTopRightRadius: scale(30), paddingHorizontal: scale(20), elevation: 25, shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: scale(20), shadowOffset: { width: 0, height: scale(-5) } },
+  handleWrapper: { width: '100%', alignItems: 'center', paddingVertical: scale(12) },
+  handle: { width: scale(40), height: scale(5), borderRadius: scale(3) },
+  itemHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: scale(25) },
+  itemImage: { width: scale(60), height: scale(60), borderRadius: scale(15), marginRight: scale(15), backgroundColor: '#EAEAEC' },
   itemInfo: { flex: 1 },
-  itemName: { fontSize: 20, fontWeight: 'bold', marginBottom: 4 },
-  itemCat: { fontSize: 14, fontWeight: '600' },
-  sectionTitle: { fontSize: 12, fontWeight: 'bold', letterSpacing: 1, marginBottom: 10, marginLeft: 5 },
-  variantsContainer: { borderRadius: 20, borderWidth: 1, marginBottom: 25, overflow: 'hidden' },
-  variantRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 18 },
+  itemName: { fontSize: scale(20), fontWeight: 'bold', marginBottom: scale(4) },
+  itemCat: { fontSize: scale(14), fontWeight: '600' },
+  sectionTitle: { fontSize: scale(12), fontWeight: 'bold', letterSpacing: 1, marginBottom: scale(10), marginLeft: scale(5) },
+  variantsContainer: { borderRadius: scale(20), borderWidth: 1, marginBottom: scale(25), overflow: 'hidden' },
+  variantRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: scale(18) },
   variantLeft: { flex: 1 },
-  variantLabel: { fontSize: 16, fontWeight: 'bold', marginBottom: 4 },
-  variantPrice: { fontSize: 14, fontWeight: 'bold' },
-  addBtn: { width: '100%', paddingVertical: 18, borderRadius: 20, alignItems: 'center', justifyContent: 'center', elevation: 4, shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 5, shadowOffset: { width: 0, height: 4 } },
-  addBtnText: { color: '#FFF', fontSize: 16, fontWeight: 'bold' },
+  variantLabel: { fontSize: scale(16), fontWeight: 'bold', marginBottom: scale(4) },
+  variantPrice: { fontSize: scale(14), fontWeight: 'bold' },
+  addBtn: { width: '100%', paddingVertical: scale(18), borderRadius: scale(20), alignItems: 'center', justifyContent: 'center', elevation: 4, shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: scale(5), shadowOffset: { width: 0, height: scale(4) } },
+  addBtnText: { color: '#FFF', fontSize: scale(16), fontWeight: 'bold' },
 });

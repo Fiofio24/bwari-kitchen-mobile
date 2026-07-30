@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useCart } from '../context/CartContext';
 import { Colors } from '../constants/Colors';
+import { scale } from '../constants/Sizes'; // <-- IMPORTED MASTER SCALE
 
 interface CartBadgeIconProps {
   color?: string;
@@ -10,7 +11,7 @@ interface CartBadgeIconProps {
   onPress: () => void;
 }
 
-export default function CartBadgeIcon({ color = '#FFF', size = 26, onPress }: CartBadgeIconProps) {
+export default function CartBadgeIcon({ color = '#FFF', size = scale(26), onPress }: CartBadgeIconProps) {
   const { cartItems } = useCart(); 
   
   // Safely count the total number of packages
@@ -33,25 +34,25 @@ export default function CartBadgeIcon({ color = '#FFF', size = 26, onPress }: Ca
 const styles = StyleSheet.create({
   iconWrapper: {
     position: 'relative',
-    padding: 4,
+    padding: scale(4),
     justifyContent: 'center',
     alignItems: 'center',
   },
   badge: {
     position: 'absolute',
-    top: -2,
-    right: -2,
+    top: scale(-2),
+    right: scale(-2),
     backgroundColor: '#FFFFFF', // White background to match notification badge
-    borderRadius: 10,
-    minWidth: 16,
-    height: 16,
+    borderRadius: scale(10),
+    minWidth: scale(16),
+    height: scale(16),
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 10,
   },
   badgeText: {
     color: Colors.primary, // Primary color text
-    fontSize: 10,
+    fontSize: scale(10),
     fontWeight: 'bold',
     textAlign: 'center',
   },
