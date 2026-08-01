@@ -16,7 +16,10 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.fiotecz.bwarikitchen"
+      "bundleIdentifier": "com.fiotecz.bwarikitchen",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -45,12 +48,12 @@
       "expo-web-browser"
     ],
     "scheme": "bwarikitchen",
+    "owner": "fiofio24",
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "a131349a-4d98-4c7d-a2d3-96d830f948a6"
+        "projectId": "b43549ec-ac0e-47ad-b457-19de98b6237f"
       }
-    },
-    "owner": "cybernaut"
+    }
   }
 }

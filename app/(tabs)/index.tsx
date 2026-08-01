@@ -9,7 +9,8 @@ import {
   Animated, 
   RefreshControl,
   Platform,
-  BackHandler
+  BackHandler,
+  PanResponder
 } from 'react-native'; 
 import { Colors } from '../../constants/Colors';
 import { useFocusEffect } from 'expo-router';
@@ -31,6 +32,7 @@ import { useMenu } from '../../context/MenuContext';
 
 import CartBadgeIcon from '../../components/CartBadgeIcon';
 import AddressSelectorModal from '../../components/AddressSelectorModal';
+import FeedbackExitModal from '../../components/FeedbackExitModal';
 import { useNotifications } from '../../context/NotificationContext';
 import { useAddresses } from '../../context/AddressContext';
 import { scale } from '../../constants/Sizes'; // <-- IMPORTED MASTER SCALE
@@ -67,11 +69,27 @@ export default function HomeScreen() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [isAddressModalVisible, setIsAddressModalVisible] = useState(false);
+  const [isExitModalVisible, setIsExitModalVisible] = useState(false);
   
   const insets = useSafeAreaInsets();
   const shadowTripwire = scale(100) + insets.top; 
   const { colors, isDark } = useTheme();
   const toastAnim = useRef(new Animated.Value(-scale(100))).current;
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onPanResponderRelease: (e, gestureState) => {
+        if (Math.abs(gestureState.dx) > 20 || Math.abs(gestureState.dy) > 20) {
+          Animated.timing(toastAnim, {
+            toValue: -scale(100),
+            duration: 200,
+            useNativeDriver: true
+          }).start();
+        }
+      }
+    })
+  ).current;
   
   const { width } = useWindowDimensions();
   const MAX_GRID_WIDTH = scale(200); 
@@ -84,7 +102,8 @@ export default function HomeScreen() {
   useFocusEffect(
     useCallback(() => {
       const onBackPress = () => {
-        BackHandler.exitApp();
+        // Show Feedback Modal instead of exiting instantly
+        setIsExitModalVisible(true);
         return true; 
       };
 
@@ -134,7 +153,8 @@ export default function HomeScreen() {
     if (!combo.subItems || combo.subItems.length === 0) return combo.isAvailable !== false;
     return !combo.subItems.some((sub: any) => {
       const dbItem = findItem(sub.id);
-      return dbItem?.isAvailable === false;
+      // Treat deleted items (!dbItem) the same as sold out items
+      return !dbItem || dbItem.isAvailable === false;
     });
   };
 
@@ -222,7 +242,6 @@ export default function HomeScreen() {
         </View>
       </ScrollView>
 
-      {}
       <TopNav 
         leftIcon="menu"
         onLeftPress={() => setIsSidebarOpen(true)}
@@ -261,7 +280,10 @@ export default function HomeScreen() {
         }
       />
 
-      <Animated.View style={[styles.toastContainer, { transform: [{ translateY: toastAnim }], backgroundColor: isDark ? '#333' : '#222' }]}>
+      <Animated.View 
+        {...panResponder.panHandlers}
+        style={[styles.toastContainer, { transform: [{ translateY: toastAnim }], backgroundColor: isDark ? '#333' : '#222' }]}
+      >
         <Ionicons name="checkmark-circle" size={scale(24)} color="#4CAF50" />
         <Text style={styles.toastText}>Successfully added to cart!</Text>
       </Animated.View>
@@ -271,6 +293,12 @@ export default function HomeScreen() {
       <AddressSelectorModal 
         visible={isAddressModalVisible} 
         onClose={() => setIsAddressModalVisible(false)} 
+      />
+
+      <FeedbackExitModal 
+        visible={isExitModalVisible} 
+        onClose={() => setIsExitModalVisible(false)} 
+        onExit={() => BackHandler.exitApp()} 
       />
     </View>
   );

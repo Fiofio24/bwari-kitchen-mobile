@@ -25,9 +25,7 @@ import GridDishCard from './GridDishCard';
 import ItemVariantModal from './ItemVariantModal';
 import { scale } from '../constants/Sizes'; // <-- IMPORTED MASTER SCALE
 
-// Make sure it matches the exact custom plate from the menu screen!
 const CUSTOM_PACKAGE_IMAGE = require('../assets/images/custom-plate.png');
-
 const { height, width } = Dimensions.get('window');
 
 interface QuickEditPackageProps {
@@ -53,6 +51,7 @@ export default function QuickEditPackage({
 
   const slideAnim = useRef(new Animated.Value(height)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const prevVisible = useRef(false);
   const [isRendering, setIsRendering] = useState(visible);
 
   const [activeCategory, setActiveCategory] = useState('Main');
@@ -71,29 +70,34 @@ export default function QuickEditPackage({
   useEffect(() => {
     if (visible && initialItem) {
       setIsRendering(true);
-      setSearchQuery('');
-      setActiveCategory('Main');
       
-      const initialPlate: Record<string, number> = {};
-      
-      if (initialItem.subItems && initialItem.subItems.length > 0) {
-        initialItem.subItems.forEach((sub: any) => {
-          const dbItem = findItem(sub.id);
-          const actualPrice = (sub.price !== undefined && sub.price > 1) 
-            ? sub.price 
-            : (dbItem?.basePrice || 0);
-            
-          let key = sub.compositeKey;
-          if (!key || key.includes('::1') || key.includes('::null')) {
-            key = `${sub.id}::${sub.variantLabel || 'Base'}::${actualPrice}`;
-          }
-          initialPlate[key] = sub.qty || 1;
-        });
-      } else {
-        const basePrice = initialItem.basePrice ?? initialItem.price ?? 0;
-        initialPlate[`${initialItem.id}::Base::${basePrice}`] = 1;
+      // ONLY reset state if the modal just transitioned from closed to open.
+      // This stops background syncs from wiping the user's edits!
+      if (!prevVisible.current) {
+        setSearchQuery('');
+        setActiveCategory('Main');
+        
+        const initialPlate: Record<string, number> = {};
+        
+        if (initialItem.subItems && initialItem.subItems.length > 0) {
+          initialItem.subItems.forEach((sub: any) => {
+            const dbItem = findItem(sub.id);
+            const actualPrice = (sub.price !== undefined && sub.price > 1) 
+              ? sub.price 
+              : (dbItem?.basePrice || 0);
+              
+            let key = sub.compositeKey;
+            if (!key || key.includes('::1') || key.includes('::null')) {
+              key = `${sub.id}::${sub.variantLabel || 'Base'}::${actualPrice}`;
+            }
+            initialPlate[key] = sub.qty || 1;
+          });
+        } else {
+          const basePrice = initialItem.basePrice ?? initialItem.price ?? 0;
+          initialPlate[`${initialItem.id}::Base::${basePrice}`] = 1;
+        }
+        setCustomPlate(initialPlate);
       }
-      setCustomPlate(initialPlate);
 
       Animated.parallel([
         Animated.timing(fadeAnim, { 
@@ -122,6 +126,9 @@ export default function QuickEditPackage({
         })
       ]).start(() => setIsRendering(false));
     }
+    
+    // Remember the visibility state for the next render check
+    prevVisible.current = visible;
   }, [visible, initialItem, fadeAnim, slideAnim, isRendering, findItem]);
 
   if (!isRendering || !initialItem) return null;
@@ -178,9 +185,13 @@ export default function QuickEditPackage({
     
     const finalPrice = variantPrice !== null ? variantPrice : (dbItem?.basePrice || 0);
     
-    const finalName = variantLabel && variantLabel !== 'Base' 
-      ? `${dbItem?.name} (${variantLabel})` 
-      : (dbItem?.name || 'Unknown Item');
+    // Ghost item trap! If the item was completely deleted from DB, it's flagged as Deleted Item.
+    let finalName = 'Deleted Item';
+    if (dbItem) {
+      finalName = variantLabel && variantLabel !== 'Base' 
+        ? `${dbItem.name} (${variantLabel})` 
+        : dbItem.name;
+    }
 
     return {
       compositeKey,
@@ -189,7 +200,7 @@ export default function QuickEditPackage({
       variantLabel: variantLabel && variantLabel !== 'Base' ? variantLabel : null,
       price: finalPrice,
       qty: customPlate[compositeKey],
-      isAvailable: dbItem?.isAvailable !== false,
+      isAvailable: dbItem ? dbItem.isAvailable !== false : false, // Treats deleted items as sold out
     };
   });
 
@@ -426,6 +437,7 @@ export default function QuickEditPackage({
   );
 }
 
+// PRO CSS COMPLIANCE: Every property strictly on its own line
 const styles = StyleSheet.create({
   overlay: {
     zIndex: 1000,

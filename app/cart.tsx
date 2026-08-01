@@ -34,7 +34,8 @@ const CartItemCard = ({ item, isSelected, onToggle, onIncrease, onDecrease, onRe
 
   const unavailableSubItems = (item.subItems || []).filter((sub: any) => {
     const dbItem = findItem(sub.id);
-    return dbItem?.isAvailable === false;
+    // Treat deleted items (!dbItem) the same as sold out items
+    return !dbItem || dbItem.isAvailable === false;
   });
   
   const hasUnavailable = unavailableSubItems.length > 0;
@@ -232,10 +233,15 @@ export default function CartScreen() {
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
 
   const isItemFullyAvailable = useCallback((item: any) => {
-    if (!item.subItems || item.subItems.length === 0) return true;
+    if (!item.subItems || item.subItems.length === 0) {
+      const dbItem = findItem(item.id);
+      // If it's a single item and it was deleted, lock it!
+      return dbItem ? dbItem.isAvailable !== false : false;
+    }
     return !item.subItems.some((sub: any) => {
       const dbItem = findItem(sub.id);
-      return dbItem?.isAvailable === false;
+      // Treat deleted items (!dbItem) the same as sold out items
+      return !dbItem || dbItem.isAvailable === false;
     });
   }, [findItem]);
 

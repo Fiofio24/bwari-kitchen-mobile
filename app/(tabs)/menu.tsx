@@ -8,7 +8,8 @@ import {
   Animated, 
   useWindowDimensions,
   RefreshControl,
-  Image
+  Image,
+  PanResponder
 } from 'react-native';
 import { useSafeRouter } from '../../hooks/useSafeRouter';
 import { Ionicons } from '@expo/vector-icons';
@@ -48,6 +49,21 @@ export default function MenuScreen() {
   const [customPlate, setCustomPlate] = useState<Record<string, number>>({});
   const [refreshing, setRefreshing] = useState(false); 
   const [variantModalItem, setVariantModalItem] = useState<any>(null);
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onPanResponderRelease: (e, gestureState) => {
+        if (Math.abs(gestureState.dx) > 20 || Math.abs(gestureState.dy) > 20) {
+          Animated.timing(toastAnim, {
+            toValue: -scale(100),
+            duration: 200,
+            useNativeDriver: true
+          }).start();
+        }
+      }
+    })
+  ).current;
 
   const { width } = useWindowDimensions();
   const GRID_PADDING = scale(20); 
@@ -352,7 +368,10 @@ export default function MenuScreen() {
         </TouchableOpacity>
       </Animated.View>
     
-      <Animated.View style={[menuStyles.toastContainer, { transform: [{ translateY: toastAnim }], backgroundColor: isDark ? '#333' : '#222' }]}>
+      <Animated.View 
+        {...panResponder.panHandlers}
+        style={[menuStyles.toastContainer, { transform: [{ translateY: toastAnim }], backgroundColor: isDark ? '#333' : '#222' }]}
+      >
         <Ionicons name="checkmark-circle" size={scale(24)} color="#4CAF50" />
         <Text style={menuStyles.toastText}>Custom Package added to cart!</Text>
       </Animated.View>

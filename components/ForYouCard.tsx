@@ -64,7 +64,8 @@ export default function ForYouCard({ onAddToCart }: ForYouCardProps) {
     if (!combo.subItems || combo.subItems.length === 0) return combo.isAvailable !== false;
     return !combo.subItems.some((sub: any) => {
       const dbItem = findItem(sub.id);
-      return dbItem?.isAvailable === false;
+      // Treat deleted items (!dbItem) the same as sold out items
+      return !dbItem || dbItem.isAvailable === false;
     });
   };
 

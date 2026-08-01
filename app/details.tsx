@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { 
   View, 
   Text, 
@@ -7,7 +7,9 @@ import {
   ScrollView, 
   ImageBackground, 
   Platform,
-  Animated
+  Animated,
+  RefreshControl,
+  PanResponder
 } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useSafeRouter } from '../hooks/useSafeRouter';
@@ -37,9 +39,38 @@ export default function DetailsScreen() {
   
   const [quantity, setQuantity] = useState(1);
   const [isEditModalVisible, setIsEditModalVisible] = useState(false); 
+  const [refreshing, setRefreshing] = useState(false);
   const toastAnim = useRef(new Animated.Value(-scale(100))).current;
 
-  const { findItem, findPackage, loading } = useMenu();
+  const { findItem, findPackage, loading, refresh } = useMenu();
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await refresh();
+    } catch (error) {
+      console.error("Error refreshing data:", error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refresh]);
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onPanResponderRelease: (e, gestureState) => {
+        // If dragged more than 20px in any direction, dismiss it!
+        if (Math.abs(gestureState.dx) > 20 || Math.abs(gestureState.dy) > 20) {
+          Animated.timing(toastAnim, {
+            toValue: -scale(100),
+            duration: 200,
+            useNativeDriver: true
+          }).start();
+        }
+      }
+    })
+  ).current;
+
   const rawItem = findPackage(id as string) || findItem(id as string);
 
   const item: any = rawItem ? {
@@ -59,7 +90,7 @@ export default function DetailsScreen() {
     })) : [],
   } : null;
 
-  if (loading) {
+  if (loading && !item) {
     return (
       <View style={[styles.errorContainer, { backgroundColor: colors.background }]}>
         <Text style={[styles.errorText, { color: colors.text }]}>Loading...</Text>
@@ -85,7 +116,8 @@ export default function DetailsScreen() {
     if (!item.subItems || item.subItems.length === 0) return item.isAvailable !== false;
     return !item.subItems.some((sub: any) => {
       const dbItem = findItem(sub.id);
-      return dbItem?.isAvailable === false;
+      // Treat deleted items (!dbItem) the same as sold out items
+      return !dbItem || dbItem.isAvailable === false;
     });
   };
 
@@ -146,7 +178,20 @@ export default function DetailsScreen() {
         showDivider={false}
       />
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + scale(140) }]}>
+      <ScrollView 
+        showsVerticalScrollIndicator={false} 
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + scale(140) }]}
+        refreshControl={
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={onRefresh} 
+            tintColor={Colors.primary} 
+            colors={[Colors.primary]} 
+            progressBackgroundColor={isDark ? colors.surface : '#FFF'} 
+            progressViewOffset={insets.top + scale(60)} 
+          />
+        }
+      >
         
         <ImageBackground 
           source={typeof item.image === 'string' ? { uri: item.image } : require('../assets/images/custom-plate.png')} 
@@ -230,7 +275,8 @@ export default function DetailsScreen() {
 
               {item.subItems.map((sub: any, idx: number) => {
                 const dbItem = findItem(sub.id);
-                const isSubSoldOut = dbItem?.isAvailable === false;
+                // Treat deleted items (!dbItem) the same as sold out items
+                const isSubSoldOut = !dbItem || dbItem.isAvailable === false;
 
                 return (
                   <View key={idx} style={styles.comboItemRow}>
@@ -302,13 +348,16 @@ export default function DetailsScreen() {
         </TouchableOpacity>
       </View>
 
-      <Animated.View style={[
-        styles.toastContainer, 
-        { 
-          transform: [{ translateY: toastAnim }], 
-          backgroundColor: isDark ? '#333' : '#222' 
-        }
-      ]}>
+      <Animated.View 
+        {...panResponder.panHandlers}
+        style={[
+          styles.toastContainer, 
+          { 
+            transform: [{ translateY: toastAnim }], 
+            backgroundColor: isDark ? '#333' : '#222' 
+          }
+        ]}
+      >
         <Ionicons name="checkmark-circle" size={scale(24)} color="#4CAF50" />
         <Text style={styles.toastText}>Successfully added to cart!</Text>
       </Animated.View>

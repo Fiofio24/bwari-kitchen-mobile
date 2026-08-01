@@ -7,7 +7,8 @@ import {
   Animated, 
   useWindowDimensions, 
   RefreshControl,
-  TouchableOpacity
+  TouchableOpacity,
+  PanResponder
 } from 'react-native';
 import { useSafeRouter } from '../../hooks/useSafeRouter';
 import { Ionicons } from '@expo/vector-icons';
@@ -36,6 +37,21 @@ export default function FavoriteScreen() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false); 
   const toastAnim = useRef(new Animated.Value(-scale(100))).current;
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onPanResponderRelease: (e, gestureState) => {
+        if (Math.abs(gestureState.dx) > 20 || Math.abs(gestureState.dy) > 20) {
+          Animated.timing(toastAnim, {
+            toValue: -scale(100),
+            duration: 200,
+            useNativeDriver: true
+          }).start();
+        }
+      }
+    })
+  ).current;
 
   const { width } = useWindowDimensions();
   const GRID_PADDING = scale(20);
@@ -83,11 +99,12 @@ export default function FavoriteScreen() {
     if (dish.subItems && dish.subItems.length > 0) {
       return !dish.subItems.some((sub: any) => {
         const dbItem = findItem(sub.id);
-        return dbItem?.isAvailable === false;
+        // Treat deleted items (!dbItem) the same as sold out items
+        return !dbItem || dbItem.isAvailable === false;
       });
     }
     const dbItem = findItem(dish.id);
-    return dbItem ? dbItem.isAvailable !== false : true;
+    return dbItem ? dbItem.isAvailable !== false : false; // False if completely deleted
   };
 
   const headerRightComponent = (
@@ -179,7 +196,10 @@ export default function FavoriteScreen() {
         )}
       </ScrollView>
 
-      <Animated.View style={[styles.toastContainer, { transform: [{ translateY: toastAnim }], backgroundColor: isDark ? '#333' : '#222' }]}>
+      <Animated.View 
+        {...panResponder.panHandlers}
+        style={[styles.toastContainer, { transform: [{ translateY: toastAnim }], backgroundColor: isDark ? '#333' : '#222' }]}
+      >
         <Ionicons name="checkmark-circle" size={scale(24)} color="#4CAF50" />
         <Text style={styles.toastText}>Added to cart!</Text>
       </Animated.View>

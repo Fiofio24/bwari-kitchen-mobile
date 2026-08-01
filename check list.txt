@@ -20,9 +20,17 @@ To Do List:
 19. it's like cart orders are being saved to phone memory or something even when i created a new account on signig up successful the account already had items in the cart
 20. (Done ✅)in the promo page instead of the "copy code" button let it be copy icon so that there would be enough space in case of long promo code
 21. (not confirmed)in the sidebar the sign out button does not have allowance for the phone's navigation bar 
-22. the location area in the home page at the very top should show the selected address not "Select Location"
-23. in the admin dashboard in menu page when creating a new package after adding a discription then saved the package, then in the main customer app the discription on the details page was showing a hardcoded discrition aside the perticular discription i just added to that new package
-24.  
+22. the location area in the home page at the very top should show the selected address not "Select Location" and on new opening of the app the location that will show there will be the default location 
+23. (Victor) in the admin dashboard in menu page when creating a new package after adding a discription then saved the package, then in the main customer app the discription on the details page was showing a hardcoded discrition aside the perticular discription i just added to that new package
+24. (Suggestion single items shouldn't even have a details page) when a menu item is searched and clicked after taking them to the details page for that single item, on the buttom bar it's suppose to say "add to package" not "add to cart" so the user can create a package with that menu item. but it is ok for it to say "add to car" when it was a combo package that was clicked. also on a single item details page after clicking the "add to package" an option list should slide from the bottom and show "add to existing package" in case they've already started creating package before they searched an item, second option should be "add to new package" then below the second option there should be a warning note to tell them that if they had an existing package before it will be lost.
+25. (Victor) the profile image for users is not saving in the data base after log out and login the profile image disappears 
+26. (Victor) the admin page is too sluggish it will frustrate them
+27. ON changing location on checkout page or home page the newly changed location shouldn't automatically change to default location onless they change it right from Manage Addresses page
+28. (Victor) in the admin make that when an item or package is being created it should be able to 
+In the admin menu page under items, the list of items is not scrollable to the right on mobile view. it should be just like the categories list is scrollable to the right on mobile view
+29. in case of a situation where admin completely deletes an item in the menu page of the app the item disappears that's good but in the combo package in home page and packages in cart they stay as if nothing happened then when i want to edit a plate that the item no longer exist the item name becomes "unknown item" only whe i want to edit that a user can realise something is wrong with that particular item
+30. The image in QuickEditPackage.tsx above "Your package is empty" is not showing the right image which is "../assets/images/Icon&logo/empty-package.png"
+31. Don't forget to remove the user testing feadback feature when ready for real build for official lunch version
 
 Future updates:
 1. 
