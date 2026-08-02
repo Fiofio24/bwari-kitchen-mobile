@@ -47,3 +47,10 @@ Checked ✅:
 5. I rearranged the GridDishCard.tsx from [{category || name} {rating}],[{name}],[{price} Add] to  [{name}],[{category || name} {rating}],[{price} Add]
 6. I created an in-app browser that handles the paystack url instead of redirecting to phone browser which also fixed some errors concerning checkout process
 7. I added Sizes.tsx to dynamically scale in or out the theme size of the whole app
+
+
+User testing feedbacks 
+1. When I tried biometrics and thought the all crashed just to see it was loading. Maybe add a loading screen?
+2. Also when I tap to search for my address. The tab doesn't rise so I can't see what I'm typing (the keyboard is covering the text input section)
+3. (in the cart page) I was first confused why my total was just 2500 then I realised I had to tap on the picture of the food. Not just any part of the tab but the picture itself to select that package. That's annoying 
+4. Also, it took me a while to find the cart icon. Maybe put it where you put the my orders. Or when they open the app for the first time there is like a quick tutorial of where all the buttons are.
