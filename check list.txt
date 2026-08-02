@@ -56,3 +56,4 @@ User testing feedbacks
 4. Also, it took me a while to find the cart icon. Maybe put it where you put the my orders. Or when they open the app for the first time there is like a quick tutorial of where all the buttons are.
 5. the response time for the biometrics is too slow. The dark mode theme no fine but white mode make sense
 6. Ur app works well, u did very well and I love the user interface
+7. Ok my order is taking time maybe network shall another thing is that it's showing me my current location but I myself can't confirm the current location if it's what I mean
