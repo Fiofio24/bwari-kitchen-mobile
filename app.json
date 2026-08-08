@@ -4,7 +4,7 @@
     "slug": "bwari-kitchen",
     "version": "2.4.0",
     "orientation": "portrait",
-    "icon": "./assets/BK_logo12-r.png",
+    "icon": "./assets/BK_logo.png",
     "userInterfaceStyle": "automatic",
     "splash": {
       "image": "./assets/splash.png",
@@ -33,7 +33,7 @@
       ]
     },
     "web": {
-      "favicon": "./assets/BK_logo12-r.png"
+      "favicon": "./assets/BK_logo.png"
     },
     "plugins": [
       "expo-router",

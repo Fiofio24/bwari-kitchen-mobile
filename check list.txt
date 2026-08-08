@@ -34,7 +34,9 @@ To Do List:
 33. notification should automatically mark as read once user enters the notification page
 34. (Victor) admin should be able to tag a package as brakefast, lunch or dinner recommended package 
 35. (Victor) when admin change price for a particular item and a customer clicker reorder in the past order which have the old price, on click of "place ordre" it throws an error saying "Menu item {the item name} is not available". instead of the reorder to automatically update the price for that item. so basically because a data for that item was changed it then assumes the item doesn't exist because it was reordered from an out dated order price. maybe i can fix this from my end with a logic that tell the reorder button to refetch the current prices and other info for that order 
-
+36. (Victor) the switch off button in the admin customers page, what does it do. cuz i thought it was supposed to deactivate a customer but i don't think that works....(08/08/2026) Ooo it actually works but it doesn't log them out, they have to log out first then try to login again before it denies then access
+37. (Victor) add a loading feature to the admin page so user will know what ever they clicked is processing to prevent double or more repeared action...make sure when loading user 
+38. Change your brand name to fioWeber or something more cool and unique 
 
 Future updates:
 1. 
@@ -60,4 +62,5 @@ User testing feedbacks
 8. (From Client) The unlock feature is not necessary, there's nothing to protect
 8. So customer can't order without creating an account?
 9. Nice app bro. All working well. Issue I noticed, The input boxes should go up along with the keyboard, so you can see what you are typing. Nice work !
-10. 
+10. I selected a 6k package in the cart and increase the quantity to 3 that is 18k total, but after clicking place order in the checkout page i saw "...Pay N6,000" also in the my orders page the price there is also something different...Summary the math is not mathing.
+11. 
