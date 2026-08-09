@@ -8,7 +8,7 @@ To Do List:
 7. (Done ✅)the mini menu for editing is showing all prices as ₦1
 8. (victor)fixing the isAvailable logic for menu items "Hey Victor, when you toggle an item to 'off' in the Admin dashboard, the /api/menu/items endpoint completely removes the item from the JSON array. Can you update the endpoint so it still returns all items, but changes the isAvailable boolean to false for sold-out items? We need the items to still appear in the app UI, just visually greyed out and unclickable."
 9. (Done ✅)let the theme of the app be light mode by default 
-10. (Partially Done ✅)Stop buttons from activating more than once even if user clicks it several times before the button rout to the next page. this is because currently when user clicks a button more than once when the next page opens and user wants to go back they will go back to same page because they opened that same page repeatedly 
+10. (Done ✅)Stop buttons from activating more than once even if user clicks it several times before the button rout to the next page. this is because currently when user clicks a button more than once when the next page opens and user wants to go back they will go back to same page because they opened that same page repeatedly 
 11. (Done ✅)why is it that when i click a package in the details page default price in the QuickEditPackage is ₦0 then when i deselect and select that item again then the actual price appears 
 12. change the default image that the a menu item has if admin forgot to add an item image from that basketball image to something food related probably the bwari kitchen logo 
 13. (Done ✅)in the my-order.tsx make it that user can switch from active orders to past orders by just swipping the page left or right
@@ -19,7 +19,7 @@ To Do List:
 18. (Done ✅)in the sign up page under password input section make that it will have a kind of must have features before the password will be accepted like showing message under "password must be up to 8-characters" etc
 19. it's like cart orders are being saved to phone memory or something even when i created a new account on signig up successful the account already had items in the cart
 20. (Done ✅)in the promo page instead of the "copy code" button let it be copy icon so that there would be enough space in case of long promo code
-21. (not confirmed)in the sidebar the sign out button does not have allowance for the phone's navigation bar 
+21. (not confirmed) in the sidebar the sign out button does not have allowance for the phone's navigation bar 
 22. the location area in the home page at the very top should show the selected address not "Select Location" and on new opening of the app the location that will show there will be the default location 
 23. (Victor) in the admin dashboard in menu page when creating a new package after adding a discription then saved the package, then in the main customer app the discription on the details page was showing a hardcoded discrition aside the perticular discription i just added to that new package
 24. (Suggestion single items shouldn't even have a details page) when a menu item is searched and clicked after taking them to the details page for that single item, on the buttom bar it's suppose to say "add to package" not "add to cart" so the user can create a package with that menu item. but it is ok for it to say "add to car" when it was a combo package that was clicked. also on a single item details page after clicking the "add to package" an option list should slide from the bottom and show "add to existing package" in case they've already started creating package before they searched an item, second option should be "add to new package" then below the second option there should be a warning note to tell them that if they had an existing package before it will be lost.
@@ -37,9 +37,21 @@ To Do List:
 36. (Victor) the switch off button in the admin customers page, what does it do. cuz i thought it was supposed to deactivate a customer but i don't think that works....(08/08/2026) Ooo it actually works but it doesn't log them out, they have to log out first then try to login again before it denies then access
 37. (Victor) add a loading feature to the admin page so user will know what ever they clicked is processing to prevent double or more repeared action...make sure when loading user 
 38. Change your brand name to fioWeber or something more cool and unique 
+39. (Victor) In the admin dashboard the "total revenue" section it shounldn't be that only successful payment on paystack will be calculated, what if an error occurs and customer got debited but paystack sees it as pending or failed and admin then confirms the payment the forcefully change the order status to confirmed that means that order won't add up in the dashboard's total revenue calculation 
+40. (Victor) Need of push notification to alart customer on their phone
+41. (Victor) Can you make the admin to be able to create more than one user access so that when checcking the activity log they can know which particular admin did whatever whenever
+42. Create the user agreement and privacy policy on sign up. Also is the checkbox for user agreement and privacy policy necessary for the login if not remove.\
+43. (Victor) let's integrate the "forgot password?" section.
+44. (Victor) in the personal info page let us rethink on a perfect system for changing phone number i think they should have a number of chnages then before they will have to contact support to change or till another period of time again something like that. let's just put this section into concreat thought.
+45. (Victor) Should user be able to delete their account with kitchen??
+46. Payment method option in the profile page is not routing to a valid page 
+47. In the favorite page it is not updating it's grid card with live data...when i added a package to fav when item was unavailable, after that item was available, in the fav page that grid card still shows that an item is not available in the package.
+48.
+
 
 Future updates:
 1. 
+
 
 Checked ✅:
 1. I updated components/DraggableOrderButton.tsx to only glow red when there's an active order (this triggers instantly after checkout).
@@ -63,4 +75,7 @@ User testing feedbacks
 8. So customer can't order without creating an account?
 9. Nice app bro. All working well. Issue I noticed, The input boxes should go up along with the keyboard, so you can see what you are typing. Nice work !
 10. I selected a 6k package in the cart and increase the quantity to 3 that is 18k total, but after clicking place order in the checkout page i saw "...Pay N6,000" also in the my orders page the price there is also something different...Summary the math is not mathing.
-11. 
+11. (from help page) From this frequent question what about adding when someone plays an other due to network he was debited but the receiver wasn't credited
+12. (from profile page) This refer and earn how will the customer get the money , if it will be there maybe there should be a wallet in the app some one an send money directly to the app. At that orders showing 24 I clicked it 👉🏻...Comes out empty (change the hard coded number of order in the profile page from 24 to actually show total numbers of orders customer had placed in that account)
+13. (in the home page)There are no categories for soups and bakes sir. (this is because home and menu share same categories list so even though packages have not been created under bakes and soups it will still show but say "This category is not available in the Kitchen"...instead it should be that when there is no package under those categories the category shouldn't show at all in the list even though that category exits in the menu).
+14. 
