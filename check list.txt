@@ -46,7 +46,7 @@ To Do List:
 45. (Victor) Should user be able to delete their account with kitchen??
 46. Payment method option in the profile page is not routing to a valid page 
 47. In the favorite page it is not updating it's grid card with live data...when i added a package to fav when item was unavailable, after that item was available, in the fav page that grid card still shows that an item is not available in the package.
-48.
+48. (Victor) There should be an error message that says something like "This email is not registered with Bwari Kitchen" in caseses where a user without an account trys to login, also check there should be appropraite error meassage that shows for various scenarios like bad network etces 
 
 
 Future updates:
