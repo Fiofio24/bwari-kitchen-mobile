@@ -43,11 +43,12 @@ To Do List:
 42. Create the user agreement and privacy policy on sign up. Also is the checkbox for user agreement and privacy policy necessary for the login if not remove.\
 43. (Victor) let's integrate the "forgot password?" section.
 44. (Victor) in the personal info page let us rethink on a perfect system for changing phone number i think they should have a number of chnages then before they will have to contact support to change or till another period of time again something like that. let's just put this section into concreat thought.
-45. (Victor) Should user be able to delete their account with kitchen??
+45. (Victor) Should user be able to delete their account??
 46. Payment method option in the profile page is not routing to a valid page 
 47. In the favorite page it is not updating it's grid card with live data...when i added a package to fav when item was unavailable, after that item was available, in the fav page that grid card still shows that an item is not available in the package.
 48. (Victor) There should be an error message that says something like "This email is not registered with Bwari Kitchen" in caseses where a user without an account trys to login, also check there should be appropraite error meassage that shows for various scenarios like bad network etces 
-
+49. (Victor) Let us add delivery code on active orders so rider can confirm that order belongs to the customer by inserting code on rider page customer gives 
+50.
 
 Future updates:
 1. 
