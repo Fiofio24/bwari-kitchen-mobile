@@ -80,3 +80,7 @@ User testing feedbacks
 12. (from profile page) This refer and earn how will the customer get the money , if it will be there maybe there should be a wallet in the app some one an send money directly to the app. At that orders showing 24 I clicked it 👉🏻...Comes out empty (change the hard coded number of order in the profile page from 24 to actually show total numbers of orders customer had placed in that account)
 13. (in the home page)There are no categories for soups and bakes sir. (this is because home and menu share same categories list so even though packages have not been created under bakes and soups it will still show but say "This category is not available in the Kitchen"...instead it should be that when there is no package under those categories the category shouldn't show at all in the list even though that category exits in the menu).
 14. 
+
+
+Internal Database url
+postgresql://bwari_kitchen_database_user:7CbPj0ZZz89LVmCjjqCfulybIZG3t0fA@dpg-da0tksugekts73fqhkkg-a/bwari_kitchen_database
