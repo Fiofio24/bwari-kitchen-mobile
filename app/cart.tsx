@@ -108,10 +108,7 @@ const CartItemCard = ({ item, isSelected, onToggle, onIncrease, onDecrease, onRe
       isSelected && !isLocked ? {
         borderColor: 'transparent',
         shadowColor: '#000',
-        shadowOffset: { 
-          width: 0, 
-          height: scale(4) 
-        },
+        shadowOffset: { width: 0, height: scale(4) },
         shadowOpacity: 0.15,
         shadowRadius: scale(8),
         elevation: 6,
@@ -120,100 +117,103 @@ const CartItemCard = ({ item, isSelected, onToggle, onIncrease, onDecrease, onRe
       }
     ]}>
       
-      {isLocked && (
-        <Animated.View style={[styles.floatingBadge, { width: badgeWidth }]}>
-          <TouchableOpacity style={styles.badgeContent} onPress={toggleExpand} activeOpacity={0.9}>
-            <Ionicons name="alert" size={scale(16)} color="#FFF" style={styles.badgeIcon} />
-            <Text style={styles.floatingBadgeText} numberOfLines={1}>Item sold out. Please edit.</Text>
-          </TouchableOpacity>
-        </Animated.View>
-      )}
-
+      {/* THE FIX: Wrapping everything in a TouchableOpacity */}
       <TouchableOpacity 
+        style={{ flex: 1, flexDirection: 'row' }}
+        activeOpacity={isLocked ? 1 : 0.7}
         onPress={() => {
           if (isLocked) toggleExpand();
           else onToggle(item.id);
-        }} 
-        activeOpacity={isLocked ? 1 : 0.8} 
-        style={styles.imageWrapper}
+        }}
       >
-        <Image 
-          source={typeof item.image === 'string' ? { uri: item.image } : item.image} 
-          style={[styles.itemImage, isLocked && { opacity: 0.3 }]} 
-          resizeMode="cover" 
-        />
-        
-        {!isLocked && (
-          <Animated.View style={[styles.selectedOverlay, { opacity: scaleAnim }]}>
-            <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
-              <Ionicons name="checkmark-circle" size={scale(36)} color="#FFF" />
-            </Animated.View>
+        {isLocked && (
+          <Animated.View style={[styles.floatingBadge, { width: badgeWidth, zIndex: 10 }]}>
+            <TouchableOpacity style={styles.badgeContent} onPress={toggleExpand} activeOpacity={0.9}>
+              <Ionicons name="alert" size={scale(16)} color="#FFF" style={styles.badgeIcon} />
+              <Text style={styles.floatingBadgeText} numberOfLines={1}>Item sold out. Please edit.</Text>
+            </TouchableOpacity>
           </Animated.View>
         )}
-      </TouchableOpacity>
-      
-      <View style={[styles.detailsWrapper, isLocked && { opacity: 0.6 }]}>
-        <View style={styles.topRow}>
-          <Text style={[styles.itemName, { color: isLocked ? colors.textMuted : colors.text }]} numberOfLines={1}>
-            {item.category || item.name}
-          </Text>
-          <TouchableOpacity onPress={() => onRemove(item.id)} style={styles.deleteBtn}>
-            <Ionicons name="trash-outline" size={scale(20)} color={isLocked ? colors.text : Colors.primary} />
-          </TouchableOpacity>
-        </View>
 
-        <View style={styles.itemDetails}>
-          <Text style={[styles.itemContents, { color: colors.textMuted }]} numberOfLines={1}>
-            {item.subItems && item.subItems.length > 0 
-              ? item.subItems.map((sub: any) => sub.name).join(' | ') 
-              : (item.contents || '')}
-          </Text>
-
-          {isLocked && isExpanded && (
-            <View style={styles.expandedMissingBox}>
-              {unavailableSubItems.map((sub: any, idx: number) => (
-                <Text key={idx} style={styles.missingItemText} numberOfLines={1}>
-                  • {sub.name} (Sold Out)
-                </Text>
-              ))}
-            </View>
-          )}
+        <View style={styles.imageWrapper}>
+          <Image 
+            source={typeof item.image === 'string' ? { uri: item.image } : item.image} 
+            style={[styles.itemImage, isLocked && { opacity: 0.3 }]} 
+            resizeMode="cover" 
+          />
           
-          <View style={styles.priceAndActionRow}>
-            <Text style={[styles.itemPrice, { color: isLocked ? colors.textMuted : Colors.primary }]}>
-              ₦{item.price.toLocaleString()}
+          {!isLocked && (
+            <Animated.View style={[styles.selectedOverlay, { opacity: scaleAnim }]}>
+              <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+                <Ionicons name="checkmark-circle" size={scale(36)} color="#FFF" />
+              </Animated.View>
+            </Animated.View>
+          )}
+        </View>
+        
+        <View style={[styles.detailsWrapper, isLocked && { opacity: 0.6 }]}>
+          <View style={styles.topRow}>
+            <Text style={[styles.itemName, { color: isLocked ? colors.textMuted : colors.text }]} numberOfLines={1}>
+              {item.category || item.name}
+            </Text>
+            <TouchableOpacity onPress={() => onRemove(item.id)} style={styles.deleteBtn}>
+              <Ionicons name="trash-outline" size={scale(20)} color={isLocked ? colors.text : Colors.primary} />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.itemDetails}>
+            <Text style={[styles.itemContents, { color: colors.textMuted }]} numberOfLines={1}>
+              {item.subItems && item.subItems.length > 0 
+                ? item.subItems.map((sub: any) => sub.name).join(' | ') 
+                : (item.contents || '')}
             </Text>
 
-            <View style={styles.rightActions}>
-              <TouchableOpacity 
-                style={[
-                  styles.editBtn, 
-                  { backgroundColor: isLocked ? '#FFEBEE' : (isDark ? 'rgba(255,255,255,0.1)' : '#F0F0F0') }
-                ]} 
-                onPress={() => onEdit(item)}
-              >
-                <Text style={[styles.editBtnText, { color: isLocked ? '#D32F2F' : colors.text }]}>Edit</Text>
-              </TouchableOpacity>
-              
-              <View style={[
-                styles.quantityBox, 
-                { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F5F5F5' },
-                isLocked && { opacity: 0.3 }
-              ]}>
-                <TouchableOpacity onPress={() => !isLocked && onDecrease(item.id)} style={styles.qtyBtn} disabled={isLocked}>
-                  <Ionicons name="remove" size={scale(16)} color={colors.text} />
+            {isLocked && isExpanded && (
+              <View style={styles.expandedMissingBox}>
+                {unavailableSubItems.map((sub: any, idx: number) => (
+                  <Text key={idx} style={styles.missingItemText} numberOfLines={1}>
+                    • {sub.name} (Sold Out)
+                  </Text>
+                ))}
+              </View>
+            )}
+            
+            <View style={styles.priceAndActionRow}>
+              <Text style={[styles.itemPrice, { color: isLocked ? colors.textMuted : Colors.primary }]}>
+                ₦{(item.price * (item.quantity || 1)).toLocaleString()}
+              </Text>
+
+              <View style={styles.rightActions}>
+                <TouchableOpacity 
+                  style={[
+                    styles.editBtn, 
+                    { backgroundColor: isLocked ? '#FFEBEE' : (isDark ? 'rgba(255,255,255,0.1)' : '#F0F0F0') }
+                  ]} 
+                  onPress={() => onEdit(item)}
+                >
+                  <Text style={[styles.editBtnText, { color: isLocked ? '#D32F2F' : colors.text }]}>Edit</Text>
                 </TouchableOpacity>
-                <Text style={[styles.qtyText, { color: colors.text }]}>
-                  {item.quantity || 1}
-                </Text>
-                <TouchableOpacity onPress={() => !isLocked && onIncrease(item.id)} style={styles.qtyBtn} disabled={isLocked}>
-                  <Ionicons name="add" size={scale(16)} color={colors.text} />
-                </TouchableOpacity>
+                
+                <View style={[
+                  styles.quantityBox, 
+                  { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F5F5F5' },
+                  isLocked && { opacity: 0.3 }
+                ]}>
+                  <TouchableOpacity onPress={() => !isLocked && onDecrease(item.id)} style={styles.qtyBtn} disabled={isLocked}>
+                    <Ionicons name="remove" size={scale(16)} color={colors.text} />
+                  </TouchableOpacity>
+                  <Text style={[styles.qtyText, { color: colors.text }]}>
+                    {item.quantity || 1}
+                  </Text>
+                  <TouchableOpacity onPress={() => !isLocked && onIncrease(item.id)} style={styles.qtyBtn} disabled={isLocked}>
+                    <Ionicons name="add" size={scale(16)} color={colors.text} />
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
           </View>
         </View>
-      </View>
+      </TouchableOpacity>
     </Animated.View>
   );
 };

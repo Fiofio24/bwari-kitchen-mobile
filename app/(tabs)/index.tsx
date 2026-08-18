@@ -295,11 +295,6 @@ export default function HomeScreen() {
         onClose={() => setIsAddressModalVisible(false)} 
       />
 
-      <FeedbackExitModal 
-        visible={isExitModalVisible} 
-        onClose={() => setIsExitModalVisible(false)} 
-        onExit={() => BackHandler.exitApp()} 
-      />
     </View>
   );
 }

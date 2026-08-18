@@ -34,24 +34,27 @@ import { scale } from '../constants/Sizes'; // <-- IMPORTED MASTER SCALE
 
 const buildOrderPackagesPayload = (items: any[]) => {
   return items.map((item: any) => {
+    const isRealPackageId = !String(item.id).startsWith('custom_');
+    
     if (item.subItems && item.subItems.length > 0) {
-      const isRealPackageId = !String(item.id).startsWith('custom_');
       return {
         packageId: isRealPackageId ? item.id : undefined,
         name: item.name,
+        quantity: item.quantity || 1, // <-- Cleanly passing the quantity for Victor!
         wasEdited: String(item.id).startsWith('custom_edit_'),
         items: item.subItems.map((sub: any) => ({
           menuItemId: sub.id,
           variantLabel: sub.variantLabel || undefined,
-          quantity: sub.qty * (item.quantity || 1),
+          quantity: sub.qty, 
         })),
       };
     } else {
       return {
         name: item.name,
+        quantity: item.quantity || 1, // <-- Cleanly passing the quantity for Victor!
         items: [{
           menuItemId: item.id,
-          quantity: item.quantity || 1,
+          quantity: 1, 
         }],
       };
     }

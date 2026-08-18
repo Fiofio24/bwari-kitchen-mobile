@@ -5,9 +5,7 @@ import {
   StyleSheet, 
   TextInput, 
   TouchableOpacity, 
-  KeyboardAvoidingView, 
   Platform, 
-  ScrollView,
   ActivityIndicator,
   Dimensions
 } from 'react-native';
@@ -24,7 +22,8 @@ import { useAddresses } from '../context/AddressContext';
 import { useFavorites } from '../context/FavoriteContext';
 import api from './lib/api';
 import * as SecureStore from 'expo-secure-store';
-import { scale } from '../constants/Sizes'; // <-- IMPORTED MASTER SCALE
+import { scale } from '../constants/Sizes'; 
+import SafeKeyboardWrapper from '../components/SafeKeyboardWrapper';
 
 const { height } = Dimensions.get('window');
 
@@ -70,143 +69,134 @@ export default function LoginScreen() {
   };
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.keyboardAvoid} 
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <StatusBar style="light" />
-        
-        {/* REUSABLE HERO SECTION */}
-        <HeroHeader 
-          heightRatio={0.35}
-          logoPaddingBottom={scale(35)} 
-        />
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar style="light" />
+      
+      {/* REUSABLE HERO SECTION */}
+      <HeroHeader 
+        heightRatio={0.35}
+        logoPaddingBottom={scale(35)} 
+      />
 
-        {/* WHITE FORM SECTION (Overlapping) */}
-        <View style={[styles.formSection, { backgroundColor: colors.background }]}>
-          <ScrollView
-            showsVerticalScrollIndicator={false} 
-            contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + scale(40) }]}
-          >
-            <Text style={[styles.header, { color: colors.text }]}>
-              Welcome <Text style={{ color: Colors.primary }}>Back</Text> 
+      {/* WHITE FORM SECTION (Overlapping) */}
+      <View style={[styles.formSection, { backgroundColor: colors.background }]}>
+        <SafeKeyboardWrapper
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + scale(40) }]}
+        >
+          <Text style={[styles.header, { color: colors.text }]}>
+            Welcome <Text style={{ color: Colors.primary }}>Back</Text> 
+          </Text>
+
+          {/* EMAIL */}
+          <View style={styles.inputGroup}>
+            <Text style={[styles.inputLabel, { color: colors.text }]}>
+              Email Address
             </Text>
-
-            {/* EMAIL */}
-            <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, { color: colors.text }]}>
-                Email Address
-              </Text>
-              <View style={[styles.inputWrapper, { backgroundColor: isDark ? colors.surface : '#FFF', borderColor: colors.border }]}>
-                <TextInput
-                  style={[styles.textInput, { color: colors.text }]}
-                  placeholder="Enter your email address"
-                  placeholderTextColor={colors.textMuted}
-                  value={email}
-                  onChangeText={setEmail}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                />
-              </View>
+            <View style={[styles.inputWrapper, { backgroundColor: isDark ? colors.surface : '#FFF', borderColor: colors.border }]}>
+              <TextInput
+                style={[styles.textInput, { color: colors.text }]}
+                placeholder="Enter your email address"
+                placeholderTextColor={colors.textMuted}
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
             </View>
+          </View>
 
-            {/* PASSWORD */}
-            <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, { color: colors.text }]}>
-                Password
-              </Text>
-              <View style={[styles.inputWrapper, { backgroundColor: isDark ? colors.surface : '#FFF', borderColor: colors.border }]}>
-                <TextInput
-                  style={[styles.textInput, { color: colors.text }]}
-                  placeholder="Enter your password"
-                  placeholderTextColor={colors.textMuted}
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry={!showPassword}
-                />
-                <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
-                  <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={scale(20)} color={colors.textMuted} />
-                </TouchableOpacity>
-              </View>
-              
-              <TouchableOpacity style={styles.forgotPasswordBtn} activeOpacity={0.7}>
-                <Text style={[styles.forgotPasswordText, { color: colors.textMuted }]}>
-                  Forgot password?
-                </Text>
+          {/* PASSWORD */}
+          <View style={styles.inputGroup}>
+            <Text style={[styles.inputLabel, { color: colors.text }]}>
+              Password
+            </Text>
+            <View style={[styles.inputWrapper, { backgroundColor: isDark ? colors.surface : '#FFF', borderColor: colors.border }]}>
+              <TextInput
+                style={[styles.textInput, { color: colors.text }]}
+                placeholder="Enter your password"
+                placeholderTextColor={colors.textMuted}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+              />
+              <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
+                <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={scale(20)} color={colors.textMuted} />
               </TouchableOpacity>
             </View>
-
-            {/* AGREEMENT CHECKBOX */}
-            <View style={styles.agreementRow}>
-              <TouchableOpacity 
-                style={[
-                  styles.checkbox, 
-                  { 
-                    borderColor: agreed ? Colors.primary : colors.border,
-                    backgroundColor: agreed ? Colors.primary : 'transparent' 
-                  }
-                ]}
-                activeOpacity={0.8}
-                onPress={() => setAgreed(!agreed)}
-              >
-                {agreed && <Ionicons name="checkmark" size={scale(14)} color="#FFF" />}
-              </TouchableOpacity>
-
-              <Text style={[styles.agreementText, { color: colors.textMuted }]}>
-                I&apos;ve read and agreed to <Text style={{ color: Colors.primary, fontWeight: 'bold' }}>User Agreement</Text> and <Text style={{ color: Colors.primary, fontWeight: 'bold' }}>Privacy Policy</Text>
-              </Text>
-            </View>
-
-             {errorMessage ? (
-              <Text style={{ color: '#D32F2F', fontSize: scale(12), marginBottom: scale(15), textAlign: 'center', fontWeight: '500' }}>{errorMessage}</Text>
-            ) : null}
             
-            {/* SIGN IN BUTTON */}
+            <TouchableOpacity style={styles.forgotPasswordBtn} activeOpacity={0.7}>
+              <Text style={[styles.forgotPasswordText, { color: colors.textMuted }]}>
+                Forgot password?
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* AGREEMENT CHECKBOX */}
+          <View style={styles.agreementRow}>
             <TouchableOpacity 
               style={[
-                styles.primaryBtn, 
-                { backgroundColor: (!email || !password || !agreed) ? colors.border : Colors.primary }
-              ]} 
-              disabled={!email || !password || !agreed || isLoading}
+                styles.checkbox, 
+                { 
+                  borderColor: agreed ? Colors.primary : colors.border,
+                  backgroundColor: agreed ? Colors.primary : 'transparent' 
+                }
+              ]}
               activeOpacity={0.8}
-              onPress={handleLogin}
+              onPress={() => setAgreed(!agreed)}
             >
-              {isLoading ? (
-                <ActivityIndicator color="#FFF" />
-              ) : (
-                <Text style={[
-                  styles.primaryBtnText, 
-                  { color: (!email || !password || !agreed) ? colors.textMuted : '#FFF' }
-                ]}>
-                  Sign in
-                </Text>
-              )}
+              {agreed && <Ionicons name="checkmark" size={scale(14)} color="#FFF" />}
             </TouchableOpacity>
 
-            {/* FOOTER LINK */}
-            <View style={styles.footerContainer}>
-              <Text style={[styles.footerText, { color: colors.textMuted }]}>
-                Don&apos;t have an account?
-              </Text>
-              <TouchableOpacity onPress={() => router.push('/signup')} activeOpacity={0.7}>
-                <Text style={[styles.footerLink, { color: Colors.primary }]}>
-                  Sign Up
-                </Text>
-              </TouchableOpacity>
-            </View>
+            <Text style={[styles.agreementText, { color: colors.textMuted }]}>
+              I&apos;ve read and agreed to <Text style={{ color: Colors.primary, fontWeight: 'bold' }}>User Agreement</Text> and <Text style={{ color: Colors.primary, fontWeight: 'bold' }}>Privacy Policy</Text>
+            </Text>
+          </View>
 
-          </ScrollView>
-        </View>
+          {errorMessage ? (
+            <Text style={{ color: '#D32F2F', fontSize: scale(12), marginBottom: scale(15), textAlign: 'center', fontWeight: '500' }}>{errorMessage}</Text>
+          ) : null}
+          
+          {/* SIGN IN BUTTON */}
+          <TouchableOpacity 
+            style={[
+              styles.primaryBtn, 
+              { backgroundColor: (!email || !password || !agreed) ? colors.border : Colors.primary }
+            ]} 
+            disabled={!email || !password || !agreed || isLoading}
+            activeOpacity={0.8}
+            onPress={handleLogin}
+          >
+            {isLoading ? (
+              <ActivityIndicator color="#FFF" />
+            ) : (
+              <Text style={[
+                styles.primaryBtnText, 
+                { color: (!email || !password || !agreed) ? colors.textMuted : '#FFF' }
+              ]}>
+                Sign in
+              </Text>
+            )}
+          </TouchableOpacity>
+
+          {/* FOOTER LINK */}
+          <View style={styles.footerContainer}>
+            <Text style={[styles.footerText, { color: colors.textMuted }]}>
+              Don&apos;t have an account?
+            </Text>
+            <TouchableOpacity onPress={() => router.push('/signup')} activeOpacity={0.7}>
+              <Text style={[styles.footerLink, { color: Colors.primary }]}>
+                Sign Up
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+        </SafeKeyboardWrapper>
       </View>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  keyboardAvoid: {
-    flex: 1,
-  },
   container: {
     flex: 1,
   },

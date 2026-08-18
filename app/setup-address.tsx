@@ -40,20 +40,20 @@ export default function SetupAddressScreen() {
     // Simulate Backend API Call saving the address
     setTimeout(() => {
       setIsLoading(false);
-      // Route to the final step: PIN Setup
-      router.replace('/setup-pin');
+      // Route straight to the main app (PIN setup removed)
+      router.replace('/(tabs)');
     }, 1500);
   };
 
   const handleSkip = () => {
     // Let users skip and add it later in the app if they are in a hurry
-    router.replace('/setup-pin');
+    router.replace('/(tabs)');
   };
 
   return (
     <KeyboardAvoidingView 
       style={styles.keyboardAvoid} 
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
         <StatusBar style={isDark ? "light" : "dark"} />
@@ -73,6 +73,7 @@ export default function SetupAddressScreen() {
 
         <ScrollView
           showsVerticalScrollIndicator={false} 
+          keyboardShouldPersistTaps="handled"
           contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + scale(40) }]}
         >
           {/* Icon Header */}

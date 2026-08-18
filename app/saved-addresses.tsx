@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -10,8 +10,8 @@ import {
   TextInput,
   ActivityIndicator,
   Modal,
-  KeyboardAvoidingView,
   Platform,
+  Keyboard
 } from 'react-native';
 import { useSafeRouter } from '../hooks/useSafeRouter';
 import { Ionicons } from '@expo/vector-icons';
@@ -37,6 +37,27 @@ export default function SavedAddressesScreen() {
   const [landmark, setLandmark] = useState('');
   const [area, setArea] = useState('');
   const [saving, setSaving] = useState(false);
+  
+  // NEW: Manual Keyboard Listener State
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  // NEW: Effect to listen to exact keyboard height
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const showSubscription = Keyboard.addListener(showEvent, (e) => {
+      setKeyboardHeight(e.endCoordinates.height);
+    });
+    const hideSubscription = Keyboard.addListener(hideEvent, () => {
+      setKeyboardHeight(0);
+    });
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, []);
 
   const handleSetDefault = (id: string) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -235,81 +256,97 @@ export default function SavedAddressesScreen() {
       </View>
 
       <Modal visible={modalVisible} transparent animationType="slide" onRequestClose={() => setModalVisible(false)}>
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, justifyContent: 'flex-end' }}>
-          <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setModalVisible(false)} />
-          <View style={{ backgroundColor: colors.background, borderTopLeftRadius: scale(25), borderTopRightRadius: scale(25), padding: scale(20), paddingBottom: insets.bottom + scale(20) }}>
+        <View style={{ flex: 1, justifyContent: 'flex-end' }}>
+          {/* Added Keyboard.dismiss() so tapping the background hides the keyboard smoothly */}
+          <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => { Keyboard.dismiss(); setModalVisible(false); }} />
+          
+          <View style={{ 
+            backgroundColor: colors.background, 
+            borderTopLeftRadius: scale(25), 
+            borderTopRightRadius: scale(25), 
+            padding: scale(20), 
+            paddingTop: scale(25),
+            // MAGIC UX FIX: We inject the exact keyboard height here!
+            paddingBottom: Math.max(insets.bottom, scale(20)) + keyboardHeight 
+          }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: scale(15) }}>
               <Text style={{ fontSize: scale(18), fontWeight: 'bold', color: colors.text }}>
                 {editingId ? 'Edit Address' : 'New Address'}
               </Text>
-              <TouchableOpacity onPress={() => setModalVisible(false)}>
+              <TouchableOpacity onPress={() => { Keyboard.dismiss(); setModalVisible(false); }}>
                 <Ionicons name="close-circle" size={scale(26)} color={colors.textMuted} />
               </TouchableOpacity>
             </View>
-            <View style={{ gap: scale(12) }}>
-          <View>
-            <Text style={{ fontSize: scale(13), fontWeight: '600', marginBottom: scale(6), color: colors.text }}>Label (e.g. Home, Work)</Text>
-            <TextInput
-              value={label}
-              onChangeText={setLabel}
-              placeholder="Home"
-              placeholderTextColor={colors.textMuted}
-              style={{ borderWidth: 1, borderColor: colors.border, borderRadius: scale(12), padding: scale(12), color: colors.text }}
-            />
-          </View>
-          <View>
-            <Text style={{ fontSize: scale(13), fontWeight: '600', marginBottom: scale(6), color: colors.text }}>Street Address *</Text>
-            <TextInput
-              value={streetAddress}
-              onChangeText={setStreetAddress}
-              placeholder="No 6 Kuje Street"
-              placeholderTextColor={colors.textMuted}
-              style={{ borderWidth: 1, borderColor: colors.border, borderRadius: scale(12), padding: scale(12), color: colors.text }}
-            />
-          </View>
-          <View>
-            <Text style={{ fontSize: scale(13), fontWeight: '600', marginBottom: scale(6), color: colors.text }}>Landmark</Text>
-            <TextInput
-              value={landmark}
-              onChangeText={setLandmark}
-              placeholder="Opposite the blue gate"
-              placeholderTextColor={colors.textMuted}
-              style={{ borderWidth: 1, borderColor: colors.border, borderRadius: scale(12), padding: scale(12), color: colors.text }}
-            />
-          </View>
-          <View>
-            <Text style={{ fontSize: scale(13), fontWeight: '600', marginBottom: scale(6), color: colors.text }}>Area</Text>
-            <TextInput
-              value={area}
-              onChangeText={setArea}
-              placeholder="Kuje"
-              placeholderTextColor={colors.textMuted}
-              style={{ borderWidth: 1, borderColor: colors.border, borderRadius: scale(12), padding: scale(12), color: colors.text }}
-            />
-          </View>
+            
+            <ScrollView 
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+            >
+              <View style={{ gap: scale(12) }}>
+                <View>
+                  <Text style={{ fontSize: scale(13), fontWeight: '600', marginBottom: scale(6), color: colors.text }}>Label (e.g. Home, Work)</Text>
+                  <TextInput
+                    value={label}
+                    onChangeText={setLabel}
+                    placeholder="Home"
+                    placeholderTextColor={colors.textMuted}
+                    style={{ borderWidth: 1, borderColor: colors.border, borderRadius: scale(12), padding: scale(12), color: colors.text }}
+                  />
+                </View>
+                <View>
+                  <Text style={{ fontSize: scale(13), fontWeight: '600', marginBottom: scale(6), color: colors.text }}>Street Address *</Text>
+                  <TextInput
+                    value={streetAddress}
+                    onChangeText={setStreetAddress}
+                    placeholder="No 6 Kuje Street"
+                    placeholderTextColor={colors.textMuted}
+                    style={{ borderWidth: 1, borderColor: colors.border, borderRadius: scale(12), padding: scale(12), color: colors.text }}
+                  />
+                </View>
+                <View>
+                  <Text style={{ fontSize: scale(13), fontWeight: '600', marginBottom: scale(6), color: colors.text }}>Landmark</Text>
+                  <TextInput
+                    value={landmark}
+                    onChangeText={setLandmark}
+                    placeholder="Opposite the blue gate"
+                    placeholderTextColor={colors.textMuted}
+                    style={{ borderWidth: 1, borderColor: colors.border, borderRadius: scale(12), padding: scale(12), color: colors.text }}
+                  />
+                </View>
+                <View>
+                  <Text style={{ fontSize: scale(13), fontWeight: '600', marginBottom: scale(6), color: colors.text }}>Area</Text>
+                  <TextInput
+                    value={area}
+                    onChangeText={setArea}
+                    placeholder="Kuje"
+                    placeholderTextColor={colors.textMuted}
+                    style={{ borderWidth: 1, borderColor: colors.border, borderRadius: scale(12), padding: scale(12), color: colors.text }}
+                  />
+                </View>
 
-          {!editingId && (
-            <Text style={{ fontSize: scale(12), color: colors.textMuted, fontStyle: 'italic' }}>
-              We&apos;ll use your device&apos;s current location to pinpoint this address for delivery.
-            </Text>
-          )}
+                {!editingId && (
+                  <Text style={{ fontSize: scale(12), color: colors.textMuted, fontStyle: 'italic' }}>
+                    We&apos;ll use your device&apos;s current location to pinpoint this address for delivery.
+                  </Text>
+                )}
 
-          <TouchableOpacity
-            onPress={handleSave}
-            disabled={saving}
-            style={{ backgroundColor: Colors.primary, paddingVertical: scale(14), borderRadius: scale(20), alignItems: 'center', marginTop: scale(8), opacity: saving ? 0.7 : 1 }}
-          >
-            {saving ? (
-              <ActivityIndicator color="#FFF" />
-            ) : (
-              <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: scale(15) }}>
-                {editingId ? 'Save Changes' : 'Use Current Location & Save'}
-              </Text>
-            )}
-          </TouchableOpacity>
-            </View>
+                <TouchableOpacity
+                  onPress={handleSave}
+                  disabled={saving}
+                  style={{ backgroundColor: Colors.primary, paddingVertical: scale(14), borderRadius: scale(20), alignItems: 'center', marginTop: scale(8), opacity: saving ? 0.7 : 1 }}
+                >
+                  {saving ? (
+                    <ActivityIndicator color="#FFF" />
+                  ) : (
+                    <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: scale(15) }}>
+                      {editingId ? 'Save Changes' : 'Use Current Location & Save'}
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
           </View>
-        </KeyboardAvoidingView>
+        </View>
       </Modal>
 
     </View>

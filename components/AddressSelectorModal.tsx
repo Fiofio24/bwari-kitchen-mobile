@@ -13,6 +13,7 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
+  Platform
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/Colors';
@@ -21,7 +22,7 @@ import { useTheme } from '../context/ThemeContext';
 import { BlurView } from 'expo-blur';
 import { useSafeRouter } from '../hooks/useSafeRouter';
 import { useAddresses } from '../context/AddressContext'; 
-import { scale } from '../constants/Sizes'; // <-- IMPORTED MASTER SCALE
+import { scale } from '../constants/Sizes'; 
 
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 
@@ -40,9 +41,29 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
   const [isRendering, setIsRendering] = useState(visible);
   const [isCapturingLocation, setIsCapturingLocation] = useState(false);
   
+  // NEW: State to track exactly how tall the user's keyboard is!
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  
   const fadeAnim = useRef(new Animated.Value(0)).current; 
-  // Scaled the initial off-screen distance so it translates properly on any device size
   const slideAnim = useRef(new Animated.Value(scale(500))).current; 
+
+  // NEW: The Manual Keyboard Listener
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const showSubscription = Keyboard.addListener(showEvent, (e) => {
+      setKeyboardHeight(e.endCoordinates.height);
+    });
+    const hideSubscription = Keyboard.addListener(hideEvent, () => {
+      setKeyboardHeight(0);
+    });
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, []);
 
   useEffect(() => {
     if (visible) {
@@ -118,11 +139,20 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
         />
       </TouchableWithoutFeedback>
 
-      <View style={styles.modalContentWrapper} pointerEvents="box-none">
+      {/* WE REMOVED KeyboardAvoidingView HERE AND REPLACED IT WITH A STANDARD VIEW */}
+      <View 
+        style={styles.modalContentWrapper} 
+        pointerEvents="box-none"
+      >
         <Animated.View 
           style={[
             styles.modalSheet, 
-            { backgroundColor: colors.background, paddingBottom: Math.max(insets.bottom, scale(20)), transform: [{ translateY: slideAnim }] }
+            { 
+              backgroundColor: colors.background, 
+              // MAGIC UX: We inject the exact keyboard height into the bottom padding dynamically!
+              paddingBottom: Math.max(insets.bottom, scale(20)) + keyboardHeight, 
+              transform: [{ translateY: slideAnim }] 
+            }
           ]}
         >
           <View style={styles.modalHeader}>
@@ -144,7 +174,11 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
             />
           </View>
           
-          <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: scale(300) }}>
+          <ScrollView 
+            showsVerticalScrollIndicator={false} 
+            keyboardShouldPersistTaps="handled"
+            style={{ maxHeight: scale(300) }}
+          >
             <TouchableOpacity style={styles.currentLocationBtn} onPress={handleUseCurrentLocation} activeOpacity={0.7} disabled={isCapturingLocation}>
               {isCapturingLocation ? (
                 <ActivityIndicator size="small" color={Colors.primary} />

@@ -199,11 +199,11 @@ export default function ProfileScreen() {
             label="Dark Mode" 
             rightElement={<Switch value={isDark} onValueChange={() => setThemeMode(isDark ? 'light' : 'dark')} trackColor={{ false: '#767577', true: colors.primary }} />} 
           />
-          <ProfileMenuItem 
-            icon="finger-print-outline" 
-            label="Biometric Login" 
-            rightElement={<Switch value={isBiometricEnabled} onValueChange={setIsBiometricEnabled} trackColor={{ false: '#767577', true: colors.primary }} />} 
-          />
+          {/* <ProfileMenuItem  */}
+            {/* icon="finger-print-outline"  */}
+            {/* label="Biometric Login"  */}
+            {/* rightElement={<Switch value={isBiometricEnabled} onValueChange={setIsBiometricEnabled} trackColor={{ false: '#767577', true: colors.primary }} />}  */}
+          {/* /> */}
           <ProfileMenuItem 
             icon="notifications-outline" 
             label="Notification Preferences" 

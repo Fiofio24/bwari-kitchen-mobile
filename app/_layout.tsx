@@ -7,7 +7,6 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ThemeProvider } from '../context/ThemeContext'; 
 import * as SplashScreen from 'expo-splash-screen';
 import * as SecureStore from 'expo-secure-store';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { CartProvider } from '../context/CartContext';
 import { FavoriteProvider } from '../context/FavoriteContext';
@@ -31,24 +30,12 @@ function RootContent() {
         // 1. Check if a session token is currently saved
         const token = await SecureStore.getItemAsync('authToken');
         
-        // 2. Check if the user has seen the Beta Intro screen
-        let seenBeta = null;
-        try {
-          if (Platform.OS === 'web' && typeof window !== 'undefined') {
-            seenBeta = window.localStorage.getItem('@bwari_beta_seen');
-          } else if (AsyncStorage) {
-            seenBeta = await AsyncStorage.getItem('@bwari_beta_seen');
-          }
-        } catch (e) { console.warn("Storage error", e); }
-        
-        // 3. Decide the initial route intelligently
-        if (!seenBeta) {
-          setInitialRoute('/beta-intro');
-        } else if (!token) {
+        // 2. Decide the initial route intelligently (Beta Phase Removed)
+        if (!token) {
           setInitialRoute('/welcome');
         } else {
-          // ROUTE RETURNING USERS TO THE UNLOCK SCREEN
-          setInitialRoute('/unlock');
+          // ROUTE RETURNING USERS DIRECTLY TO HOME
+          setInitialRoute('/(tabs)');
         }
 
         // Simulate minimum loading time for the native splash screen
@@ -90,11 +77,10 @@ function RootContent() {
       />
       <Stack screenOptions={{ headerShown: false }}>
         {/* Auth Flow */}
-        <Stack.Screen name="beta-intro" options={{ animation: 'fade' }} />
         <Stack.Screen name="welcome" options={{ animation: 'fade' }} />
         <Stack.Screen name="login" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="signup" options={{ animation: 'slide_from_right' }} />
-        <Stack.Screen name="unlock" options={{ animation: 'fade' }} />
+        <Stack.Screen name="setup-address" options={{ animation: 'slide_from_right' }} />
         
         {/* Role-Based App Environments */}
         <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />

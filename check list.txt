@@ -48,7 +48,8 @@ To Do List:
 47. In the favorite page it is not updating it's grid card with live data...when i added a package to fav when item was unavailable, after that item was available, in the fav page that grid card still shows that an item is not available in the package.
 48. (Victor) There should be an error message that says something like "This email is not registered with Bwari Kitchen" in caseses where a user without an account trys to login, also check there should be appropraite error meassage that shows for various scenarios like bad network etces 
 49. (Victor) Let us add delivery code on active orders so rider can confirm that order belongs to the customer by inserting code on rider page customer gives 
-50.
+50. the wlcome, login and sign up page are repeating themself when you click back button because i've entered them motiple times from one page to the other click on "already have an account? Sign in" and "Don't have an account? sign up" so ones i've navigated on this pages from each other when i press the phone's back button it then goes back to them again and again before it finally lands on the welcome page 
+
 
 Future updates:
 1. 
@@ -65,22 +66,18 @@ Checked ✅:
 
 
 User testing feedbacks 
-1. When I tried biometrics and thought the all crashed just to see it was loading. Maybe add a loading screen?
-2. Also when I tap to search for my address. The tab doesn't rise so I can't see what I'm typing (the keyboard is covering the text input section)
-3. (in the cart page) I was first confused why my total was just 2500 then I realised I had to tap on the picture of the food. Not just any part of the tab but the picture itself to select that package. That's annoying 
+1. (Feature removed ✅)When I tried biometrics and thought the all crashed just to see it was loading. Maybe add a loading screen?
+2. (Done ✅) Also when I tap to search for my address. The tab doesn't rise so I can't see what I'm typing (the keyboard is covering the text input section)
+3. (Done ✅) (in the cart page) I was first confused why my total was just 2500 then I realised I had to tap on the picture of the food. Not just any part of the tab but the picture itself to select that package. That's annoying 
 4. Also, it took me a while to find the cart icon. Maybe put it where you put the my orders. Or when they open the app for the first time there is like a quick tutorial of where all the buttons are.
-5. the response time for the biometrics is too slow. The dark mode theme no fine but white mode make sense
+5. (Feature removed ✅)the response time for the biometrics is too slow. The dark mode theme no fine but white mode make sense
 6. Ur app works well, u did very well and I love the user interface
 7. Ok my order is taking time maybe network shall another thing is that it's showing me my current location but I myself can't confirm the current location if it's what I mean
-8. (From Client) The unlock feature is not necessary, there's nothing to protect
-8. So customer can't order without creating an account?
-9. Nice app bro. All working well. Issue I noticed, The input boxes should go up along with the keyboard, so you can see what you are typing. Nice work !
+8a. (From Client) The unlock feature is not necessary, there's nothing to protect
+8b. So customer can't order without creating an account?
+9. (Done ✅) Nice app bro. All working well. Issue I noticed, The input boxes should go up along with the keyboard, so you can see what you are typing. Nice work !
 10. I selected a 6k package in the cart and increase the quantity to 3 that is 18k total, but after clicking place order in the checkout page i saw "...Pay N6,000" also in the my orders page the price there is also something different...Summary the math is not mathing.
 11. (from help page) From this frequent question what about adding when someone plays an other due to network he was debited but the receiver wasn't credited
 12. (from profile page) This refer and earn how will the customer get the money , if it will be there maybe there should be a wallet in the app some one an send money directly to the app. At that orders showing 24 I clicked it 👉🏻...Comes out empty (change the hard coded number of order in the profile page from 24 to actually show total numbers of orders customer had placed in that account)
 13. (in the home page)There are no categories for soups and bakes sir. (this is because home and menu share same categories list so even though packages have not been created under bakes and soups it will still show but say "This category is not available in the Kitchen"...instead it should be that when there is no package under those categories the category shouldn't show at all in the list even though that category exits in the menu).
 14. 
-
-
-Internal Database url
-postgresql://bwari_kitchen_database_user:7CbPj0ZZz89LVmCjjqCfulybIZG3t0fA@dpg-da0tksugekts73fqhkkg-a/bwari_kitchen_database
