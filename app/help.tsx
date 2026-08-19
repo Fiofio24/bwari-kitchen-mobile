@@ -18,7 +18,7 @@ import { Colors } from '../constants/Colors';
 import { StatusBar } from 'expo-status-bar';
 import { useUser } from '../context/UserContext';
 import TopNav from '../components/TopNav';
-import { scale } from '../constants/Sizes'; // <-- IMPORTED MASTER SCALE
+import { scale } from '../constants/Sizes'; 
 
 const FAQ_DATA = [
   {
@@ -34,17 +34,22 @@ const FAQ_DATA = [
   {
     id: '3',
     question: 'I received the wrong item. What do I do?',
-    answer: 'We apologize for the mix-up! Please take a picture of the food you received and contact our Live Chat support immediately so we can process a refund or replacement.'
+    answer: 'We apologize for the mix-up! Please take a picture of the food you received and contact our Customer support immediately as provided above so we can process a refund or replacement.'
   },
   {
     id: '4',
     question: 'How do I use a promo code?',
-    answer: 'You can enter your promo code in the "Offers & Promo" section from the sidebar, or directly apply it during the Checkout process before making your payment.'
+    answer: 'Copy a promo code from the "Offers & Promo" section from the sidebar, then apply it during the Checkout process before making your payment.'
   },
   {
     id: '5',
     question: 'What are your delivery hours?',
     answer: 'Bwari Kitchen delivers hot and fresh meals from 7:00 AM to 10:00 PM, Monday through Sunday.'
+  },
+  {
+    id: '6',
+    question: 'What if I get debited due to network issues, but my order fails?',
+    answer: 'Don\'t panic! If you are debited but the order does not drop, your bank will automatically reverse the funds within 24 hours. You can also send a screenshot of the debit alert to our WhatsApp support, and we will manually confirm your order on our end!'
   }
 ];
 

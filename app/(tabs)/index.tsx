@@ -9,11 +9,9 @@ import {
   Animated, 
   RefreshControl,
   Platform,
-  BackHandler,
   PanResponder
 } from 'react-native'; 
 import { Colors } from '../../constants/Colors';
-import { useFocusEffect } from 'expo-router';
 import { useSafeRouter } from '../../hooks/useSafeRouter';
 import { Ionicons } from '@expo/vector-icons';
 import TopNav from '../../components/TopNav';
@@ -32,7 +30,6 @@ import { useMenu } from '../../context/MenuContext';
 
 import CartBadgeIcon from '../../components/CartBadgeIcon';
 import AddressSelectorModal from '../../components/AddressSelectorModal';
-import FeedbackExitModal from '../../components/FeedbackExitModal';
 import { useNotifications } from '../../context/NotificationContext';
 import { useAddresses } from '../../context/AddressContext';
 import { scale } from '../../constants/Sizes'; // <-- IMPORTED MASTER SCALE
@@ -47,7 +44,6 @@ export default function HomeScreen() {
   const { activeAddress } = useAddresses();
   
   const { packages, categories, findItem, loading, refresh } = useMenu();
-  const CATEGORIES = ['All', ...categories.map(c => c.name)];
   
   const normalizedPackages = packages.map(pkg => ({
     id: pkg.id,
@@ -64,12 +60,17 @@ export default function HomeScreen() {
     })),
   }));
 
+  // THE FIX: We create a Set of all categories currently used by packages
+  const activeCategoriesInKitchen = new Set(normalizedPackages.map(pkg => pkg.category));
+  
+  // Then we filter the main list to only include categories that exist in that Set
+  const CATEGORIES = ['All', ...categories.map(c => c.name).filter(cat => activeCategoriesInKitchen.has(cat))];
+
   const [activeCategory, setActiveCategory] = useState('All');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [isAddressModalVisible, setIsAddressModalVisible] = useState(false);
-  const [isExitModalVisible, setIsExitModalVisible] = useState(false);
   
   const insets = useSafeAreaInsets();
   const shadowTripwire = scale(100) + insets.top; 
@@ -98,19 +99,6 @@ export default function HomeScreen() {
   const AVAILABLE_WIDTH = width - (GRID_PADDING * 2);
   const NUM_COLUMNS = Math.max(2, Math.ceil(AVAILABLE_WIDTH / (MAX_GRID_WIDTH + GRID_GAP)));
   const CARD_WIDTH = Math.floor((AVAILABLE_WIDTH - (GRID_GAP * (NUM_COLUMNS - 1))) / NUM_COLUMNS);
-
-  useFocusEffect(
-    useCallback(() => {
-      const onBackPress = () => {
-        // Show Feedback Modal instead of exiting instantly
-        setIsExitModalVisible(true);
-        return true; 
-      };
-
-      const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
-      return () => subscription.remove();
-    }, [])
-  );
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -166,6 +154,28 @@ export default function HomeScreen() {
     );
   }
 
+  // NEW: Smart address formatter
+  const getFormattedDisplayAddress = () => {
+    if (!activeAddress) return "Select Location";
+    
+    const addr = activeAddress as any;
+    
+    // Combine the available location parts, filtering out any empty ones
+    const locationDetails = [addr.streetAddress, addr.landmark, addr.area].filter(Boolean).join(', ');
+    
+    // Check if the label is one of the auto-generated ones
+    const autoLabels = ['my location', 'current location'];
+    const isAutoLabel = addr.label && autoLabels.includes(addr.label.toLowerCase());
+    
+    // If it has a custom label (like "Home" or "Work"), attach it!
+    if (addr.label && !isAutoLabel) {
+      return `${addr.label}: ${locationDetails}`;
+    }
+    
+    // Otherwise, just return the raw address details
+    return locationDetails || "Select Location";
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       
@@ -197,9 +207,9 @@ export default function HomeScreen() {
 
         <View style={styles.headerRow}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Others</Text>
-          <TouchableOpacity>
+          {/* <TouchableOpacity>
             <Text style={styles.seeMoreText}>See More</Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scrollContainer}>
@@ -253,7 +263,7 @@ export default function HomeScreen() {
             <View style={styles.addressRow}>
               <Ionicons name="location" size={scale(14)} color="#FFC107" />
               <Text style={styles.addressText} numberOfLines={1} ellipsizeMode="tail">
-                {(activeAddress as any)?.address || "Select Location"}
+                {getFormattedDisplayAddress()}
               </Text>
               <Ionicons name="chevron-down" size={scale(14)} color="#FFF" style={styles.chevronIcon} />
             </View>

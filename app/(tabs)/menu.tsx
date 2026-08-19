@@ -37,7 +37,12 @@ export default function MenuScreen() {
   const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const { items, categories, loading, refresh, findItem } = useMenu();
-  const MENU_CATEGORIES = ['All', ...categories.map(c => c.name)];
+  
+  // THE FIX: We create a Set of all categories currently used by single items
+  const activeItemCategories = new Set(items.map(item => item.category.name));
+  
+  // Then we filter the main list to only include categories that exist in that Set
+  const MENU_CATEGORIES = ['All', ...categories.map(c => c.name).filter(cat => activeItemCategories.has(cat))];
   
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { addToCart } = useCart();

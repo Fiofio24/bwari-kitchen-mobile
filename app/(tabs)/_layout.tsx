@@ -19,6 +19,7 @@ export default function TabLayout() {
         {/* We list all the screens that belong to the bottom nav here */}
         <Tabs.Screen name="index" />
         <Tabs.Screen name="menu" />
+        {/* <Tabs.Screen name="cart" />  */}
         <Tabs.Screen name="favorite" />
         <Tabs.Screen name="profile" />
       </Tabs>

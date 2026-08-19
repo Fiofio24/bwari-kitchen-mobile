@@ -15,13 +15,14 @@ import {
 } from 'react-native';
 import { useSafeRouter } from '../hooks/useSafeRouter';
 import { Ionicons } from '@expo/vector-icons';
+import * as Location from 'expo-location'; // <-- NEW: Expo Location Import
 import { useSafeAreaInsets } from 'react-native-safe-area-context'; 
 import { useTheme } from '../context/ThemeContext';
 import { Colors } from '../constants/Colors';
 import { StatusBar } from 'expo-status-bar';
 import { useAddresses, Address } from '../context/AddressContext'; 
 import TopNav from '../components/TopNav';
-import { scale } from '../constants/Sizes'; // <-- IMPORTED MASTER SCALE
+import { scale } from '../constants/Sizes'; 
 
 export default function SavedAddressesScreen() {
   const router = useSafeRouter();
@@ -38,10 +39,9 @@ export default function SavedAddressesScreen() {
   const [area, setArea] = useState('');
   const [saving, setSaving] = useState(false);
   
-  // NEW: Manual Keyboard Listener State
+  const [isCapturingLocation, setIsCapturingLocation] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
 
-  // NEW: Effect to listen to exact keyboard height
   useEffect(() => {
     const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
     const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
@@ -98,6 +98,42 @@ export default function SavedAddressesScreen() {
     setLandmark(item.landmark || '');
     setArea(item.area || '');
     setModalVisible(true);
+  };
+
+  // NEW: Fetch GPS Location and Auto-Fill Input
+  const handleGetLocation = async () => {
+    setIsCapturingLocation(true);
+    try {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Denied', 'Please grant location access in your device settings.');
+        setIsCapturingLocation(false);
+        return;
+      }
+
+      let location = await Location.getCurrentPositionAsync({});
+      let geocode = await Location.reverseGeocodeAsync({
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude
+      });
+
+      if (geocode && geocode.length > 0) {
+        const place = geocode[0];
+        
+        // Isolate the street and area to fill the specific text boxes
+        const foundStreet = [place.street, place.name].filter(Boolean).join(', ');
+        const foundArea = [place.city, place.region].filter(Boolean).join(', ');
+        
+        if (foundStreet) setStreetAddress(foundStreet);
+        if (foundArea) setArea(foundArea);
+      } else {
+        Alert.alert('Location Info', 'Coordinates fetched, but could not determine street name.');
+      }
+    } catch (error) {
+      Alert.alert('Location Error', 'Could not fetch your precise location.');
+    } finally {
+      setIsCapturingLocation(false);
+    }
   };
 
   const handleSave = async () => {
@@ -257,7 +293,6 @@ export default function SavedAddressesScreen() {
 
       <Modal visible={modalVisible} transparent animationType="slide" onRequestClose={() => setModalVisible(false)}>
         <View style={{ flex: 1, justifyContent: 'flex-end' }}>
-          {/* Added Keyboard.dismiss() so tapping the background hides the keyboard smoothly */}
           <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => { Keyboard.dismiss(); setModalVisible(false); }} />
           
           <View style={{ 
@@ -266,7 +301,6 @@ export default function SavedAddressesScreen() {
             borderTopRightRadius: scale(25), 
             padding: scale(20), 
             paddingTop: scale(25),
-            // MAGIC UX FIX: We inject the exact keyboard height here!
             paddingBottom: Math.max(insets.bottom, scale(20)) + keyboardHeight 
           }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: scale(15) }}>
@@ -283,6 +317,33 @@ export default function SavedAddressesScreen() {
               keyboardShouldPersistTaps="handled"
             >
               <View style={{ gap: scale(12) }}>
+                
+                {/* NEW: Auto-Fill Location Button */}
+                {!editingId && (
+                  <TouchableOpacity
+                    onPress={handleGetLocation}
+                    disabled={isCapturingLocation}
+                    style={{ 
+                      flexDirection: 'row', 
+                      alignItems: 'center', 
+                      backgroundColor: 'rgba(229, 57, 53, 0.1)', 
+                      padding: scale(12), 
+                      borderRadius: scale(12), 
+                      marginBottom: scale(5),
+                      justifyContent: 'center' 
+                    }}
+                  >
+                    {isCapturingLocation ? (
+                      <ActivityIndicator size="small" color={Colors.primary} style={{ marginRight: scale(8) }} />
+                    ) : (
+                      <Ionicons name="locate" size={scale(20)} color={Colors.primary} style={{ marginRight: scale(8) }} />
+                    )}
+                    <Text style={{ color: Colors.primary, fontWeight: 'bold', fontSize: scale(14) }}>
+                      {isCapturingLocation ? 'Fetching Location...' : 'Auto-fill with Current Location'}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+
                 <View>
                   <Text style={{ fontSize: scale(13), fontWeight: '600', marginBottom: scale(6), color: colors.text }}>Label (e.g. Home, Work)</Text>
                   <TextInput
@@ -324,22 +385,17 @@ export default function SavedAddressesScreen() {
                   />
                 </View>
 
-                {!editingId && (
-                  <Text style={{ fontSize: scale(12), color: colors.textMuted, fontStyle: 'italic' }}>
-                    We&apos;ll use your device&apos;s current location to pinpoint this address for delivery.
-                  </Text>
-                )}
-
+                {/* MODIFIED: Save Button */}
                 <TouchableOpacity
                   onPress={handleSave}
-                  disabled={saving}
-                  style={{ backgroundColor: Colors.primary, paddingVertical: scale(14), borderRadius: scale(20), alignItems: 'center', marginTop: scale(8), opacity: saving ? 0.7 : 1 }}
+                  disabled={saving || isCapturingLocation}
+                  style={{ backgroundColor: Colors.primary, paddingVertical: scale(14), borderRadius: scale(20), alignItems: 'center', marginTop: scale(8), opacity: saving || isCapturingLocation ? 0.7 : 1 }}
                 >
                   {saving ? (
                     <ActivityIndicator color="#FFF" />
                   ) : (
                     <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: scale(15) }}>
-                      {editingId ? 'Save Changes' : 'Use Current Location & Save'}
+                      {editingId ? 'Save Changes' : 'Save Address'}
                     </Text>
                   )}
                 </TouchableOpacity>

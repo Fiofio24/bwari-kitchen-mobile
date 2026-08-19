@@ -3,7 +3,8 @@ import { View, Text, StyleSheet, TouchableOpacity, Platform, Animated, Dimension
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext'; 
 import { useSafeAreaInsets } from 'react-native-safe-area-context'; 
-import { scale } from '../constants/Sizes'; // <-- IMPORTED MASTER SCALE
+import { useCart } from '../context/CartContext'; 
+import { scale } from '../constants/Sizes'; 
 
 const { width } = Dimensions.get('window');
 
@@ -13,6 +14,7 @@ const USABLE_WIDTH = width - (PADDING_HORIZONTAL * 2);
 export default function BottomNav({ state, descriptors, navigation }: any) {
   const { colors, isDark } = useTheme(); 
   const insets = useSafeAreaInsets();
+  const { cartItems } = useCart();
   
   const safeBottom = Math.max(insets.bottom, scale(15)); 
 
@@ -40,6 +42,8 @@ export default function BottomNav({ state, descriptors, navigation }: any) {
     switch(routeName) {
       case 'index': return { label: 'Home', icon: 'home', outlineIcon: 'home-outline' };
       case 'menu': return { label: 'Menu', icon: 'restaurant', outlineIcon: 'restaurant-outline' };
+      // to apply the cart icon on the bottom nav, uncomment the following line and the corresponding <Tabs.Screen name="cart" /> in app/(tabs)/_layout.tsx then move the cart.tsx file to the (tabs) folder.
+      // case 'cart': return { label: 'Cart', icon: 'cart', outlineIcon: 'cart-outline' };
       case 'favorite': return { label: 'Favorite', icon: 'heart', outlineIcon: 'heart-outline' };
       case 'profile': return { label: 'Profile', icon: 'person', outlineIcon: 'person-outline' };
       default: return { label: routeName, icon: 'ellipse', outlineIcon: 'ellipse-outline' };
@@ -66,7 +70,12 @@ export default function BottomNav({ state, descriptors, navigation }: any) {
 
                 return (
                   <TouchableOpacity key={route.key} style={[styles.navItem, { width: TAB_WIDTH }]} activeOpacity={0.8} onPress={onPress}>
-                    <Ionicons name={isFocused ? config.icon as any : config.outlineIcon as any} size={scale(22)} color={isFocused ? '#FFFFFF' : colors.textMuted} />
+                    <View style={styles.iconContainer}>
+                      <Ionicons name={isFocused ? config.icon as any : config.outlineIcon as any} size={scale(22)} color={isFocused ? '#FFFFFF' : colors.textMuted} />
+                      {route.name === 'cart' && cartItems.length > 0 && (
+                        <View style={[styles.badge, isFocused && { borderColor: colors.primary, borderWidth: scale(1.5) }]} />
+                      )}
+                    </View>
                     {isFocused && <Text style={styles.activeText} numberOfLines={1}>{config.label}</Text>}
                   </TouchableOpacity>
                 );
@@ -87,5 +96,15 @@ const styles = StyleSheet.create({
   animatedPill: { position: 'absolute', height: scale(70), justifyContent: 'center', alignItems: 'center', left: 0, top: 0 },
   pillInner: { width: '90%', height: '70%', borderRadius: scale(30) },
   navItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', height: '100%', zIndex: 1 },
+  iconContainer: { position: 'relative' },
+  badge: {
+    position: 'absolute',
+    top: scale(-2),
+    right: scale(-4),
+    width: scale(10),
+    height: scale(10),
+    borderRadius: scale(5),
+    backgroundColor: '#FF3B30', 
+  },
   activeText: { color: '#FFFFFF', fontWeight: 'bold', fontSize: scale(13), marginLeft: scale(4) },
 });

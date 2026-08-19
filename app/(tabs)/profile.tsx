@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -22,7 +22,8 @@ import { useSafeRouter } from '../../hooks/useSafeRouter';
 import TopNav from '../../components/TopNav';
 import * as SecureStore from 'expo-secure-store';
 import ActionModal from '../../components/ActionModal';
-import { scale } from '../../constants/Sizes'; // <-- IMPORTED MASTER SCALE
+import { scale } from '../../constants/Sizes'; 
+import api from '../../app/lib/api';
 
 export default function ProfileScreen() {
   const { colors, isDark, setThemeMode } = useTheme();
@@ -34,8 +35,21 @@ export default function ProfileScreen() {
   
   const [isSignOutModalVisible, setIsSignOutModalVisible] = useState(false);
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
+  const [totalOrders, setTotalOrders] = useState(0);
 
-  const userStats = { ordersCount: 24, points: 450, referralCode: "BWARI-SERIFF-99" };
+  const userStats = { points: 450, referralCode: "BWARI-SERIFF-99" };
+
+  useEffect(() => {
+    const fetchOrdersCount = async () => {
+      try {
+        const res = await api.get('/api/orders?limit=1'); 
+        setTotalOrders(res.data.pagination?.totalCount || res.data.orders?.length || 0);
+      } catch (e) {
+        console.warn('Failed to load order count', e);
+      }
+    };
+    fetchOrdersCount();
+  }, []);
 
   const onShareReferral = async () => {
     try {
@@ -139,7 +153,7 @@ export default function ProfileScreen() {
               onPress={() => router.push('/my-orders')}
               activeOpacity={0.7}
             >
-              <Text style={[styles.statValue, { color: colors.text }]}>{userStats.ordersCount}</Text>
+              <Text style={[styles.statValue, { color: colors.text }]}>{totalOrders}</Text>
               <Text style={[styles.statLabel, { color: colors.textMuted }]}>Orders</Text>
             </TouchableOpacity>
             
@@ -199,11 +213,6 @@ export default function ProfileScreen() {
             label="Dark Mode" 
             rightElement={<Switch value={isDark} onValueChange={() => setThemeMode(isDark ? 'light' : 'dark')} trackColor={{ false: '#767577', true: colors.primary }} />} 
           />
-          {/* <ProfileMenuItem  */}
-            {/* icon="finger-print-outline"  */}
-            {/* label="Biometric Login"  */}
-            {/* rightElement={<Switch value={isBiometricEnabled} onValueChange={setIsBiometricEnabled} trackColor={{ false: '#767577', true: colors.primary }} />}  */}
-          {/* /> */}
           <ProfileMenuItem 
             icon="notifications-outline" 
             label="Notification Preferences" 

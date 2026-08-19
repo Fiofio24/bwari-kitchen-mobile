@@ -16,6 +16,7 @@ import {
   Platform
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as Location from 'expo-location'; 
 import { Colors } from '../constants/Colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context'; 
 import { useTheme } from '../context/ThemeContext';
@@ -41,13 +42,11 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
   const [isRendering, setIsRendering] = useState(visible);
   const [isCapturingLocation, setIsCapturingLocation] = useState(false);
   
-  // NEW: State to track exactly how tall the user's keyboard is!
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   
   const fadeAnim = useRef(new Animated.Value(0)).current; 
   const slideAnim = useRef(new Animated.Value(scale(500))).current; 
 
-  // NEW: The Manual Keyboard Listener
   useEffect(() => {
     const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
     const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
@@ -87,18 +86,66 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
     onClose(); 
   };
 
-  const handleUseCurrentLocation = async () => {
+  // FETCH & AUTO-FILL GPS LOCATION
+  const handleGetLocation = async () => {
     setIsCapturingLocation(true);
     try {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Denied', 'Please grant location access in your device settings.');
+        setIsCapturingLocation(false);
+        return;
+      }
+
+      let location = await Location.getCurrentPositionAsync({});
+      let geocode = await Location.reverseGeocodeAsync({
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude
+      });
+
+      if (geocode && geocode.length > 0) {
+        const place = geocode[0];
+        const addressString = [place.street || place.name, place.city, place.region].filter(Boolean).join(', ');
+        setInputText(addressString); 
+      } else {
+        setInputText('Unknown Location');
+      }
+    } catch (error) {
+      Alert.alert('Location Error', 'Could not fetch your precise location.');
+    } finally {
+      setIsCapturingLocation(false);
+    }
+  };
+
+  // VICTOR'S ORIGINAL SAVE LOGIC + SMART SPLITTER
+  const handleSaveAndUse = async () => {
+    const rawText = inputText.trim() || 'My current location';
+    setIsCapturingLocation(true);
+    
+    try {
+      // SMART SPLITTER: Divide the single input string by commas
+      const parts = rawText.split(',').map(p => p.trim());
+      
+      let parsedStreet = rawText;
+      let parsedArea = undefined;
+
+      // If there's a comma (e.g., "15 Law School Rd, Bwari")
+      if (parts.length > 1) {
+        parsedStreet = parts[0]; // Gets "15 Law School Rd"
+        parsedArea = parts.slice(1).join(', '); // Gets "Bwari" and anything else
+      }
+
       const result = await addCurrentLocationAddress({
         label: 'Current Location',
-        streetAddress: inputText.trim() || 'My current location',
+        streetAddress: parsedStreet,
+        area: parsedArea, // Sends the separated area to Victor's backend!
         isDefault: true,
       });
+      
       if (result.success) {
         onClose();
       } else {
-        Alert.alert('Location Error', result.error || 'Could not get your location.');
+        Alert.alert('Location Error', result.error || 'Could not save your location.');
       }
     } finally {
       setIsCapturingLocation(false);
@@ -139,56 +186,67 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
         />
       </TouchableWithoutFeedback>
 
-      {/* WE REMOVED KeyboardAvoidingView HERE AND REPLACED IT WITH A STANDARD VIEW */}
-      <View 
-        style={styles.modalContentWrapper} 
-        pointerEvents="box-none"
-      >
+      <View style={styles.modalContentWrapper} pointerEvents="box-none">
         <Animated.View 
           style={[
             styles.modalSheet, 
             { 
               backgroundColor: colors.background, 
-              // MAGIC UX: We inject the exact keyboard height into the bottom padding dynamically!
               paddingBottom: Math.max(insets.bottom, scale(20)) + keyboardHeight, 
               transform: [{ translateY: slideAnim }] 
             }
           ]}
         >
           <View style={styles.modalHeader}>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>Select Address</Text>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>Delivery Address</Text>
             <TouchableOpacity onPress={onClose}>
               <Ionicons name="close-circle" size={scale(28)} color={colors.textMuted} />
             </TouchableOpacity>
           </View>
           
           <View style={[styles.inputContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <Ionicons name="search" size={scale(20)} color={colors.textMuted} />
+            <Ionicons name="location-outline" size={scale(20)} color={colors.textMuted} />
             <TextInput 
               style={[styles.input, { color: colors.text }]} 
               value={inputText} 
               onChangeText={setInputText} 
-              placeholder="Search saved addresses..." 
+              placeholder="Search or enter new address..." 
               placeholderTextColor={colors.textMuted} 
               autoCorrect={false} 
             />
+          </View>
+
+          {/* SPLIT ACTION BUTTONS */}
+          <View style={styles.actionButtonsRow}>
+            <TouchableOpacity 
+              style={[styles.actionBtn, styles.locationBtn]} 
+              onPress={handleGetLocation} 
+              activeOpacity={0.7} 
+              disabled={isCapturingLocation}
+            >
+              {isCapturingLocation ? (
+                <ActivityIndicator size="small" color={Colors.primary} />
+              ) : (
+                <Ionicons name="locate" size={scale(20)} color={Colors.primary} />
+              )}
+              <Text style={[styles.actionBtnText, { color: Colors.primary }]}>Get Location</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={[styles.actionBtn, styles.saveBtn, { opacity: inputText.trim().length > 0 ? 1 : 0.5 }]} 
+              onPress={handleSaveAndUse} 
+              activeOpacity={0.7} 
+              disabled={inputText.trim().length === 0 || isCapturingLocation}
+            >
+              <Text style={styles.saveBtnText}>Save & Use</Text>
+            </TouchableOpacity>
           </View>
           
           <ScrollView 
             showsVerticalScrollIndicator={false} 
             keyboardShouldPersistTaps="handled"
-            style={{ maxHeight: scale(300) }}
+            style={{ maxHeight: scale(250) }}
           >
-            <TouchableOpacity style={styles.currentLocationBtn} onPress={handleUseCurrentLocation} activeOpacity={0.7} disabled={isCapturingLocation}>
-              {isCapturingLocation ? (
-                <ActivityIndicator size="small" color={Colors.primary} />
-              ) : (
-                <Ionicons name="locate" size={scale(22)} color={Colors.primary} />
-              )}
-              <Text style={[styles.currentLocationText, { color: Colors.primary }]}>
-                {isCapturingLocation ? 'Getting your location...' : 'Use Current Location'}
-              </Text>
-            </TouchableOpacity>
             
             {inputText.length === 0 && <Text style={[styles.savedTitle, { color: colors.textMuted }]}>Saved Addresses</Text>}
             
@@ -214,7 +272,7 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
             
             {inputText.length > 0 && filteredAddresses.length === 0 && (
               <Text style={[styles.noResultsText, { color: colors.textMuted }]}>
-                No saved addresses match &quot;{inputText}&quot;.
+                No saved addresses match "{inputText}". Hit "Save & Use" to add it!
               </Text>
             )}
           </ScrollView>
@@ -236,15 +294,21 @@ const styles = StyleSheet.create({
   modalTitle: { fontSize: scale(20), fontWeight: 'bold' },
   inputContainer: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: scale(15), paddingHorizontal: scale(15), height: scale(50), marginBottom: scale(15) },
   input: { flex: 1, marginLeft: scale(10), fontSize: scale(16) },
-  currentLocationBtn: { flexDirection: 'row', alignItems: 'center', paddingVertical: scale(10), marginBottom: scale(20) },
-  currentLocationText: { fontSize: scale(16), fontWeight: 'bold', marginLeft: scale(10) },
+  
+  actionButtonsRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: scale(20), gap: scale(10) },
+  actionBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', height: scale(45), borderRadius: scale(12) },
+  locationBtn: { backgroundColor: 'rgba(229, 57, 53, 0.1)' },
+  saveBtn: { backgroundColor: Colors.primary },
+  actionBtnText: { fontSize: scale(14), fontWeight: 'bold', marginLeft: scale(8) },
+  saveBtnText: { color: '#FFF', fontSize: scale(14), fontWeight: 'bold' },
+
   savedTitle: { fontSize: scale(14), fontWeight: 'bold', marginBottom: scale(5), letterSpacing: 0.5 },
   quickAddressRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: scale(12), borderBottomWidth: 1 },
   iconBox: { width: scale(36), height: scale(36), borderRadius: scale(18), justifyContent: 'center', alignItems: 'center' },
   addressTextStack: { marginLeft: scale(15), justifyContent: 'center', flex: 1 },
   quickAddressTitle: { fontSize: scale(16), fontWeight: 'bold' },
   quickAddressDetail: { fontSize: scale(12), marginTop: scale(2) },
-  noResultsText: { textAlign: 'center', marginTop: scale(20), fontStyle: 'italic' },
+  noResultsText: { textAlign: 'center', marginTop: scale(20), marginBottom: scale(10), fontStyle: 'italic', paddingHorizontal: scale(10) },
   manageBtn: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: scale(20), marginTop: scale(5), borderTopWidth: 1 },
   manageBtnText: { fontSize: scale(16), fontWeight: 'bold' },
 });
