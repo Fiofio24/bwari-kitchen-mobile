@@ -272,7 +272,7 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
             
             {inputText.length > 0 && filteredAddresses.length === 0 && (
               <Text style={[styles.noResultsText, { color: colors.textMuted }]}>
-                No saved addresses match "{inputText}". Hit "Save & Use" to add it!
+                No saved addresses match &rdquo;{inputText}&rdquo;. Hit &rdquo;Save & Use&rdquo; to add it!
               </Text>
             )}
           </ScrollView>

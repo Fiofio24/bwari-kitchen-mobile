@@ -18,9 +18,9 @@ To Do List:
 17. for the package and menu images make a loading effect when their yet to fetch the actual image for that item also generally creat loading effects for any other thing like package details texts
 18. (Done ✅)in the sign up page under password input section make that it will have a kind of must have features before the password will be accepted like showing message under "password must be up to 8-characters" etc
 19. it's like cart orders are being saved to phone memory or something even when i created a new account on signig up successful the account already had items in the cart
-20. (Done ✅)in the promo page instead of the "copy code" button let it be copy icon so that there would be enough space in case of long promo code
-21. (not confirmed) in the sidebar the sign out button does not have allowance for the phone's navigation bar 
-22. the location area in the home page at the very top should show the selected address not "Select Location" and on new opening of the app the location that will show there will be the default location 
+20. (Done ✅) in the promo page instead of the "copy code" button let it be copy icon so that there would be enough space in case of long promo code
+21. (Done ✅) in the sidebar the sign out button does not have allowance for the phone's navigation bar 
+22. (Done ✅)the location area in the home page at the very top should show the selected address not "Select Location" and on new opening of the app the location that will show there will be the default location 
 23. (Victor) in the admin dashboard in menu page when creating a new package after adding a discription then saved the package, then in the main customer app the discription on the details page was showing a hardcoded discrition aside the perticular discription i just added to that new package
 24. (Suggestion single items shouldn't even have a details page) when a menu item is searched and clicked after taking them to the details page for that single item, on the buttom bar it's suppose to say "add to package" not "add to cart" so the user can create a package with that menu item. but it is ok for it to say "add to car" when it was a combo package that was clicked. also on a single item details page after clicking the "add to package" an option list should slide from the bottom and show "add to existing package" in case they've already started creating package before they searched an item, second option should be "add to new package" then below the second option there should be a warning note to tell them that if they had an existing package before it will be lost.
 25. (Victor) the profile image for users is not saving in the data base after log out and login the profile image disappears 
@@ -86,10 +86,10 @@ User testing feedbacks
 6. (✅) Ur app works well, u did very well and I love the user interface
 7. (Victor) Ok my order is taking time maybe network shall another thing is that it's showing me my current location but I myself can't confirm the current location if it's what I mean
 8a. (Feature removed ✅) (From Client) The unlock feature is not necessary, there's nothing to protect
-8b. So customer can't order without creating an account?
+8b. (✅) So customer can't order without creating an account?
 9. (Done ✅) Nice app bro. All working well. Issue I noticed, The input boxes should go up along with the keyboard, so you can see what you are typing. Nice work !
 10. (Victor make sure the backend has quantity for packages) I selected a 6k package in the cart and increase the quantity to 3 that is 18k total, but after clicking place order in the checkout page i saw "...Pay N6,000" also in the my orders page the price there is also something different...Summary the math is not mathing.
-11. (from help page) From this frequent question what about adding when someone plays an other due to network he was debited but the receiver wasn't credited
-12. (from profile page) This refer and earn how will the customer get the money , if it will be there maybe there should be a wallet in the app some one an send money directly to the app. (Done ✅)At that orders showing 24 I clicked it 👉🏻...Comes out empty (change the hard coded number of order in the profile page from 24 to actually show total numbers of orders customer had placed in that account)
+11. (Done ✅) (from help page) From this frequent question what about adding when someone plays an other due to network he was debited but the receiver wasn't credited
+12. (from profile page) This refer and earn how will the customer get the money , if it will be there maybe there should be a wallet in the app some one an send money directly to the app. (Done ✅????)At that orders showing 24 I clicked it 👉🏻...Comes out empty (change the hard coded number of order in the profile page from 24 to actually show total numbers of orders customer had placed in that account)
 13. (Done ✅)(in the home page)There are no categories for soups and bakes sir. (this is because home and menu share same categories list so even though packages have not been created under bakes and soups it will still show but say "This category is not available in the Kitchen"...instead it should be that when there is no package under those categories the category shouldn't show at all in the list even though that category exits in the menu).
 14. 
