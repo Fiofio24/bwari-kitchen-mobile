@@ -87,15 +87,26 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     saveAndSync();
   }, [cartItems, isLoaded]);
 
-  const addToCart = (newItem: CartItem) => {
-    setCartItems(prev => {
-      const existingItem = prev.find(item => item.id === newItem.id);
-      if (existingItem) {
-        return prev.map(item => 
-          item.id === newItem.id ? { ...item, quantity: item.quantity + (newItem.quantity || 1) } : item
-        );
+  const addToCart = (newItem: any) => {
+    setCartItems(prevItems => {
+      // Check if the exact same item/package already exists in the cart
+      const existingIndex = prevItems.findIndex(item => item.id === newItem.id);
+
+      if (existingIndex > -1) {
+        // 1. Item exists: update its quantity
+        const updatedItems = [...prevItems];
+        const existingItem = updatedItems[existingIndex];
+        
+        const newQuantity = (existingItem.quantity || 1) + (newItem.quantity || 1);
+        const updatedItem = { ...existingItem, quantity: newQuantity };
+
+        // 2. Remove it from its current position and move it to the TOP (index 0)
+        updatedItems.splice(existingIndex, 1);
+        return [updatedItem, ...updatedItems];
+      } else {
+        // Brand new item: add it directly to the top of the list
+        return [newItem, ...prevItems];
       }
-      return [{ ...newItem, quantity: newItem.quantity || 1 }, ...prev];
     });
   };
 

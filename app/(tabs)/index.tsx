@@ -9,7 +9,8 @@ import {
   Animated, 
   RefreshControl,
   Platform,
-  PanResponder
+  PanResponder,
+  BackHandler
 } from 'react-native'; 
 import { Colors } from '../../constants/Colors';
 import { useSafeRouter } from '../../hooks/useSafeRouter';
@@ -28,6 +29,10 @@ import { useCart } from '../../context/CartContext';
 import { useFavorites } from '../../context/FavoriteContext'; 
 import { useMenu } from '../../context/MenuContext'; 
 
+// import React, { useCallback } from 'react';
+// import { BackHandler } from 'react-native';
+import { useFocusEffect } from 'expo-router';
+
 import CartBadgeIcon from '../../components/CartBadgeIcon';
 import AddressSelectorModal from '../../components/AddressSelectorModal';
 import { useNotifications } from '../../context/NotificationContext';
@@ -37,6 +42,18 @@ import { scale } from '../../constants/Sizes'; // <-- IMPORTED MASTER SCALE
 const USER_PROFILE = { name: "User" };
 
 export default function HomeScreen() {
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => {
+        BackHandler.exitApp();
+        return true; 
+      };
+
+      const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+      return () => subscription.remove();
+    }, [])
+  );
+
   const router = useSafeRouter(); 
   const { addToCart } = useCart(); 
   const { toggleFavorite, isFavorite } = useFavorites(); 

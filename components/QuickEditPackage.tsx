@@ -26,6 +26,7 @@ import ItemVariantModal from './ItemVariantModal';
 import { scale } from '../constants/Sizes'; // <-- IMPORTED MASTER SCALE
 
 const CUSTOM_PACKAGE_IMAGE = require('../assets/images/custom-plate.png');
+const EMPTY_PACKAGE_IMAGE = require('../assets/images/Icon&logo/empty-package.png');
 const { height, width } = Dimensions.get('window');
 
 interface QuickEditPackageProps {
@@ -305,7 +306,7 @@ export default function QuickEditPackage({
                   ]}
                 >
                   <Image 
-                    source={CUSTOM_PACKAGE_IMAGE}
+                    source={EMPTY_PACKAGE_IMAGE}
                     style={[styles.emptyPackageIcon, { tintColor: Colors.primary }]}
                     resizeMode="contain"
                   />

@@ -82,7 +82,7 @@ export default function WelcomeScreen() {
                 <Text style={styles.textRed}>Wel</Text>
                 <Text style={styles.textWhite}>come to</Text>
               </Text>
-              <Text style={styles.brandTitle}>Bwari Kitchen Mobile</Text>
+              <Text style={styles.brandTitle}>Bwari Kitchen</Text>
 
               {/* SUBTLE DIVIDER */}
               <View style={styles.divider} />

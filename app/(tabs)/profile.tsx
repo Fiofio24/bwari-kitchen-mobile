@@ -6,15 +6,16 @@ import {
   TouchableOpacity, 
   ScrollView, 
   Platform, 
-  Switch,
-  Share,
-  Image,
-  Alert
+  Switch, 
+  Share, 
+  Image, 
+  Alert 
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker'; 
 import { useTheme } from '../../context/ThemeContext';
 import { useUser } from '../../context/UserContext'; 
+import { useAddresses } from '../../context/AddressContext'; 
 import { Colors } from '../../constants/Colors';
 import { StatusBar } from 'expo-status-bar';
 import Sidebar from '../../components/Sidebar';
@@ -28,6 +29,7 @@ import api from '../../app/lib/api';
 export default function ProfileScreen() {
   const { colors, isDark, setThemeMode } = useTheme();
   const { userData, updateAvatar, resetToDefault } = useUser(); 
+  const { setActiveAddress } = useAddresses(); 
   const router = useSafeRouter(); 
   
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -198,12 +200,12 @@ export default function ProfileScreen() {
             label="Saved Addresses" 
             onPress={() => router.push('/saved-addresses')} 
           />
-          <ProfileMenuItem 
+          {/* <ProfileMenuItem 
             icon="card-outline" 
             label="Payment Methods" 
             subLabel="Manage cards" 
             onPress={() => router.push('/payment-methods')} 
-          />
+          /> */}
         </View>
 
         <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>SECURITY & APP</Text>
@@ -265,6 +267,7 @@ export default function ProfileScreen() {
           setIsSignOutModalVisible(false);
           await SecureStore.deleteItemAsync('authToken'); 
           resetToDefault(); 
+          setActiveAddress(null); 
           router.replace('/welcome'); 
         }} 
         title="Sign Out"
@@ -281,6 +284,7 @@ export default function ProfileScreen() {
           setIsDeleteModalVisible(false);
           await SecureStore.deleteItemAsync('authToken'); 
           resetToDefault(); 
+          setActiveAddress(null); 
           router.replace('/welcome'); 
         }} 
         title="Delete Account"

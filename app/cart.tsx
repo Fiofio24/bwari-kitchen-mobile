@@ -21,7 +21,7 @@ import { useMenu } from '../context/MenuContext';
 import QuickEditPackage from '../components/QuickEditPackage';
 import TopNav from '../components/TopNav';
 import HomeIcon from '../components/HomeIcon';
-import { scale } from '../constants/Sizes'; // <-- IMPORTED MASTER SCALE
+import { scale } from '../constants/Sizes'; 
 
 const CartItemCard = ({ item, isSelected, onToggle, onIncrease, onDecrease, onRemove, onEdit, colors, isDark }: any) => {
   const { findItem } = useMenu();
@@ -34,7 +34,6 @@ const CartItemCard = ({ item, isSelected, onToggle, onIncrease, onDecrease, onRe
 
   const unavailableSubItems = (item.subItems || []).filter((sub: any) => {
     const dbItem = findItem(sub.id);
-    // Treat deleted items (!dbItem) the same as sold out items
     return !dbItem || dbItem.isAvailable === false;
   });
   
@@ -117,7 +116,6 @@ const CartItemCard = ({ item, isSelected, onToggle, onIncrease, onDecrease, onRe
       }
     ]}>
       
-      {/* THE FIX: Wrapping everything in a TouchableOpacity */}
       <TouchableOpacity 
         style={{ flex: 1, flexDirection: 'row' }}
         activeOpacity={isLocked ? 1 : 0.7}
@@ -154,7 +152,7 @@ const CartItemCard = ({ item, isSelected, onToggle, onIncrease, onDecrease, onRe
         <View style={[styles.detailsWrapper, isLocked && { opacity: 0.6 }]}>
           <View style={styles.topRow}>
             <Text style={[styles.itemName, { color: isLocked ? colors.textMuted : colors.text }]} numberOfLines={1}>
-              {item.category || item.name}
+              {item.name || item.category}
             </Text>
             <TouchableOpacity onPress={() => onRemove(item.id)} style={styles.deleteBtn}>
               <Ionicons name="trash-outline" size={scale(20)} color={isLocked ? colors.text : Colors.primary} />
@@ -235,12 +233,10 @@ export default function CartScreen() {
   const isItemFullyAvailable = useCallback((item: any) => {
     if (!item.subItems || item.subItems.length === 0) {
       const dbItem = findItem(item.id);
-      // If it's a single item and it was deleted, lock it!
       return dbItem ? dbItem.isAvailable !== false : false;
     }
     return !item.subItems.some((sub: any) => {
       const dbItem = findItem(sub.id);
-      // Treat deleted items (!dbItem) the same as sold out items
       return !dbItem || dbItem.isAvailable === false;
     });
   }, [findItem]);
@@ -341,18 +337,55 @@ export default function CartScreen() {
               {isSummaryExpanded && (
                 <View style={styles.expandedSummaryContent}>
                   {selectedItemsList.map((item: any, idx: number) => (
-                    <View key={item.id} style={styles.summaryItemRow}>
-                      <View style={styles.summaryItemLeft}>
-                        <Text style={[styles.snText, { color: Colors.primary }]}>
-                          {(idx + 1).toString().padStart(2, '0')}.
-                        </Text>
-                        <Text style={[styles.summaryItemName, { color: colors.textMuted }]} numberOfLines={1}>
-                          {item.quantity || 1}x {item.name}
+                    <View key={item.id} style={[styles.summaryItemContainer, { borderBottomColor: colors.border }]}>
+                      <View style={styles.summaryItemRow}>
+                        <View style={styles.summaryItemLeft}>
+                          <Text style={[styles.snText, { color: Colors.primary }]}>
+                            {(idx + 1).toString().padStart(2, '0')}.
+                          </Text>
+                          <Text style={[styles.summaryItemName, { color: colors.textMuted }]} numberOfLines={1}>
+                            {item.quantity || 1}x {item.name}
+                          </Text>
+                        </View>
+                        <Text style={[styles.summaryItemPrice, { color: colors.text }]}>
+                          ₦{(item.price * (item.quantity || 1)).toLocaleString()}
                         </Text>
                       </View>
-                      <Text style={[styles.summaryItemPrice, { color: colors.text }]}>
-                        ₦{(item.price * (item.quantity || 1)).toLocaleString()}
-                      </Text>
+                      
+                      {/* DYNAMIC MULTIPLIED SUB-ITEMS */}
+                      {item.subItems && item.subItems.length > 0 && (
+                        <View style={styles.subItemsList}>
+                          {item.subItems.map((sub: any, subIdx: number) => {
+                            const dbItem = sub.id ? findItem(sub.id) : null;
+                            
+                            // Multiply base qty by package qty
+                            const baseSubQty = sub.qty ?? sub.quantity ?? 1;
+                            const mainPkgQty = item.quantity || 1;
+                            const displayQty = baseSubQty * mainPkgQty;
+                            
+                            const unitPrice = (sub.price !== undefined && sub.price !== null)
+                              ? sub.price
+                              : ((sub.unitPrice !== undefined && sub.unitPrice !== null)
+                                ? sub.unitPrice
+                                : (dbItem?.basePrice ?? 0));
+                                
+                            // Multiply base unit price by the scaled up quantity
+                            const displayPrice = unitPrice * displayQty;
+                            const name = sub.name || sub.itemName || dbItem?.name || 'Item';
+
+                            return (
+                              <View key={subIdx} style={styles.subItemRow}>
+                                <Text style={[styles.subItemText, { color: colors.textMuted }]} numberOfLines={1}>
+                                  • {displayQty}x {name}
+                                </Text>
+                                <Text style={[styles.subItemPrice, { color: colors.textMuted }]}>
+                                  ₦{displayPrice.toLocaleString()}
+                                </Text>
+                              </View>
+                            );
+                          })}
+                        </View>
+                      )}
                     </View>
                   ))}
                   
@@ -606,12 +639,15 @@ const styles = StyleSheet.create({
   expandedSummaryContent: {
     overflow: 'hidden',
   },
-  summaryItemRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: scale(10),
-  },
+  
+  // SUB-ITEM SUMMARY STYLES
+  summaryItemContainer: { borderBottomWidth: 1, paddingVertical: scale(10) },
+  summaryItemRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  subItemsList: { paddingLeft: scale(25), marginTop: scale(6), marginBottom: scale(2) },
+  subItemRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: scale(3) },
+  subItemText: { fontSize: scale(12), flex: 1, paddingRight: scale(10) },
+  subItemPrice: { fontSize: scale(12), fontWeight: '500' },
+  
   summaryItemLeft: {
     flex: 1,
     flexDirection: 'row',

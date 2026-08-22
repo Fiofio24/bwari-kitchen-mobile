@@ -19,6 +19,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useUser } from '../context/UserContext';
 import TopNav from '../components/TopNav';
 import { scale } from '../constants/Sizes'; 
+import HomeIcon from '../components/HomeIcon';
 
 const FAQ_DATA = [
   {
@@ -97,6 +98,11 @@ export default function HelpScreen() {
         title="Help & Support"
         leftIcon="arrow-back"
         onLeftPress={() => router.back()}
+        rightComponent={
+          <View style={styles.headerRight}>
+            <HomeIcon onPress={() => router.push('/(tabs)')} />
+          </View>
+        }
         isAbsolute={false} 
         isScrolled={true}
         showDivider={false}
@@ -227,6 +233,11 @@ export default function HelpScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  headerRight: { 
+    flexDirection: 'row', 
+    gap: scale(10), 
+    alignItems: 'center',
   },
   scrollContent: {
     paddingTop: scale(20),

@@ -23,7 +23,8 @@ import Sidebar from '../../components/Sidebar';
 import CartBadgeIcon from '../../components/CartBadgeIcon';
 import { useMenu } from '../../context/MenuContext';
 import TopNav from '../../components/TopNav';
-import { scale } from '../../constants/Sizes'; // <-- IMPORTED MASTER SCALE
+import HomeIcon from '../../components/HomeIcon';
+import { scale } from '../../constants/Sizes'; 
 
 export default function FavoriteScreen() {
   const router = useSafeRouter();
@@ -32,7 +33,9 @@ export default function FavoriteScreen() {
   const { addToCart } = useCart();
   
   const { favorites, toggleFavorite, isFavorite, refresh, loading } = useFavorites();
-  const { findItem } = useMenu();
+  
+  // Destructuring items & packages so we can map historical favorites to LIVE data
+  const { items, packages, findItem } = useMenu();
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false); 
@@ -75,16 +78,91 @@ export default function FavoriteScreen() {
     }
   }, [refresh]);
 
+  // SMART LIVE MAPPING HELPER (Typed as ANY to bypass TypeScript strictness)
+  const getLiveItem = useCallback((id: string, name: string, isPkg = false): any => {
+    if (id) {
+      const found = findItem(id);
+      if (found) return found;
+    }
+    if (name && items) {
+      const foundByName = items.find((i: any) => i.name.toLowerCase() === name.toLowerCase());
+      if (foundByName) return foundByName;
+    }
+    if (isPkg && packages && id) {
+      const foundPkg = packages.find((p: any) => p.id === id);
+      if (foundPkg) return foundPkg;
+    }
+    return null;
+  }, [findItem, items, packages]);
+
+  const checkAvailability = useCallback((dish: any) => {
+    if (dish.subItems && dish.subItems.length > 0) {
+      return !dish.subItems.some((sub: any) => {
+        const dbItem: any = getLiveItem(sub.id, sub.name || sub.itemName);
+        return !dbItem || dbItem.isAvailable === false;
+      });
+    }
+    const dbItem: any = getLiveItem(dish.id, dish.name, true);
+    return dbItem ? dbItem.isAvailable !== false : false; 
+  }, [getLiveItem]);
+
+  const getLivePrice = useCallback((dish: any) => {
+    if (dish.subItems && dish.subItems.length > 0) {
+      let total = 0;
+      dish.subItems.forEach((sub: any) => {
+        const dbItem: any = getLiveItem(sub.id, sub.name || sub.itemName);
+        if (dbItem) {
+          // Dynamic check: Fallback to .price if .basePrice doesn't exist
+          const itemPrice = dbItem.basePrice !== undefined ? dbItem.basePrice : (dbItem.price || 0);
+          total += (itemPrice * (sub.qty || sub.quantity || 1));
+        }
+      });
+      return total > 0 ? total : dish.price;
+    }
+    const dbItem: any = getLiveItem(dish.id, dish.name, true);
+    return dbItem ? (dbItem.basePrice ?? dbItem.price ?? dish.price) : dish.price;
+  }, [getLiveItem]);
+
   const handleAddToCart = (dish: any) => {
+    let livePrice = dish.price;
+    let liveSubItems = dish.subItems || [];
+    
+    // Push LIVE mapped data to the cart, not the stale favorite snapshot!
+    if (dish.subItems && dish.subItems.length > 0) {
+      let currentPackageTotal = 0;
+      const updatedSubItems: any[] = [];
+      
+      dish.subItems.forEach((sub: any) => {
+        const dbItem: any = getLiveItem(sub.id, sub.name || sub.itemName);
+        if (dbItem) {
+          const itemPrice = dbItem.basePrice !== undefined ? dbItem.basePrice : (dbItem.price || 0);
+          updatedSubItems.push({
+            ...sub,
+            id: dbItem.id, // Ensure fresh UUID
+            name: dbItem.name,
+            price: itemPrice
+          });
+          currentPackageTotal += (itemPrice * (sub.qty || sub.quantity || 1));
+        }
+      });
+      liveSubItems = updatedSubItems;
+      livePrice = currentPackageTotal > 0 ? currentPackageTotal : dish.price;
+    } else {
+      const dbItem: any = getLiveItem(dish.id, dish.name, true);
+      if (dbItem) {
+        livePrice = dbItem.basePrice ?? dbItem.price ?? dish.price;
+      }
+    }
+
     const newItem: any = {
       id: dish.id, 
       name: dish.name,
       category: dish.category,
-      price: dish.price,
+      price: livePrice,
       quantity: 1,
       image: dish.image,
       isAvailable: true,
-      subItems: dish.subItems || []
+      subItems: liveSubItems
     };
     addToCart(newItem);
 
@@ -95,21 +173,10 @@ export default function FavoriteScreen() {
     ]).start();
   };
 
-  const checkAvailability = (dish: any) => {
-    if (dish.subItems && dish.subItems.length > 0) {
-      return !dish.subItems.some((sub: any) => {
-        const dbItem = findItem(sub.id);
-        // Treat deleted items (!dbItem) the same as sold out items
-        return !dbItem || dbItem.isAvailable === false;
-      });
-    }
-    const dbItem = findItem(dish.id);
-    return dbItem ? dbItem.isAvailable !== false : false; // False if completely deleted
-  };
-
   const headerRightComponent = (
     <View style={styles.headerRight}>
       <CartBadgeIcon onPress={() => router.push('/cart')} />
+      <HomeIcon onPress={() => router.push('/(tabs)')} />
     </View>
   );
 
@@ -161,12 +228,14 @@ export default function FavoriteScreen() {
             <View style={[styles.gridContainer, { gap: GRID_GAP }]}>
               {favorites.map((dish) => {
                 const isAvail = checkAvailability(dish);
+                const livePrice = getLivePrice(dish); // Pull the dynamic live price
+
                 return (
                   <View style={{ width: CARD_WIDTH }} key={dish.id}>
                     <GridDishCard 
                       category={dish.category} 
                       name={dish.name} 
-                      price={`₦${dish.price.toLocaleString()}`} 
+                      price={`₦${livePrice.toLocaleString()}`} 
                       rating={dish.rating} 
                       image={dish.image} 
                       isAvailable={isAvail} 
@@ -217,6 +286,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', 
     alignItems: 'center',
     justifyContent: 'flex-end',
+    gap: scale(10),
   },
   scrollContent: { 
     paddingTop: scale(15),

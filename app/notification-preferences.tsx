@@ -15,6 +15,7 @@ import TopNav from '../components/TopNav';
 import api from './lib/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { scale } from '../constants/Sizes'; // <-- IMPORTED MASTER SCALE
+import HomeIcon from '../components/HomeIcon';
 
 const DEVICE_PREFS_KEY = '@bwari_kitchen_device_prefs';
 
@@ -119,14 +120,14 @@ export default function NotificationPreferencesScreen() {
     </View>
   );
 
-  if (loading) {
-    return (
-      <View style={[styles.container, { backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }]}>
-        <TopNav title="Notification Preferences" leftIcon="arrow-back" onLeftPress={() => router.back()} isAbsolute={false} isScrolled={true} />
-        <ActivityIndicator color={Colors.primary} size="large" />
-      </View>
-    );
-  }
+  // if (loading) {
+  //   return (
+  //     <View style={[styles.container, { backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }]}>
+  //       <TopNav title="Notification Preferences" leftIcon="arrow-back" onLeftPress={() => router.back()} isAbsolute={false} isScrolled={true} />
+  //       <ActivityIndicator color={Colors.primary} size="large" />
+  //     </View>
+  //   );
+  // }
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -134,6 +135,11 @@ export default function NotificationPreferencesScreen() {
         title="Notification Preferences"
         leftIcon="arrow-back"
         onLeftPress={() => router.back()}
+        rightComponent={
+          <View style={styles.headerRight}>
+            <HomeIcon onPress={() => router.push('/(tabs)')} />
+          </View>
+        }
         isAbsolute={false} 
         isScrolled={true}
       />
@@ -170,6 +176,11 @@ export default function NotificationPreferencesScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  headerRight: { 
+    flexDirection: 'row', 
+    gap: scale(10), 
+    alignItems: 'center',
+  },
   scrollContent: { paddingHorizontal: scale(20), paddingTop: scale(10), paddingBottom: scale(40) },
   sectionTitle: { fontSize: scale(12), fontWeight: 'bold', marginBottom: scale(12), marginTop: scale(25), marginLeft: scale(5), letterSpacing: 1.5 },
   card: { borderRadius: scale(20), borderWidth: 1, overflow: 'hidden' },

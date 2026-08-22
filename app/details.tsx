@@ -132,17 +132,19 @@ export default function DetailsScreen() {
 
   const isAvail = isComboAvailable();
 
-  const handleAddToCart = () => {
-    if (!isAvail) return;
+  const handleAddToCart = (targetItem = item, customQty = quantity) => {
+    const targetIsAvailable = targetItem === item ? isAvail : true; 
+    if (!targetIsAvailable) return;
+
     const newItem: any = { 
-      id: item.id, 
-      name: item.name, 
-      category: item.category,
-      price: item.price, 
-      quantity: quantity, 
-      image: item.image, 
+      id: targetItem.id, 
+      name: targetItem.name, 
+      category: targetItem.category,
+      price: targetItem.price, 
+      quantity: customQty, 
+      image: targetItem.image, 
       isAvailable: true,
-      subItems: item.subItems || [] 
+      subItems: targetItem.subItems || [] 
     };
     addToCart(newItem);
 

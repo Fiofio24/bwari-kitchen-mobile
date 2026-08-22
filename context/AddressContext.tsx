@@ -45,7 +45,7 @@ interface AddressContextType {
   setDefaultAddress: (id: string) => Promise<void>;
   
   // NEW: Function to set a temporary address for the current order
-  setActiveAddress: (id: string) => void; 
+  setActiveAddress: (id: string | null) => void; 
 }
 
 const AddressContext = createContext<AddressContextType | undefined>(undefined);
@@ -138,7 +138,7 @@ export function AddressProvider({ children }: { children: React.ReactNode }) {
     await refresh();
   };
 
-  const setActiveAddress = (id: string) => {
+  const setActiveAddress = (id: string | null) => {
     setTempActiveId(id);
   };
 
