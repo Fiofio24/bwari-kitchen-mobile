@@ -109,3 +109,4 @@ User testing feedbacks
 IOS UI/UX problems
 1. (Done ✅)the slide down to load for the index page is not working it is just over sliding the page that the red greeting section totally slides down and start showing the white background of the app but it is working fine on android...Note:the menu, favorite etc pages slide down to reload feature are working just fine 
 2. the reload spinner is not showing on the home page 
+3. the slide down to load for the details page is not working it is just over sliding the page that the item or package image section totally slides down and start showing the white background of the app but it is working fine on android...Note:the menu, favorite etc pages slide down to reload feature are working just fine

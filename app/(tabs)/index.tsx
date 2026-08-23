@@ -88,6 +88,9 @@ export default function HomeScreen() {
   const { colors, isDark } = useTheme();
   const toastAnim = useRef(new Animated.Value(-scale(100))).current;
 
+  // NEW: Scroll animation value for the synchronized background
+  const scrollY = useRef(new Animated.Value(0)).current;
+
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
@@ -113,6 +116,7 @@ export default function HomeScreen() {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
+    console.log("🔄 Reloading Home Screen data...");
     try {
       await refresh();
     } catch (error) {
@@ -122,11 +126,20 @@ export default function HomeScreen() {
     }
   }, [refresh]);
 
+  // NEW: Synchronized scrolling event
+  const handleScroll = Animated.event(
+    [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+    { 
+      useNativeDriver: true,
+      listener: (event: any) => {
+        setIsScrolled(event.nativeEvent.contentOffset.y > shadowTripwire);
+      }
+    }
+  );
+
   const filteredDishes = activeCategory === 'All' 
     ? normalizedPackages 
     : normalizedPackages.filter(dish => dish.category === activeCategory);
-
-  const handleScroll = (event: any) => setIsScrolled(event.nativeEvent.contentOffset.y > shadowTripwire);
 
   const handleAddToCart = (comboPackage: any) => {
     const newItem: any = { 
@@ -181,7 +194,30 @@ export default function HomeScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       
-      <ScrollView 
+      {/* THE FLAWLESS iOS SPINNER FIX */}
+      {Platform.OS === 'ios' && (
+        <Animated.View
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: scale(260), // Perfectly matches the Greeting Section height
+            backgroundColor: Colors.primary,
+            zIndex: 0, // Sits behind the ScrollView so the spinner is visible!
+            transform: [{
+              translateY: scrollY.interpolate({
+                inputRange: [0, 100],
+                outputRange: [0, -100],
+                extrapolateLeft: 'clamp', // Pinned to top when pulling down
+              })
+            }]
+          }}
+        />
+      )}
+
+      {/* Changed to Animated.ScrollView to hook up the sync scrolling */}
+      <Animated.ScrollView 
         showsVerticalScrollIndicator={false} 
         contentContainerStyle={{ paddingBottom: scale(100) }}
         onScroll={handleScroll}
@@ -197,21 +233,6 @@ export default function HomeScreen() {
           />
         }
       >
-        {/* FIX: TS Compliant iOS Overscroll/Bounce Background Hack */}
-        {Platform.OS === 'ios' && (
-          <View
-            style={{
-              position: 'absolute',
-              top: -scale(1000),
-              left: 0,
-              right: 0,
-              height: scale(1000) + scale(50), 
-              backgroundColor: Colors.primary,
-              zIndex: 0,
-            }}
-          />
-        )}
-
         <View style={styles.topLayoutContainer}>
           <GreetingSection userName={USER_PROFILE.name} />
           <View style={styles.searchBarWrapper}>
@@ -264,7 +285,7 @@ export default function HomeScreen() {
             </Text>
           )}
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
 
       <TopNav 
         leftIcon="menu"
