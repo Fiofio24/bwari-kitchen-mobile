@@ -43,7 +43,6 @@ export default function MenuScreen() {
   
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
-  // MODIFIED: Pull customPlate directly from global CartContext!
   const { addToCart, customPlate, setCustomPlate } = useCart();
   
   const toastAnim = useRef(new Animated.Value(-scale(100))).current;
@@ -82,6 +81,8 @@ export default function MenuScreen() {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
+    // NEW: Terminal Feedback so you know it's working!
+    console.log("🔄 Reloading Menu data...");
     try {
       await refresh();
     } catch (error) {
@@ -255,7 +256,7 @@ export default function MenuScreen() {
           <RefreshControl 
             refreshing={refreshing} 
             onRefresh={onRefresh} 
-            tintColor={Colors.primary} 
+            tintColor={isDark ? "#FFF" : Colors.primary} // High Contrast Fix
             colors={[Colors.primary]} 
             progressBackgroundColor={isDark ? colors.surface : '#FFF'} 
           />
@@ -364,7 +365,6 @@ export default function MenuScreen() {
 
       </ScrollView>
 
-      {}
       <Animated.View pointerEvents={isPackageEmpty ? 'none' : 'auto'} style={[menuStyles.floatingButtonContainer, { bottom: bottomNavHeight + scale(15), opacity: floatingButtonAnim, transform: [{ translateY: floatingButtonAnim.interpolate({ inputRange: [0, 1], outputRange: [scale(20), 0] }) }] }]}>
         <TouchableOpacity style={[menuStyles.mainAddButton, { backgroundColor: Colors.primary }]} activeOpacity={0.8} onPress={handleAddCustomPlateToCart}>
           <Text style={[menuStyles.mainAddButtonText, { color: '#FFF' }]}>{`Add To Cart - ₦${plateTotal.toLocaleString()}`}</Text>

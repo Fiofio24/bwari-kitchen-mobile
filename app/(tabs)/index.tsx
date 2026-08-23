@@ -28,16 +28,13 @@ import { useTheme } from '../../context/ThemeContext';
 import { useCart } from '../../context/CartContext';
 import { useFavorites } from '../../context/FavoriteContext'; 
 import { useMenu } from '../../context/MenuContext'; 
-
-// import React, { useCallback } from 'react';
-// import { BackHandler } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 
 import CartBadgeIcon from '../../components/CartBadgeIcon';
 import AddressSelectorModal from '../../components/AddressSelectorModal';
 import { useNotifications } from '../../context/NotificationContext';
 import { useAddresses } from '../../context/AddressContext';
-import { scale } from '../../constants/Sizes'; // <-- IMPORTED MASTER SCALE
+import { scale } from '../../constants/Sizes'; 
 
 const USER_PROFILE = { name: "User" };
 
@@ -77,10 +74,7 @@ export default function HomeScreen() {
     })),
   }));
 
-  // THE FIX: We create a Set of all categories currently used by packages
   const activeCategoriesInKitchen = new Set(normalizedPackages.map(pkg => pkg.category));
-  
-  // Then we filter the main list to only include categories that exist in that Set
   const CATEGORIES = ['All', ...categories.map(c => c.name).filter(cat => activeCategoriesInKitchen.has(cat))];
 
   const [activeCategory, setActiveCategory] = useState('All');
@@ -158,7 +152,6 @@ export default function HomeScreen() {
     if (!combo.subItems || combo.subItems.length === 0) return combo.isAvailable !== false;
     return !combo.subItems.some((sub: any) => {
       const dbItem = findItem(sub.id);
-      // Treat deleted items (!dbItem) the same as sold out items
       return !dbItem || dbItem.isAvailable === false;
     });
   };
@@ -171,25 +164,17 @@ export default function HomeScreen() {
     );
   }
 
-  // NEW: Smart address formatter
   const getFormattedDisplayAddress = () => {
     if (!activeAddress) return "Select Location";
     
     const addr = activeAddress as any;
-    
-    // Combine the available location parts, filtering out any empty ones
     const locationDetails = [addr.streetAddress, addr.landmark, addr.area].filter(Boolean).join(', ');
-    
-    // Check if the label is one of the auto-generated ones
     const autoLabels = ['my location', 'current location'];
     const isAutoLabel = addr.label && autoLabels.includes(addr.label.toLowerCase());
     
-    // If it has a custom label (like "Home" or "Work"), attach it!
     if (addr.label && !isAutoLabel) {
       return `${addr.label}: ${locationDetails}`;
     }
-    
-    // Otherwise, just return the raw address details
     return locationDetails || "Select Location";
   };
 
@@ -205,13 +190,28 @@ export default function HomeScreen() {
           <RefreshControl 
             refreshing={refreshing} 
             onRefresh={onRefresh} 
-            tintColor={Colors.primary} 
+            tintColor="#FFF" 
             colors={[Colors.primary]} 
             progressBackgroundColor={isDark ? colors.surface : '#FFF'} 
             progressViewOffset={insets.top + scale(60)} 
           />
         }
       >
+        {/* FIX: TS Compliant iOS Overscroll/Bounce Background Hack */}
+        {Platform.OS === 'ios' && (
+          <View
+            style={{
+              position: 'absolute',
+              top: -scale(1000),
+              left: 0,
+              right: 0,
+              height: scale(1000) + scale(50), 
+              backgroundColor: Colors.primary,
+              zIndex: 0,
+            }}
+          />
+        )}
+
         <View style={styles.topLayoutContainer}>
           <GreetingSection userName={USER_PROFILE.name} />
           <View style={styles.searchBarWrapper}>
@@ -224,9 +224,6 @@ export default function HomeScreen() {
 
         <View style={styles.headerRow}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Others</Text>
-          {/* <TouchableOpacity>
-            <Text style={styles.seeMoreText}>See More</Text>
-          </TouchableOpacity> */}
         </View>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scrollContainer}>

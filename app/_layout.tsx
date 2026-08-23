@@ -51,7 +51,13 @@ function RootContent() {
 
   useEffect(() => {
     if (appIsReady && initialRoute) {
-      SplashScreen.hideAsync();
+      
+      // FIX: Wrap this in a try/catch to stop the iOS Expo Go spam!
+      try {
+        SplashScreen.hideAsync();
+      } catch (e) {
+        // Silently ignore if the splash screen is already hidden
+      }
       
       // FIX: Added a 100ms delay before replacing the route.
       // This prevents the dreaded Android 'getChildDrawingOrder' crash 

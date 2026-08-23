@@ -33,8 +33,6 @@ export default function FavoriteScreen() {
   const { addToCart } = useCart();
   
   const { favorites, toggleFavorite, isFavorite, refresh, loading } = useFavorites();
-  
-  // Destructuring items & packages so we can map historical favorites to LIVE data
   const { items, packages, findItem } = useMenu();
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -60,7 +58,6 @@ export default function FavoriteScreen() {
   const GRID_PADDING = scale(20);
   const GRID_GAP = scale(15);
   const AVAILABLE_WIDTH = width - (GRID_PADDING * 2);
-  
   const MAX_GRID_WIDTH = scale(200); 
   const NUM_COLUMNS = Math.max(2, Math.ceil(AVAILABLE_WIDTH / (MAX_GRID_WIDTH + GRID_GAP)));
   const CARD_WIDTH = Math.floor((AVAILABLE_WIDTH - (GRID_GAP * (NUM_COLUMNS - 1))) / NUM_COLUMNS);
@@ -69,6 +66,7 @@ export default function FavoriteScreen() {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
+    console.log("🔄 Reloading Favorites data...");
     try {
       await refresh();
     } catch (error) {
@@ -78,7 +76,6 @@ export default function FavoriteScreen() {
     }
   }, [refresh]);
 
-  // SMART LIVE MAPPING HELPER (Typed as ANY to bypass TypeScript strictness)
   const getLiveItem = useCallback((id: string, name: string, isPkg = false): any => {
     if (id) {
       const found = findItem(id);
@@ -112,7 +109,6 @@ export default function FavoriteScreen() {
       dish.subItems.forEach((sub: any) => {
         const dbItem: any = getLiveItem(sub.id, sub.name || sub.itemName);
         if (dbItem) {
-          // Dynamic check: Fallback to .price if .basePrice doesn't exist
           const itemPrice = dbItem.basePrice !== undefined ? dbItem.basePrice : (dbItem.price || 0);
           total += (itemPrice * (sub.qty || sub.quantity || 1));
         }
@@ -127,7 +123,6 @@ export default function FavoriteScreen() {
     let livePrice = dish.price;
     let liveSubItems = dish.subItems || [];
     
-    // Push LIVE mapped data to the cart, not the stale favorite snapshot!
     if (dish.subItems && dish.subItems.length > 0) {
       let currentPackageTotal = 0;
       const updatedSubItems: any[] = [];
@@ -138,7 +133,7 @@ export default function FavoriteScreen() {
           const itemPrice = dbItem.basePrice !== undefined ? dbItem.basePrice : (dbItem.price || 0);
           updatedSubItems.push({
             ...sub,
-            id: dbItem.id, // Ensure fresh UUID
+            id: dbItem.id, 
             name: dbItem.name,
             price: itemPrice
           });
@@ -211,7 +206,7 @@ export default function FavoriteScreen() {
           <RefreshControl 
             refreshing={refreshing} 
             onRefresh={onRefresh} 
-            tintColor={Colors.primary} 
+            tintColor={isDark ? "#FFF" : Colors.primary} // High visibility contrast spinner
             colors={[Colors.primary]} 
             progressBackgroundColor={isDark ? colors.surface : '#FFF'} 
           />
@@ -228,7 +223,7 @@ export default function FavoriteScreen() {
             <View style={[styles.gridContainer, { gap: GRID_GAP }]}>
               {favorites.map((dish) => {
                 const isAvail = checkAvailability(dish);
-                const livePrice = getLivePrice(dish); // Pull the dynamic live price
+                const livePrice = getLivePrice(dish);
 
                 return (
                   <View style={{ width: CARD_WIDTH }} key={dish.id}>
@@ -279,97 +274,18 @@ export default function FavoriteScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-  },
-  headerRight: { 
-    flexDirection: 'row', 
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    gap: scale(10),
-  },
-  scrollContent: { 
-    paddingTop: scale(15),
-  },
-  headerRow: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'center', 
-    paddingHorizontal: scale(20), 
-    marginBottom: scale(15),
-  },
-  resultCount: { 
-    fontSize: scale(14), 
-    fontWeight: 'bold',
-  },
-  gridContainer: { 
-    flexDirection: 'row', 
-    flexWrap: 'wrap', 
-    paddingHorizontal: scale(20),
-  },
-  emptyContainer: { 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    paddingHorizontal: scale(40), 
-    paddingBottom: scale(50),
-  },
-  iconCircle: { 
-    width: scale(140), 
-    height: scale(140), 
-    borderRadius: scale(70), 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    marginBottom: scale(20),
-  },
-  emptyTitle: { 
-    fontSize: scale(24), 
-    fontWeight: 'bold', 
-    marginBottom: scale(10), 
-    textAlign: 'center',
-  },
-  emptySubtitle: { 
-    fontSize: scale(16), 
-    textAlign: 'center', 
-    lineHeight: scale(24), 
-    marginBottom: scale(35),
-  },
-  browseBtn: { 
-    backgroundColor: Colors.primary, 
-    paddingVertical: scale(16), 
-    paddingHorizontal: scale(35), 
-    borderRadius: scale(30),
-    elevation: 3,
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: scale(4) },
-    shadowOpacity: 0.3,
-    shadowRadius: scale(5),
-  },
-  browseBtnText: { 
-    color: '#FFF', 
-    fontSize: scale(18), 
-    fontWeight: 'bold',
-  },
-  toastContainer: { 
-    position: 'absolute', 
-    left: scale(20), 
-    right: scale(20), 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    paddingVertical: scale(14), 
-    paddingHorizontal: scale(20), 
-    borderRadius: scale(30), 
-    elevation: 10, 
-    shadowColor: '#000', 
-    shadowOffset: { width: 0, height: scale(5) }, 
-    shadowOpacity: 0.3, 
-    shadowRadius: scale(8), 
-    zIndex: 100, 
-    justifyContent: 'center', 
-    gap: scale(10),
-  },
-  toastText: { 
-    color: '#FFF', 
-    fontSize: scale(16), 
-    fontWeight: 'bold',
-  }
+  container: { flex: 1 },
+  headerRight: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: scale(10) },
+  scrollContent: { paddingTop: scale(15) },
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: scale(20), marginBottom: scale(15) },
+  resultCount: { fontSize: scale(14), fontWeight: 'bold' },
+  gridContainer: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: scale(20) },
+  emptyContainer: { justifyContent: 'center', alignItems: 'center', paddingHorizontal: scale(40), paddingBottom: scale(50) },
+  iconCircle: { width: scale(140), height: scale(140), borderRadius: scale(70), justifyContent: 'center', alignItems: 'center', marginBottom: scale(20) },
+  emptyTitle: { fontSize: scale(24), fontWeight: 'bold', marginBottom: scale(10), textAlign: 'center' },
+  emptySubtitle: { fontSize: scale(16), textAlign: 'center', lineHeight: scale(24), marginBottom: scale(35) },
+  browseBtn: { backgroundColor: Colors.primary, paddingVertical: scale(16), paddingHorizontal: scale(35), borderRadius: scale(30), elevation: 3, shadowColor: Colors.primary, shadowOffset: { width: 0, height: scale(4) }, shadowOpacity: 0.3, shadowRadius: scale(5) },
+  browseBtnText: { color: '#FFF', fontSize: scale(18), fontWeight: 'bold' },
+  toastContainer: { position: 'absolute', left: scale(20), right: scale(20), flexDirection: 'row', alignItems: 'center', paddingVertical: scale(14), paddingHorizontal: scale(20), borderRadius: scale(30), elevation: 10, shadowColor: '#000', shadowOffset: { width: 0, height: scale(5) }, shadowOpacity: 0.3, shadowRadius: scale(8), zIndex: 100, justifyContent: 'center', gap: scale(10) },
+  toastText: { color: '#FFF', fontSize: scale(16), fontWeight: 'bold' }
 });
