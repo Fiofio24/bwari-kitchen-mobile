@@ -26,11 +26,12 @@ import { Colors } from '../constants/Colors';
 import { StatusBar } from 'expo-status-bar';
 import { useCart } from '../context/CartContext';
 import { useAddresses } from '../context/AddressContext'; 
+import { useMenu } from '../context/MenuContext';
 import AddressSelectorModal from '../components/AddressSelectorModal'; 
 import TopNav from '../components/TopNav';
 import HomeIcon from '../components/HomeIcon';
 import api from './lib/api';
-import { scale } from '../constants/Sizes'; // <-- IMPORTED MASTER SCALE
+import { scale } from '../constants/Sizes'; 
 
 const buildOrderPackagesPayload = (items: any[]) => {
   return items.map((item: any) => {
@@ -40,18 +41,18 @@ const buildOrderPackagesPayload = (items: any[]) => {
       return {
         packageId: isRealPackageId ? item.id : undefined,
         name: item.name,
-        quantity: item.quantity || 1, // <-- Cleanly passing the quantity for Victor!
+        quantity: item.quantity || 1,
         wasEdited: String(item.id).startsWith('custom_edit_'),
         items: item.subItems.map((sub: any) => ({
           menuItemId: sub.id,
           variantLabel: sub.variantLabel || undefined,
-          quantity: sub.qty, 
+          quantity: sub.qty || sub.quantity || 1, 
         })),
       };
     } else {
       return {
         name: item.name,
-        quantity: item.quantity || 1, // <-- Cleanly passing the quantity for Victor!
+        quantity: item.quantity || 1,
         items: [{
           menuItemId: item.id,
           quantity: 1, 
@@ -68,7 +69,8 @@ export default function CheckoutScreen() {
   const insets = useSafeAreaInsets();
   
   const { cartItems, removeMultipleFromCart } = useCart();
-  const { activeAddress } = useAddresses(); 
+  const { activeAddress, setActiveAddress } = useAddresses(); 
+  const { findItem } = useMenu();
   
   const [deliveryMethod, setDeliveryMethod] = useState<'delivery' | 'pickup'>('delivery'); 
   const [isProcessing, setIsProcessing] = useState(false);
@@ -201,6 +203,7 @@ export default function CheckoutScreen() {
       if (!params.instantReorder) {
         removeMultipleFromCart(checkoutItems.map((item: any) => item.id));
       }
+      setActiveAddress(null); 
       DeviceEventEmitter.emit('ORDER_PLACED');
       Alert.alert('Payment Successful!', 'Your food is confirmed and processing.');
       router.replace('/my-orders');
@@ -446,18 +449,55 @@ export default function CheckoutScreen() {
         <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           
           {checkoutItems.map((item: any) => (
-            <View key={item.id} style={[styles.summaryItemRow, { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
-              <View style={styles.summaryItemLeft}>
-                <Text style={[styles.snText, { color: Colors.primary }]}>
-                  {item.quantity || 1}x
-                </Text>
-                <Text style={[styles.summaryItemName, { color: colors.text }]} numberOfLines={2}>
-                  {item.name}
+            <View key={item.id} style={[styles.summaryItemContainer, { borderBottomColor: colors.border }]}>
+              <View style={styles.summaryItemRow}>
+                <View style={styles.summaryItemLeft}>
+                  <Text style={[styles.snText, { color: Colors.primary }]}>
+                    {item.quantity || 1}x
+                  </Text>
+                  <Text style={[styles.summaryItemName, { color: colors.text }]} numberOfLines={2}>
+                    {item.name}
+                  </Text>
+                </View>
+                <Text style={[styles.summaryItemPrice, { color: colors.text }]}>
+                  ₦{(item.price * (item.quantity || 1)).toLocaleString()}
                 </Text>
               </View>
-              <Text style={[styles.summaryItemPrice, { color: colors.text }]}>
-                ₦{(item.price * (item.quantity || 1)).toLocaleString()}
-              </Text>
+
+              {/* DYNAMIC MULTIPLIED SUB-ITEMS */}
+              {item.subItems && item.subItems.length > 0 && (
+                <View style={styles.subItemsList}>
+                  {item.subItems.map((sub: any, subIdx: number) => {
+                    const dbItem = sub.id ? findItem(sub.id) : null;
+                    
+                    // Multiply base qty by package qty
+                    const baseSubQty = sub.qty ?? sub.quantity ?? 1;
+                    const mainPkgQty = item.quantity || 1;
+                    const displayQty = baseSubQty * mainPkgQty;
+                    
+                    const unitPrice = (sub.price !== undefined && sub.price !== null)
+                      ? sub.price
+                      : ((sub.unitPrice !== undefined && sub.unitPrice !== null)
+                        ? sub.unitPrice
+                        : (dbItem?.basePrice ?? 0));
+                        
+                    // Multiply base unit price by the scaled up quantity
+                    const displayPrice = unitPrice * displayQty;
+                    const name = sub.name || sub.itemName || dbItem?.name || 'Item';
+
+                    return (
+                      <View key={subIdx} style={styles.subItemRow}>
+                        <Text style={[styles.subItemText, { color: colors.textMuted }]} numberOfLines={1}>
+                          • {displayQty}x {name}
+                        </Text>
+                        <Text style={[styles.subItemPrice, { color: colors.textMuted }]}>
+                          ₦{displayPrice.toLocaleString()}
+                        </Text>
+                      </View>
+                    );
+                  })}
+                </View>
+              )}
             </View>
           ))}
 
@@ -585,7 +625,14 @@ const styles = StyleSheet.create({
   paymentTextContainer: { flex: 1 },
   paymentTitle: { fontSize: scale(16), fontWeight: '600', marginBottom: scale(2) },
   paymentSub: { fontSize: scale(12) },
-  summaryItemRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: scale(12) },
+  
+  summaryItemContainer: { borderBottomWidth: 1, paddingVertical: scale(10) },
+  summaryItemRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  subItemsList: { paddingLeft: scale(20), marginTop: scale(6), marginBottom: scale(2) },
+  subItemRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: scale(4) },
+  subItemText: { fontSize: scale(13), flex: 1, paddingRight: scale(10) },
+  subItemPrice: { fontSize: scale(13), fontWeight: '600' },
+  
   summaryItemLeft: { flex: 1, flexDirection: 'row', alignItems: 'center' },
   snText: { fontSize: scale(14), fontWeight: '900', marginRight: scale(8) },
   summaryItemName: { flex: 1, fontSize: scale(15), fontWeight: '500', paddingRight: scale(10) },

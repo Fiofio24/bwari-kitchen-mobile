@@ -9,7 +9,9 @@ import {
   Platform,
   Animated,
   RefreshControl,
-  PanResponder
+  PanResponder,
+  Modal,
+  TouchableWithoutFeedback
 } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useSafeRouter } from '../hooks/useSafeRouter';
@@ -27,19 +29,25 @@ import CartBadgeIcon from '../components/CartBadgeIcon';
 import HomeIcon from '@/components/HomeIcon';
 import TopNav from '../components/TopNav';
 import ForYouCard from '../components/ForYouCard';
-import { scale } from '../constants/Sizes'; // <-- IMPORTED MASTER SCALE
+import { scale } from '../constants/Sizes'; 
 
 export default function DetailsScreen() {
   const { id } = useLocalSearchParams();
   const router = useSafeRouter();
   const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
-  const { addToCart } = useCart();
+  
+  // MODIFIED: Pulling setCustomPlate globally!
+  const { addToCart, setCustomPlate } = useCart();
   const { toggleFavorite, isFavorite } = useFavorites();
   
   const [quantity, setQuantity] = useState(1);
   const [isEditModalVisible, setIsEditModalVisible] = useState(false); 
   const [refreshing, setRefreshing] = useState(false);
+  
+  // NEW: State for our Slide-up Package Options Modal
+  const [packageModalVisible, setPackageModalVisible] = useState(false);
+  
   const toastAnim = useRef(new Animated.Value(-scale(100))).current;
 
   const { findItem, findPackage, loading, refresh } = useMenu();
@@ -59,7 +67,6 @@ export default function DetailsScreen() {
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onPanResponderRelease: (e, gestureState) => {
-        // If dragged more than 20px in any direction, dismiss it!
         if (Math.abs(gestureState.dx) > 20 || Math.abs(gestureState.dy) > 20) {
           Animated.timing(toastAnim, {
             toValue: -scale(100),
@@ -112,28 +119,32 @@ export default function DetailsScreen() {
     );
   }
 
+  // NEW: Determine if this is a single item or combo package
+  const isSingleItem = !item.subItems || item.subItems.length === 0;
+
   const isComboAvailable = () => {
-    if (!item.subItems || item.subItems.length === 0) return item.isAvailable !== false;
+    if (isSingleItem) return item.isAvailable !== false;
     return !item.subItems.some((sub: any) => {
       const dbItem = findItem(sub.id);
-      // Treat deleted items (!dbItem) the same as sold out items
       return !dbItem || dbItem.isAvailable === false;
     });
   };
 
   const isAvail = isComboAvailable();
 
-  const handleAddToCart = () => {
-    if (!isAvail) return;
+  const handleAddToCart = (targetItem = item, customQty = quantity) => {
+    const targetIsAvailable = targetItem === item ? isAvail : true; 
+    if (!targetIsAvailable) return;
+
     const newItem: any = { 
-      id: item.id, 
-      name: item.name, 
-      category: item.category,
-      price: item.price, 
-      quantity: quantity, 
-      image: item.image, 
+      id: targetItem.id, 
+      name: targetItem.name, 
+      category: targetItem.category,
+      price: targetItem.price, 
+      quantity: customQty, 
+      image: targetItem.image, 
       isAvailable: true,
-      subItems: item.subItems || [] 
+      subItems: targetItem.subItems || [] 
     };
     addToCart(newItem);
 
@@ -152,6 +163,29 @@ export default function DetailsScreen() {
     ]).start();
   };
 
+  // NEW: Logic for handling single item additions
+  const compositeKey = `${item.id}::Base::${item.price}`;
+
+  const addToExistingPackage = () => {
+    setPackageModalVisible(false);
+    setCustomPlate(prev => ({
+      ...prev,
+      [compositeKey]: (prev[compositeKey] || 0) + quantity
+    }));
+    // Take them straight to the menu screen to see the package they are building!
+    setTimeout(() => router.push('/(tabs)/menu'), 300);
+  };
+
+  const startNewPackage = () => {
+    setPackageModalVisible(false);
+    // Erase the old package and start completely fresh
+    setCustomPlate({
+      [compositeKey]: quantity
+    });
+    // Take them straight to the menu screen!
+    setTimeout(() => router.push('/(tabs)/menu'), 300);
+  };
+
   const safeTop = Platform.OS === 'web' ? scale(50) : insets.top + scale(10);
   const paddingBottom = scale(15);
   const iconHeight = scale(28); 
@@ -164,7 +198,7 @@ export default function DetailsScreen() {
       <StatusBar style="light" />
 
       <TopNav 
-        title="Package Details"
+        title={isSingleItem ? "Menu Details" : "Package Details"}
         leftIcon="arrow-back"
         onLeftPress={() => router.back()}
         rightComponent={
@@ -202,7 +236,7 @@ export default function DetailsScreen() {
                <View style={styles.soldOutBadge}>
                  <Ionicons name="alert-circle-outline" size={scale(35)} color="#FFF" style={styles.alertIcon} />
                  <Text style={styles.soldOutHeroText}>
-                   One or more items sold out. Please edit package and add to cart.
+                   {isSingleItem ? "Item sold out." : "One or more items sold out. Please edit package and add to cart."}
                  </Text>
                </View>
              </View>
@@ -260,7 +294,7 @@ export default function DetailsScreen() {
             Enjoy our delicious and freshly prepared {item.name.toLowerCase()}. Crafted with the finest ingredients to give you that authentic Bwari Kitchen taste.
           </Text>
 
-          {item.subItems && item.subItems.length > 0 && (
+          {!isSingleItem && item.subItems && item.subItems.length > 0 && (
             <View style={[styles.comboPackageBox, { backgroundColor: isDark ? colors.surface : '#F9F9F9', borderColor: colors.border }]}>
               
               <View style={styles.comboHeaderRow}>
@@ -275,7 +309,6 @@ export default function DetailsScreen() {
 
               {item.subItems.map((sub: any, idx: number) => {
                 const dbItem = findItem(sub.id);
-                // Treat deleted items (!dbItem) the same as sold out items
                 const isSubSoldOut = !dbItem || dbItem.isAvailable === false;
 
                 return (
@@ -334,16 +367,32 @@ export default function DetailsScreen() {
           </TouchableOpacity>
         </View>
 
+        {/* MODIFIED BUTTON LOGIC: Single Item vs Combo */}
         <TouchableOpacity 
           style={[
             styles.addToCartBtn, 
             { backgroundColor: Colors.primary }
           ]} 
           activeOpacity={0.8}
-          onPress={() => isAvail ? handleAddToCart() : setIsEditModalVisible(true)}
+          onPress={() => {
+            if (!isAvail) {
+              if (!isSingleItem) setIsEditModalVisible(true);
+              return;
+            }
+            if (isSingleItem) {
+              setPackageModalVisible(true); 
+            } else {
+              handleAddToCart();
+            }
+          }}
         >
           <Text style={[styles.addToCartText, { color: '#FFF' }]}>
-            {isAvail ? `Add to Cart - ₦${(item.price * quantity).toLocaleString()}` : "Edit Package"}
+            {!isAvail && !isSingleItem 
+              ? "Edit Package" 
+              : isSingleItem 
+                ? "Add to Package" 
+                : `Add to Cart - ₦${(item.price * quantity).toLocaleString()}`
+            }
           </Text>
         </TouchableOpacity>
       </View>
@@ -367,6 +416,58 @@ export default function DetailsScreen() {
         onClose={() => setIsEditModalVisible(false)} 
         initialItem={item} 
       />
+
+      {/* NEW: The Slide-up Bottom Sheet for Single Items */}
+      <Modal 
+        visible={packageModalVisible} 
+        transparent 
+        animationType="slide" 
+        onRequestClose={() => setPackageModalVisible(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <TouchableWithoutFeedback onPress={() => setPackageModalVisible(false)}>
+            <View style={StyleSheet.absoluteFillObject} />
+          </TouchableWithoutFeedback>
+          
+          <View style={[styles.modalSheet, { backgroundColor: colors.background, paddingBottom: Math.max(insets.bottom, scale(20)) }]}>
+            <View style={styles.modalHeaderRow}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Add Item</Text>
+              <TouchableOpacity onPress={() => setPackageModalVisible(false)}>
+                <Ionicons name="close-circle" size={scale(26)} color={colors.textMuted} />
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity 
+              style={[styles.modalActionBtn, { backgroundColor: colors.surface, borderColor: colors.border }]} 
+              activeOpacity={0.7}
+              onPress={addToExistingPackage}
+            >
+              <View style={[styles.modalIconBox, { backgroundColor: 'rgba(76, 175, 80, 0.1)' }]}>
+                <Ionicons name="add-circle" size={scale(24)} color="#4CAF50" />
+              </View>
+              <Text style={[styles.modalActionText, { color: colors.text }]}>Add to Existing Package</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={[styles.modalActionBtn, { backgroundColor: colors.surface, borderColor: colors.border }]} 
+              activeOpacity={0.7}
+              onPress={startNewPackage}
+            >
+              <View style={[styles.modalIconBox, { backgroundColor: 'rgba(211, 47, 47, 0.1)' }]}>
+                <Ionicons name="restaurant" size={scale(22)} color={Colors.primary} />
+              </View>
+              <Text style={[styles.modalActionText, { color: colors.text }]}>Start New Package</Text>
+            </TouchableOpacity>
+
+            <View style={styles.warningBox}>
+              <Ionicons name="warning" size={scale(16)} color="#FF9800" />
+              <Text style={styles.warningText}>
+                Note: Starting a new package will replace any custom package you are currently building.
+              </Text>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
     </View>
   );
@@ -650,4 +751,62 @@ const styles = StyleSheet.create({
     fontSize: scale(16),
     fontWeight: 'bold',
   },
+  
+  // NEW STYLES: For the Bottom Sheet Modal
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalSheet: {
+    borderTopLeftRadius: scale(30),
+    borderTopRightRadius: scale(30),
+    padding: scale(20),
+    paddingTop: scale(25),
+    elevation: 20,
+  },
+  modalHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: scale(20),
+  },
+  modalTitle: {
+    fontSize: scale(20),
+    fontWeight: 'bold',
+  },
+  modalActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: scale(15),
+    borderRadius: scale(15),
+    borderWidth: 1,
+    marginBottom: scale(15),
+  },
+  modalIconBox: {
+    width: scale(40),
+    height: scale(40),
+    borderRadius: scale(20),
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: scale(15),
+  },
+  modalActionText: {
+    fontSize: scale(16),
+    fontWeight: 'bold',
+  },
+  warningBox: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(255, 152, 0, 0.1)',
+    padding: scale(15),
+    borderRadius: scale(12),
+    marginTop: scale(5),
+  },
+  warningText: {
+    color: '#E65100',
+    fontSize: scale(12),
+    marginLeft: scale(10),
+    flex: 1,
+    lineHeight: scale(18),
+  }
 });

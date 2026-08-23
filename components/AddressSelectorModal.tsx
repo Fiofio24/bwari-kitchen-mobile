@@ -36,8 +36,8 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const router = useSafeRouter();
-  const { addresses, setDefaultAddress, addCurrentLocationAddress } = useAddresses();
-
+  const { addresses, activeAddress, setActiveAddress, addCurrentLocationAddress } = useAddresses();
+  
   const [inputText, setInputText] = useState(''); 
   const [isRendering, setIsRendering] = useState(visible);
   const [isCapturingLocation, setIsCapturingLocation] = useState(false);
@@ -81,12 +81,15 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
     }
   }, [visible, fadeAnim, slideAnim, isRendering]);
 
+  // PRO UX FIX: We set the active address instantly, then wait a split second before closing
+  // so the user actually sees the red checkmark appear on their selection!
   const handleSelectAddress = (id: string) => { 
-    setDefaultAddress(id); 
-    onClose(); 
+    setActiveAddress(id); 
+    setTimeout(() => {
+      onClose(); 
+    }, 350);
   };
 
-  // FETCH & AUTO-FILL GPS LOCATION
   const handleGetLocation = async () => {
     setIsCapturingLocation(true);
     try {
@@ -117,29 +120,25 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
     }
   };
 
-  // VICTOR'S ORIGINAL SAVE LOGIC + SMART SPLITTER
   const handleSaveAndUse = async () => {
     const rawText = inputText.trim() || 'My current location';
     setIsCapturingLocation(true);
     
     try {
-      // SMART SPLITTER: Divide the single input string by commas
       const parts = rawText.split(',').map(p => p.trim());
       
       let parsedStreet = rawText;
       let parsedArea = undefined;
 
-      // If there's a comma (e.g., "15 Law School Rd, Bwari")
       if (parts.length > 1) {
-        parsedStreet = parts[0]; // Gets "15 Law School Rd"
-        parsedArea = parts.slice(1).join(', '); // Gets "Bwari" and anything else
+        parsedStreet = parts[0]; 
+        parsedArea = parts.slice(1).join(', '); 
       }
 
       const result = await addCurrentLocationAddress({
         label: 'Current Location',
         streetAddress: parsedStreet,
-        area: parsedArea, // Sends the separated area to Victor's backend!
-        isDefault: true,
+        area: parsedArea,
       });
       
       if (result.success) {
@@ -216,7 +215,6 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
             />
           </View>
 
-          {/* SPLIT ACTION BUTTONS */}
           <View style={styles.actionButtonsRow}>
             <TouchableOpacity 
               style={[styles.actionBtn, styles.locationBtn]} 
@@ -245,34 +243,58 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
           <ScrollView 
             showsVerticalScrollIndicator={false} 
             keyboardShouldPersistTaps="handled"
-            style={{ maxHeight: scale(250) }}
+            style={{ maxHeight: scale(400) }}
           >
             
             {inputText.length === 0 && <Text style={[styles.savedTitle, { color: colors.textMuted }]}>Saved Addresses</Text>}
             
-            {filteredAddresses.map((item) => (
-              <TouchableOpacity 
-                key={item.id} 
-                style={[styles.quickAddressRow, { borderBottomColor: colors.border }]} 
-                onPress={() => handleSelectAddress(item.id)}
-              >
-                <View style={[styles.iconBox, { backgroundColor: 'rgba(150,150,150,0.1)' }]}>
-                  <Ionicons name={item.label?.toLowerCase() === 'home' ? 'home' : 'location'} size={scale(20)} color={colors.textMuted} />
-                </View>
-                <View style={styles.addressTextStack}>
-                  <Text style={[styles.quickAddressTitle, { color: colors.text }]}>
-                    {item.label || 'Address'} {item.isDefault && <Text style={{ color: Colors.primary, fontSize: scale(12) }}>(Default)</Text>}
-                  </Text>
-                  <Text style={[styles.quickAddressDetail, { color: colors.textMuted }]}>
-                    {getAddressLine(item)}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            ))}
+            {filteredAddresses.map((item) => {
+              // FOOLPROOF FIX: We wrap both IDs in String() to completely prevent Type Mismatches
+              const isActive = activeAddress != null && String(activeAddress.id) === String(item.id);
+              
+              return (
+                <TouchableOpacity 
+                  key={item.id} 
+                  style={[
+                    styles.quickAddressRow, 
+                    { 
+                      borderBottomColor: colors.border,
+                      backgroundColor: isActive ? 'rgba(211, 47, 47, 0.05)' : 'transparent', 
+                      paddingHorizontal: isActive ? scale(10) : 0, 
+                      borderRadius: isActive ? scale(12) : 0,
+                    }
+                  ]} 
+                  onPress={() => handleSelectAddress(item.id)}
+                >
+                  <View style={[styles.iconBox, { backgroundColor: isActive ? 'rgba(211, 47, 47, 0.1)' : 'rgba(150,150,150,0.1)' }]}>
+                    <Ionicons 
+                      name={item.label?.toLowerCase() === 'home' ? 'home' : 'location'} 
+                      size={scale(20)} 
+                      color={isActive ? Colors.primary : colors.textMuted} 
+                    />
+                  </View>
+                  
+                  {/* flex: 1 on this View naturally pushes the checkmark to the far right! */}
+                  <View style={styles.addressTextStack}>
+                    <Text style={[styles.quickAddressTitle, { color: isActive ? Colors.primary : colors.text }]}>
+                      {item.label || 'Address'} {item.isDefault && <Text style={{ color: Colors.primary, fontSize: scale(12) }}>(Default)</Text>}
+                    </Text>
+                    <Text style={[styles.quickAddressDetail, { color: colors.textMuted }]}>
+                      {getAddressLine(item)}
+                    </Text>
+                  </View>
+                  
+                  {/* The Active Checkmark */}
+                  {isActive && (
+                    <Ionicons name="checkmark-circle" size={scale(24)} color={Colors.primary} />
+                  )}
+                </TouchableOpacity>
+              );
+            })}
             
             {inputText.length > 0 && filteredAddresses.length === 0 && (
               <Text style={[styles.noResultsText, { color: colors.textMuted }]}>
-                No saved addresses match "{inputText}". Hit "Save & Use" to add it!
+                No saved addresses match &rdquo;{inputText}&rdquo;. Hit &rdquo;Save & Use&rdquo; to add it!
               </Text>
             )}
           </ScrollView>

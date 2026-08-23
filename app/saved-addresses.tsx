@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   View, 
   Text, 
@@ -11,11 +11,14 @@ import {
   ActivityIndicator,
   Modal,
   Platform,
-  Keyboard
+  Keyboard,
+  TouchableWithoutFeedback,
+  Animated,
+  Easing
 } from 'react-native';
 import { useSafeRouter } from '../hooks/useSafeRouter';
 import { Ionicons } from '@expo/vector-icons';
-import * as Location from 'expo-location'; // <-- NEW: Expo Location Import
+import * as Location from 'expo-location'; 
 import { useSafeAreaInsets } from 'react-native-safe-area-context'; 
 import { useTheme } from '../context/ThemeContext';
 import { Colors } from '../constants/Colors';
@@ -23,6 +26,11 @@ import { StatusBar } from 'expo-status-bar';
 import { useAddresses, Address } from '../context/AddressContext'; 
 import TopNav from '../components/TopNav';
 import { scale } from '../constants/Sizes'; 
+import HomeIcon from '../components/HomeIcon';
+import { BlurView } from 'expo-blur';
+
+// Create an animated version of BlurView so we can fade it in
+const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 
 export default function SavedAddressesScreen() {
   const router = useSafeRouter();
@@ -32,6 +40,8 @@ export default function SavedAddressesScreen() {
   const { addresses, loading, removeAddress, setDefaultAddress, addCurrentLocationAddress, updateAddress } = useAddresses();
 
   const [modalVisible, setModalVisible] = useState(false);
+  const [isRendering, setIsRendering] = useState(false); // Controls actual mount/unmount for animations
+  
   const [editingId, setEditingId] = useState<string | null>(null);
   const [label, setLabel] = useState('');
   const [streetAddress, setStreetAddress] = useState('');
@@ -41,6 +51,10 @@ export default function SavedAddressesScreen() {
   
   const [isCapturingLocation, setIsCapturingLocation] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  // Animation Refs
+  const fadeAnim = useRef(new Animated.Value(0)).current; 
+  const slideAnim = useRef(new Animated.Value(scale(500))).current; 
 
   useEffect(() => {
     const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
@@ -58,6 +72,23 @@ export default function SavedAddressesScreen() {
       hideSubscription.remove();
     };
   }, []);
+
+  // SMART ANIMATION LISTENER
+  useEffect(() => {
+    if (modalVisible) {
+      setIsRendering(true);
+      Animated.parallel([
+        Animated.timing(fadeAnim, { toValue: 1, duration: 300, useNativeDriver: true }),
+        Animated.timing(slideAnim, { toValue: 0, duration: 350, easing: Easing.out(Easing.poly(4)), useNativeDriver: true })
+      ]).start();
+    } else if (!modalVisible && isRendering) {
+      Keyboard.dismiss();
+      Animated.parallel([
+        Animated.timing(fadeAnim, { toValue: 0, duration: 250, useNativeDriver: true }),
+        Animated.timing(slideAnim, { toValue: scale(500), duration: 250, useNativeDriver: true })
+      ]).start(() => setIsRendering(false));
+    }
+  }, [modalVisible, fadeAnim, slideAnim, isRendering]);
 
   const handleSetDefault = (id: string) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -100,7 +131,6 @@ export default function SavedAddressesScreen() {
     setModalVisible(true);
   };
 
-  // NEW: Fetch GPS Location and Auto-Fill Input
   const handleGetLocation = async () => {
     setIsCapturingLocation(true);
     try {
@@ -120,7 +150,6 @@ export default function SavedAddressesScreen() {
       if (geocode && geocode.length > 0) {
         const place = geocode[0];
         
-        // Isolate the street and area to fill the specific text boxes
         const foundStreet = [place.street, place.name].filter(Boolean).join(', ');
         const foundArea = [place.city, place.region].filter(Boolean).join(', ');
         
@@ -180,6 +209,11 @@ export default function SavedAddressesScreen() {
         title="Saved Addresses"
         leftIcon="arrow-back"
         onLeftPress={() => router.back()}
+        rightComponent={
+          <View style={styles.headerRight}>
+            <HomeIcon onPress={() => router.push('/(tabs)')} />
+          </View>
+        }
         isAbsolute={false}
         isScrolled={true} 
         showDivider={false} 
@@ -291,119 +325,130 @@ export default function SavedAddressesScreen() {
         </TouchableOpacity>
       </View>
 
-      <Modal visible={modalVisible} transparent animationType="slide" onRequestClose={() => setModalVisible(false)}>
-        <View style={{ flex: 1, justifyContent: 'flex-end' }}>
-          <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => { Keyboard.dismiss(); setModalVisible(false); }} />
-          
-          <View style={{ 
-            backgroundColor: colors.background, 
-            borderTopLeftRadius: scale(25), 
-            borderTopRightRadius: scale(25), 
-            padding: scale(20), 
-            paddingTop: scale(25),
-            paddingBottom: Math.max(insets.bottom, scale(20)) + keyboardHeight 
-          }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: scale(15) }}>
-              <Text style={{ fontSize: scale(18), fontWeight: 'bold', color: colors.text }}>
-                {editingId ? 'Edit Address' : 'New Address'}
-              </Text>
-              <TouchableOpacity onPress={() => { Keyboard.dismiss(); setModalVisible(false); }}>
-                <Ionicons name="close-circle" size={scale(26)} color={colors.textMuted} />
-              </TouchableOpacity>
-            </View>
+      {isRendering && (
+        <Modal transparent animationType="none" onRequestClose={() => setModalVisible(false)}>
+          <View style={{ flex: 1, justifyContent: 'flex-end' }}>
             
-            <ScrollView 
-              showsVerticalScrollIndicator={false}
-              keyboardShouldPersistTaps="handled"
-            >
-              <View style={{ gap: scale(12) }}>
-                
-                {/* NEW: Auto-Fill Location Button */}
-                {!editingId && (
-                  <TouchableOpacity
-                    onPress={handleGetLocation}
-                    disabled={isCapturingLocation}
-                    style={{ 
-                      flexDirection: 'row', 
-                      alignItems: 'center', 
-                      backgroundColor: 'rgba(229, 57, 53, 0.1)', 
-                      padding: scale(12), 
-                      borderRadius: scale(12), 
-                      marginBottom: scale(5),
-                      justifyContent: 'center' 
-                    }}
-                  >
-                    {isCapturingLocation ? (
-                      <ActivityIndicator size="small" color={Colors.primary} style={{ marginRight: scale(8) }} />
-                    ) : (
-                      <Ionicons name="locate" size={scale(20)} color={Colors.primary} style={{ marginRight: scale(8) }} />
-                    )}
-                    <Text style={{ color: Colors.primary, fontWeight: 'bold', fontSize: scale(14) }}>
-                      {isCapturingLocation ? 'Fetching Location...' : 'Auto-fill with Current Location'}
-                    </Text>
-                  </TouchableOpacity>
-                )}
-
-                <View>
-                  <Text style={{ fontSize: scale(13), fontWeight: '600', marginBottom: scale(6), color: colors.text }}>Label (e.g. Home, Work)</Text>
-                  <TextInput
-                    value={label}
-                    onChangeText={setLabel}
-                    placeholder="Home"
-                    placeholderTextColor={colors.textMuted}
-                    style={{ borderWidth: 1, borderColor: colors.border, borderRadius: scale(12), padding: scale(12), color: colors.text }}
-                  />
-                </View>
-                <View>
-                  <Text style={{ fontSize: scale(13), fontWeight: '600', marginBottom: scale(6), color: colors.text }}>Street Address *</Text>
-                  <TextInput
-                    value={streetAddress}
-                    onChangeText={setStreetAddress}
-                    placeholder="No 6 Kuje Street"
-                    placeholderTextColor={colors.textMuted}
-                    style={{ borderWidth: 1, borderColor: colors.border, borderRadius: scale(12), padding: scale(12), color: colors.text }}
-                  />
-                </View>
-                <View>
-                  <Text style={{ fontSize: scale(13), fontWeight: '600', marginBottom: scale(6), color: colors.text }}>Landmark</Text>
-                  <TextInput
-                    value={landmark}
-                    onChangeText={setLandmark}
-                    placeholder="Opposite the blue gate"
-                    placeholderTextColor={colors.textMuted}
-                    style={{ borderWidth: 1, borderColor: colors.border, borderRadius: scale(12), padding: scale(12), color: colors.text }}
-                  />
-                </View>
-                <View>
-                  <Text style={{ fontSize: scale(13), fontWeight: '600', marginBottom: scale(6), color: colors.text }}>Area</Text>
-                  <TextInput
-                    value={area}
-                    onChangeText={setArea}
-                    placeholder="Kuje"
-                    placeholderTextColor={colors.textMuted}
-                    style={{ borderWidth: 1, borderColor: colors.border, borderRadius: scale(12), padding: scale(12), color: colors.text }}
-                  />
-                </View>
-
-                {/* MODIFIED: Save Button */}
-                <TouchableOpacity
-                  onPress={handleSave}
-                  disabled={saving || isCapturingLocation}
-                  style={{ backgroundColor: Colors.primary, paddingVertical: scale(14), borderRadius: scale(20), alignItems: 'center', marginTop: scale(8), opacity: saving || isCapturingLocation ? 0.7 : 1 }}
-                >
-                  {saving ? (
-                    <ActivityIndicator color="#FFF" />
-                  ) : (
-                    <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: scale(15) }}>
-                      {editingId ? 'Save Changes' : 'Save Address'}
-                    </Text>
-                  )}
+            <TouchableWithoutFeedback onPress={() => { Keyboard.dismiss(); setModalVisible(false); }}>
+              <AnimatedBlurView 
+                intensity={20} 
+                tint="dark" 
+                experimentalBlurMethod="dimezisBlurView" 
+                style={[StyleSheet.absoluteFill, { opacity: fadeAnim, backgroundColor: 'rgba(0,0,0,0.2)' }]} 
+              />
+            </TouchableWithoutFeedback>
+            
+            <Animated.View style={{ 
+              backgroundColor: colors.background, 
+              borderTopLeftRadius: scale(25), 
+              borderTopRightRadius: scale(25), 
+              borderWidth: scale(1), 
+              borderColor: colors.border,
+              padding: scale(20), 
+              paddingTop: scale(25),
+              paddingBottom: Math.max(insets.bottom, scale(20)) + keyboardHeight,
+              transform: [{ translateY: slideAnim }] // <-- True slide animation applied here
+            }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: scale(15) }}>
+                <Text style={{ fontSize: scale(18), fontWeight: 'bold', color: colors.text }}>
+                  {editingId ? 'Edit Address' : 'New Address'}
+                </Text>
+                <TouchableOpacity onPress={() => { Keyboard.dismiss(); setModalVisible(false); }}>
+                  <Ionicons name="close-circle" size={scale(26)} color={colors.textMuted} />
                 </TouchableOpacity>
               </View>
-            </ScrollView>
+              
+              <ScrollView 
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+              >
+                <View style={{ gap: scale(12) }}>
+                  
+                  {!editingId && (
+                    <TouchableOpacity
+                      onPress={handleGetLocation}
+                      disabled={isCapturingLocation}
+                      style={{ 
+                        flexDirection: 'row', 
+                        alignItems: 'center', 
+                        backgroundColor: 'rgba(229, 57, 53, 0.1)', 
+                        padding: scale(12), 
+                        borderRadius: scale(12), 
+                        marginBottom: scale(5),
+                        justifyContent: 'center' 
+                      }}
+                    >
+                      {isCapturingLocation ? (
+                        <ActivityIndicator size="small" color={Colors.primary} style={{ marginRight: scale(8) }} />
+                      ) : (
+                        <Ionicons name="locate" size={scale(20)} color={Colors.primary} style={{ marginRight: scale(8) }} />
+                      )}
+                      <Text style={{ color: Colors.primary, fontWeight: 'bold', fontSize: scale(14) }}>
+                        {isCapturingLocation ? 'Fetching Location...' : 'Auto-fill with Current Location'}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+
+                  <View>
+                    <Text style={{ fontSize: scale(13), fontWeight: '600', marginBottom: scale(6), color: colors.text }}>Label (e.g. Home, Work)</Text>
+                    <TextInput
+                      value={label}
+                      onChangeText={setLabel}
+                      placeholder="Home"
+                      placeholderTextColor={colors.textMuted}
+                      style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: scale(12), padding: scale(12), color: colors.text }}
+                    />
+                  </View>
+                  <View>
+                    <Text style={{ fontSize: scale(13), fontWeight: '600', marginBottom: scale(6), color: colors.text }}>Street Address *</Text>
+                    <TextInput
+                      value={streetAddress}
+                      onChangeText={setStreetAddress}
+                      placeholder="No 6 Kuje Street"
+                      placeholderTextColor={colors.textMuted}
+                      style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: scale(12), padding: scale(12), color: colors.text }}
+                    />
+                  </View>
+                  <View>
+                    <Text style={{ fontSize: scale(13), fontWeight: '600', marginBottom: scale(6), color: colors.text }}>Landmark</Text>
+                    <TextInput
+                      value={landmark}
+                      onChangeText={setLandmark}
+                      placeholder="Opposite the blue gate"
+                      placeholderTextColor={colors.textMuted}
+                      style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: scale(12), padding: scale(12), color: colors.text }}
+                    />
+                  </View>
+                  <View>
+                    <Text style={{ fontSize: scale(13), fontWeight: '600', marginBottom: scale(6), color: colors.text }}>Area</Text>
+                    <TextInput
+                      value={area}
+                      onChangeText={setArea}
+                      placeholder="Kuje"
+                      placeholderTextColor={colors.textMuted}
+                      style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: scale(12), padding: scale(12), color: colors.text }}
+                    />
+                  </View>
+
+                  <TouchableOpacity
+                    onPress={handleSave}
+                    disabled={saving || isCapturingLocation}
+                    style={{ backgroundColor: Colors.primary, paddingVertical: scale(14), borderRadius: scale(20), alignItems: 'center', marginTop: scale(8), marginBottom: scale(20), opacity: saving || isCapturingLocation ? 0.7 : 1 }}
+                  >
+                    {saving ? (
+                      <ActivityIndicator color="#FFF" />
+                    ) : (
+                      <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: scale(15) }}>
+                        {editingId ? 'Save Changes' : 'Save Address'}
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </ScrollView>
+            </Animated.View>
           </View>
-        </View>
-      </Modal>
+        </Modal>
+      )}
 
     </View>
   );
@@ -412,6 +457,11 @@ export default function SavedAddressesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  headerRight: { 
+    flexDirection: 'row', 
+    gap: scale(10), 
+    alignItems: 'center',
   },
   scrollContent: {
     paddingTop: scale(20),

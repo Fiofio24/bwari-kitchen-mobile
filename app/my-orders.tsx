@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   RefreshControl,
   useWindowDimensions,
+  Alert
 } from 'react-native';
 import { useFocusEffect } from 'expo-router'; 
 import { useSafeRouter } from '../hooks/useSafeRouter';
@@ -17,15 +18,18 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { Colors } from '../constants/Colors';
 import { StatusBar } from 'expo-status-bar';
+import { useMenu } from '../context/MenuContext'; 
 import TopNav from '../components/TopNav';
+import HomeIcon from '../components/HomeIcon';
 import api from './lib/api';
-import { scale } from '../constants/Sizes'; // <-- IMPORTED MASTER SCALE
+import { scale } from '../constants/Sizes'; 
 
 interface OrderPackageItem {
   itemName: string;
   quantity: number;
   unitPrice: number;
   totalPrice: number;
+  menuItemId?: string; 
 }
 
 interface OrderPackage {
@@ -41,6 +45,7 @@ interface Order {
   status: string;
   subtotal: number;
   deliveryFee: number;
+  deliveryCode?: string; // <-- Added Delivery Code from Victor
   totalAmount: number;
   createdAt: string;
   orderPackages: OrderPackage[];
@@ -80,6 +85,8 @@ export default function MyOrdersScreen() {
   const { width } = useWindowDimensions();
   const scrollViewRef = useRef<ScrollView>(null);
   
+  const { items, findItem } = useMenu(); 
+
   const [activeTab, setActiveTab] = useState<'active' | 'past'>('active');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -140,26 +147,70 @@ export default function MyOrdersScreen() {
     }
   };
 
+  // SMART REORDER LOGIC: Maps historical data to live database values
   const handleReorder = (order: Order) => {
-    const reorderPayload = order.orderPackages.map((pkg, index) => ({
-      id: `custom_reorder_${order.id}_${index}`,
-      name: pkg.packageName,
-      price: pkg.totalPrice,
-      quantity: 1,
-      subItems: pkg.items.map(item => ({
-        id: item.itemName,
-        name: item.itemName,
-        qty: item.quantity,
-        price: item.unitPrice
-      }))
-    }));
+    const reorderPayload: any[] = [];
+    let hasUnavailableItems = false;
 
-    const encodedPayload = encodeURIComponent(JSON.stringify(reorderPayload));
+    order.orderPackages.forEach((pkg, index) => {
+      const newSubItems: any[] = [];
+      let currentPackageTotal = 0;
 
-    router.push({
-      pathname: '/checkout',
-      params: { instantReorder: encodedPayload }
+      pkg.items.forEach(item => {
+        // Fallback: If no UUID is attached, search the live catalog by exact item name
+        const liveItem = item.menuItemId
+          ? findItem(item.menuItemId)
+          : items.find((i: any) => i.name.toLowerCase() === item.itemName.toLowerCase());
+
+        if (!liveItem || liveItem.isAvailable === false) {
+          hasUnavailableItems = true;
+        } else {
+          newSubItems.push({
+            id: liveItem.id, // Fresh UUID for Victor's backend
+            name: liveItem.name,
+            qty: item.quantity,
+            price: liveItem.basePrice // Fresh current price
+          });
+          currentPackageTotal += (liveItem.basePrice * item.quantity);
+        }
+      });
+
+      if (newSubItems.length > 0) {
+        reorderPayload.push({
+          id: `custom_reorder_${order.id}_${index}`,
+          name: pkg.packageName,
+          price: currentPackageTotal,
+          quantity: 1,
+          subItems: newSubItems
+        });
+      }
     });
+
+    if (reorderPayload.length === 0) {
+      Alert.alert("Menu Update", "The items in this past order are currently sold out or no longer available on the menu.");
+      return;
+    }
+
+    const proceedToCheckout = () => {
+      const encodedPayload = encodeURIComponent(JSON.stringify(reorderPayload));
+      router.push({
+        pathname: '/checkout',
+        params: { instantReorder: encodedPayload }
+      });
+    };
+
+    if (hasUnavailableItems) {
+      Alert.alert(
+        "Menu Update",
+        "Some items from your previous order are currently sold out and have been removed from this reorder. Do you want to proceed with the available items?",
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Continue", onPress: proceedToCheckout }
+        ]
+      );
+    } else {
+      proceedToCheckout();
+    }
   };
 
   const toggleExpand = async (id: string) => {
@@ -310,6 +361,23 @@ export default function MyOrdersScreen() {
                     <OrderProgress status={order.status} orderType={order.orderType} />
                   )}
 
+                  {/* NEW DELIVERY CODE DISPLAY */}
+                  {isActive && (order.deliveryCode || "8492") && (
+                    <View style={styles.deliveryCodeContainer}>
+                      <Text style={[styles.deliveryCodeLabel, { color: colors.textMuted }]}>
+                        {order.orderType === 'pickup' ? 'PICKUP CODE' : 'DELIVERY CODE'}
+                      </Text>
+                      <Text style={[styles.deliveryCodeValue, { color: Colors.primary }]}>
+                        {order.deliveryCode || "8492"}
+                      </Text>
+                      <Text style={[styles.deliveryCodeHint, { color: colors.textMuted }]}>
+                        {order.orderType === 'pickup' 
+                          ? 'Show this code at the counter to claim your food.' 
+                          : 'Give this code to your rider to confirm delivery.'}
+                      </Text>
+                    </View>
+                  )}
+
                   <View style={[styles.receiptBox, { backgroundColor: isDark ? colors.background : '#F9F9F9' }]}>
                     <Text style={[styles.receiptTitle, { color: colors.textMuted }]}>ORDER DETAILS</Text>
                     
@@ -431,13 +499,16 @@ export default function MyOrdersScreen() {
         isScrolled={true}
         showDivider={false}
         rightComponent={
-          <TouchableOpacity 
-            style={styles.iconButton} 
-            onPress={() => router.push('/help')}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="chatbubbles-outline" size={scale(24)} color="#FFF" />
-          </TouchableOpacity> 
+          <View style={styles.headerRight}>
+            <TouchableOpacity 
+              style={styles.iconButton} 
+              onPress={() => router.push('/help')}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="chatbubbles-outline" size={scale(24)} color="#FFF" />
+            </TouchableOpacity> 
+            <HomeIcon onPress={() => router.push('/(tabs)')} />
+          </View>
         }
       />
 
@@ -483,6 +554,7 @@ export default function MyOrdersScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  headerRight: { flexDirection: 'row', gap: scale(10), alignItems: 'center' },
   iconButton: { padding: scale(5), justifyContent: 'center', alignItems: 'center' },
   tabContainer: { flexDirection: 'row', paddingHorizontal: scale(20), marginTop: scale(15), marginBottom: scale(5) },
   tabButton: { flex: 1, alignItems: 'center', paddingVertical: scale(12), borderBottomWidth: scale(2), borderBottomColor: 'transparent' },
@@ -512,15 +584,28 @@ const styles = StyleSheet.create({
   nodeCircle: { width: scale(26), height: scale(26), borderRadius: scale(13), borderWidth: scale(2), justifyContent: 'center', alignItems: 'center', marginBottom: scale(8) },
   stepText: { fontSize: scale(11), fontWeight: '600' },
   stepTextActive: { fontWeight: 'bold', color: Colors.primary },
+  
+  deliveryCodeContainer: { 
+    backgroundColor: 'rgba(255, 152, 0, 0.05)', 
+    borderRadius: scale(15), 
+    padding: scale(15), 
+    alignItems: 'center', 
+    marginBottom: scale(20), 
+    borderWidth: 1, 
+    borderColor: 'rgba(255, 152, 0, 0.3)', 
+    borderStyle: 'dashed' 
+  },
+  deliveryCodeLabel: { fontSize: scale(11), fontWeight: 'bold', marginBottom: scale(2), letterSpacing: 1 },
+  deliveryCodeValue: { fontSize: scale(28), fontWeight: '900', letterSpacing: 8 },
+  deliveryCodeHint: { fontSize: scale(11), marginTop: scale(4) },
+
   receiptBox: { padding: scale(15), borderRadius: scale(15), marginBottom: scale(20) },
   receiptTitle: { fontSize: scale(11), fontWeight: 'bold', letterSpacing: 1, marginBottom: scale(15) },
-  
   packageGroupContainer: { marginBottom: scale(15) },
   packageGroupName: { fontSize: scale(14), fontWeight: 'bold', marginBottom: scale(8) },
   receiptItemRow: { flexDirection: 'row', alignItems: 'center', marginBottom: scale(6) },
   receiptItemName: { flex: 1, fontSize: scale(13), paddingRight: scale(10) },
   receiptItemPrice: { fontSize: scale(13), fontWeight: '500' },
-  
   dashedDivider: { borderTopWidth: 1, borderStyle: 'dashed', marginVertical: scale(10) },
   receiptSubText: { fontSize: scale(14), flex: 1 },
   receiptTotalText: { fontSize: scale(16), fontWeight: 'bold', flex: 1 },

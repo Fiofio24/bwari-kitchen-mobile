@@ -18,6 +18,7 @@ import { StatusBar } from 'expo-status-bar';
 import TopNav from '../components/TopNav';
 import api from './lib/api';
 import { scale } from '../constants/Sizes'; // <-- IMPORTED MASTER SCALE
+import HomeIcon from '../components/HomeIcon';
 
 interface Promo {
   id: string;
@@ -90,6 +91,11 @@ export default function PromoScreen() {
         title="Offers & Promo"
         leftIcon="arrow-back"
         onLeftPress={() => router.back()}
+        rightComponent={
+          <View style={styles.headerRight}>
+            <HomeIcon onPress={() => router.push('/(tabs)')} />
+          </View>
+        }
         isAbsolute={false} 
         isScrolled={true}
         showDivider={false}
@@ -176,6 +182,11 @@ export default function PromoScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  headerRight: { 
+    flexDirection: 'row', 
+    gap: scale(10), 
+    alignItems: 'center',
+  },
   scrollContent: { paddingTop: scale(20), paddingHorizontal: scale(20) },
   sectionTitle: { fontSize: scale(12), fontWeight: 'bold', marginBottom: scale(15), marginLeft: scale(5), letterSpacing: 1.5 },
   promoCard: { flexDirection: 'row', borderRadius: scale(20), borderWidth: 1, marginBottom: scale(20), overflow: 'hidden', elevation: 3, shadowColor: '#000', shadowOffset: { width: 0, height: scale(4) }, shadowOpacity: 0.1, shadowRadius: scale(6) },

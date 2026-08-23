@@ -28,7 +28,7 @@ import CartBadgeIcon from '../../components/CartBadgeIcon';
 import GridDishCard from '../../components/GridDishCard';
 import TopNav from '../../components/TopNav';
 import ItemVariantModal from '../../components/ItemVariantModal';
-import { scale } from '../../constants/Sizes'; // <-- IMPORTED MASTER SCALE
+import { scale } from '../../constants/Sizes'; 
 
 export const CUSTOM_PACKAGE_IMAGE = require('../../assets/images/custom-plate.png');
 
@@ -38,20 +38,17 @@ export default function MenuScreen() {
   const insets = useSafeAreaInsets();
   const { items, categories, loading, refresh, findItem } = useMenu();
   
-  // THE FIX: We create a Set of all categories currently used by single items
   const activeItemCategories = new Set(items.map(item => item.category.name));
-  
-  // Then we filter the main list to only include categories that exist in that Set
   const MENU_CATEGORIES = ['All', ...categories.map(c => c.name).filter(cat => activeItemCategories.has(cat))];
   
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const { addToCart } = useCart();
+  
+  const { addToCart, customPlate, setCustomPlate } = useCart();
+  
   const toastAnim = useRef(new Animated.Value(-scale(100))).current;
-
   const floatingButtonAnim = useRef(new Animated.Value(0)).current;
 
   const [activeCategory, setActiveCategory] = useState('All');
-  const [customPlate, setCustomPlate] = useState<Record<string, number>>({});
   const [refreshing, setRefreshing] = useState(false); 
   const [variantModalItem, setVariantModalItem] = useState<any>(null);
 
@@ -84,6 +81,8 @@ export default function MenuScreen() {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
+    // NEW: Terminal Feedback so you know it's working!
+    console.log("🔄 Reloading Menu data...");
     try {
       await refresh();
     } catch (error) {
@@ -257,7 +256,7 @@ export default function MenuScreen() {
           <RefreshControl 
             refreshing={refreshing} 
             onRefresh={onRefresh} 
-            tintColor={Colors.primary} 
+            tintColor={isDark ? "#FFF" : Colors.primary} // High Contrast Fix
             colors={[Colors.primary]} 
             progressBackgroundColor={isDark ? colors.surface : '#FFF'} 
           />
@@ -366,7 +365,6 @@ export default function MenuScreen() {
 
       </ScrollView>
 
-      {}
       <Animated.View pointerEvents={isPackageEmpty ? 'none' : 'auto'} style={[menuStyles.floatingButtonContainer, { bottom: bottomNavHeight + scale(15), opacity: floatingButtonAnim, transform: [{ translateY: floatingButtonAnim.interpolate({ inputRange: [0, 1], outputRange: [scale(20), 0] }) }] }]}>
         <TouchableOpacity style={[menuStyles.mainAddButton, { backgroundColor: Colors.primary }]} activeOpacity={0.8} onPress={handleAddCustomPlateToCart}>
           <Text style={[menuStyles.mainAddButtonText, { color: '#FFF' }]}>{`Add To Cart - ₦${plateTotal.toLocaleString()}`}</Text>

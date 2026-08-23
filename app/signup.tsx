@@ -211,7 +211,7 @@ export default function SignupScreen() {
             )}
           </View>
 
-          {/* AGREEMENT CHECKBOX */}
+          {/* AGREEMENT CHECKBOX (UPDATED WITH CLICKABLE LINKS) */}
           <View style={styles.agreementRow}>
             <TouchableOpacity 
               style={[
@@ -228,7 +228,20 @@ export default function SignupScreen() {
             </TouchableOpacity>
 
             <Text style={[styles.agreementText, { color: colors.textMuted }]}>
-              I&apos;ve read and agreed to <Text style={{ color: Colors.primary, fontWeight: 'bold' }}>User Agreement</Text> and <Text style={{ color: Colors.primary, fontWeight: 'bold' }}>Privacy Policy</Text>
+              I&apos;ve read and agreed to{' '}
+              <Text 
+                style={{ color: Colors.primary, fontWeight: 'bold' }} 
+                onPress={() => router.push('/user-agreement')}
+              >
+                User Agreement
+              </Text>{' '}
+              and{' '}
+              <Text 
+                style={{ color: Colors.primary, fontWeight: 'bold' }}
+                onPress={() => router.push('/privacy-policy')}
+              >
+                Privacy Policy
+              </Text>
             </Text>
           </View>
             
@@ -263,7 +276,7 @@ export default function SignupScreen() {
             <Text style={[styles.footerText, { color: colors.textMuted }]}>
               Already have an account?
             </Text>
-            <TouchableOpacity onPress={() => router.push('/login')} activeOpacity={0.7}>
+            <TouchableOpacity onPress={() => router.replace('/login')} activeOpacity={0.7}>
               <Text style={[styles.footerLink, { color: Colors.primary }]}>
                 Sign In
               </Text>

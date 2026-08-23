@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { 
   View, 
   Text, 
@@ -6,15 +6,17 @@ import {
   TouchableOpacity, 
   ScrollView, 
   Platform, 
-  Switch,
-  Share,
-  Image,
-  Alert
+  Switch, 
+  Share, 
+  Image, 
+  Alert 
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker'; 
+import { useFocusEffect } from 'expo-router';
 import { useTheme } from '../../context/ThemeContext';
 import { useUser } from '../../context/UserContext'; 
+import { useAddresses } from '../../context/AddressContext'; 
 import { Colors } from '../../constants/Colors';
 import { StatusBar } from 'expo-status-bar';
 import Sidebar from '../../components/Sidebar';
@@ -28,6 +30,7 @@ import api from '../../app/lib/api';
 export default function ProfileScreen() {
   const { colors, isDark, setThemeMode } = useTheme();
   const { userData, updateAvatar, resetToDefault } = useUser(); 
+  const { setActiveAddress } = useAddresses() as any; 
   const router = useSafeRouter(); 
   
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -39,17 +42,30 @@ export default function ProfileScreen() {
 
   const userStats = { points: 450, referralCode: "BWARI-SERIFF-99" };
 
-  useEffect(() => {
-    const fetchOrdersCount = async () => {
-      try {
-        const res = await api.get('/api/orders?limit=1'); 
-        setTotalOrders(res.data.pagination?.totalCount || res.data.orders?.length || 0);
-      } catch (e) {
-        console.warn('Failed to load order count', e);
-      }
-    };
-    fetchOrdersCount();
-  }, []);
+  // FIX: useFocusEffect ensures the number updates every time you open the profile tab!
+  useFocusEffect(
+    useCallback(() => {
+      const fetchOrdersCount = async () => {
+        try {
+          // Fetch a larger list to accurately count history
+          const res = await api.get('/api/orders?limit=100'); 
+          const ordersList = res.data.orders || [];
+          
+          // Filter out pending, cancelled, and refunded orders
+          const completedOrders = ordersList.filter((order: any) => {
+            const status = order.status?.toLowerCase() || '';
+            return !['pending', 'cancelled', 'refunded'].includes(status);
+          });
+
+          setTotalOrders(completedOrders.length);
+        } catch (e) {
+          console.warn('Failed to load order count', e);
+        }
+      };
+      
+      fetchOrdersCount();
+    }, [])
+  );
 
   const onShareReferral = async () => {
     try {
@@ -198,12 +214,6 @@ export default function ProfileScreen() {
             label="Saved Addresses" 
             onPress={() => router.push('/saved-addresses')} 
           />
-          <ProfileMenuItem 
-            icon="card-outline" 
-            label="Payment Methods" 
-            subLabel="Manage cards" 
-            onPress={() => router.push('/payment-methods')} 
-          />
         </View>
 
         <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>SECURITY & APP</Text>
@@ -265,6 +275,7 @@ export default function ProfileScreen() {
           setIsSignOutModalVisible(false);
           await SecureStore.deleteItemAsync('authToken'); 
           resetToDefault(); 
+          if (setActiveAddress) setActiveAddress(null); 
           router.replace('/welcome'); 
         }} 
         title="Sign Out"
@@ -281,6 +292,7 @@ export default function ProfileScreen() {
           setIsDeleteModalVisible(false);
           await SecureStore.deleteItemAsync('authToken'); 
           resetToDefault(); 
+          if (setActiveAddress) setActiveAddress(null); 
           router.replace('/welcome'); 
         }} 
         title="Delete Account"

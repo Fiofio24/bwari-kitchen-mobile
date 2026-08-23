@@ -23,7 +23,8 @@ import Sidebar from '../../components/Sidebar';
 import CartBadgeIcon from '../../components/CartBadgeIcon';
 import { useMenu } from '../../context/MenuContext';
 import TopNav from '../../components/TopNav';
-import { scale } from '../../constants/Sizes'; // <-- IMPORTED MASTER SCALE
+import HomeIcon from '../../components/HomeIcon';
+import { scale } from '../../constants/Sizes'; 
 
 export default function FavoriteScreen() {
   const router = useSafeRouter();
@@ -32,7 +33,7 @@ export default function FavoriteScreen() {
   const { addToCart } = useCart();
   
   const { favorites, toggleFavorite, isFavorite, refresh, loading } = useFavorites();
-  const { findItem } = useMenu();
+  const { items, packages, findItem } = useMenu();
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false); 
@@ -57,7 +58,6 @@ export default function FavoriteScreen() {
   const GRID_PADDING = scale(20);
   const GRID_GAP = scale(15);
   const AVAILABLE_WIDTH = width - (GRID_PADDING * 2);
-  
   const MAX_GRID_WIDTH = scale(200); 
   const NUM_COLUMNS = Math.max(2, Math.ceil(AVAILABLE_WIDTH / (MAX_GRID_WIDTH + GRID_GAP)));
   const CARD_WIDTH = Math.floor((AVAILABLE_WIDTH - (GRID_GAP * (NUM_COLUMNS - 1))) / NUM_COLUMNS);
@@ -66,6 +66,7 @@ export default function FavoriteScreen() {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
+    console.log("🔄 Reloading Favorites data...");
     try {
       await refresh();
     } catch (error) {
@@ -75,16 +76,88 @@ export default function FavoriteScreen() {
     }
   }, [refresh]);
 
+  const getLiveItem = useCallback((id: string, name: string, isPkg = false): any => {
+    if (id) {
+      const found = findItem(id);
+      if (found) return found;
+    }
+    if (name && items) {
+      const foundByName = items.find((i: any) => i.name.toLowerCase() === name.toLowerCase());
+      if (foundByName) return foundByName;
+    }
+    if (isPkg && packages && id) {
+      const foundPkg = packages.find((p: any) => p.id === id);
+      if (foundPkg) return foundPkg;
+    }
+    return null;
+  }, [findItem, items, packages]);
+
+  const checkAvailability = useCallback((dish: any) => {
+    if (dish.subItems && dish.subItems.length > 0) {
+      return !dish.subItems.some((sub: any) => {
+        const dbItem: any = getLiveItem(sub.id, sub.name || sub.itemName);
+        return !dbItem || dbItem.isAvailable === false;
+      });
+    }
+    const dbItem: any = getLiveItem(dish.id, dish.name, true);
+    return dbItem ? dbItem.isAvailable !== false : false; 
+  }, [getLiveItem]);
+
+  const getLivePrice = useCallback((dish: any) => {
+    if (dish.subItems && dish.subItems.length > 0) {
+      let total = 0;
+      dish.subItems.forEach((sub: any) => {
+        const dbItem: any = getLiveItem(sub.id, sub.name || sub.itemName);
+        if (dbItem) {
+          const itemPrice = dbItem.basePrice !== undefined ? dbItem.basePrice : (dbItem.price || 0);
+          total += (itemPrice * (sub.qty || sub.quantity || 1));
+        }
+      });
+      return total > 0 ? total : dish.price;
+    }
+    const dbItem: any = getLiveItem(dish.id, dish.name, true);
+    return dbItem ? (dbItem.basePrice ?? dbItem.price ?? dish.price) : dish.price;
+  }, [getLiveItem]);
+
   const handleAddToCart = (dish: any) => {
+    let livePrice = dish.price;
+    let liveSubItems = dish.subItems || [];
+    
+    if (dish.subItems && dish.subItems.length > 0) {
+      let currentPackageTotal = 0;
+      const updatedSubItems: any[] = [];
+      
+      dish.subItems.forEach((sub: any) => {
+        const dbItem: any = getLiveItem(sub.id, sub.name || sub.itemName);
+        if (dbItem) {
+          const itemPrice = dbItem.basePrice !== undefined ? dbItem.basePrice : (dbItem.price || 0);
+          updatedSubItems.push({
+            ...sub,
+            id: dbItem.id, 
+            name: dbItem.name,
+            price: itemPrice
+          });
+          currentPackageTotal += (itemPrice * (sub.qty || sub.quantity || 1));
+        }
+      });
+      liveSubItems = updatedSubItems;
+      livePrice = currentPackageTotal > 0 ? currentPackageTotal : dish.price;
+    } else {
+      const dbItem: any = getLiveItem(dish.id, dish.name, true);
+      if (dbItem) {
+        livePrice = dbItem.basePrice ?? dbItem.price ?? dish.price;
+      }
+    }
+
     const newItem: any = {
       id: dish.id, 
       name: dish.name,
       category: dish.category,
-      price: dish.price,
+      price: livePrice,
       quantity: 1,
       image: dish.image,
       isAvailable: true,
-      subItems: dish.subItems || []
+      subItems: liveSubItems
     };
     addToCart(newItem);
 
@@ -95,21 +168,10 @@ export default function FavoriteScreen() {
     ]).start();
   };
 
-  const checkAvailability = (dish: any) => {
-    if (dish.subItems && dish.subItems.length > 0) {
-      return !dish.subItems.some((sub: any) => {
-        const dbItem = findItem(sub.id);
-        // Treat deleted items (!dbItem) the same as sold out items
-        return !dbItem || dbItem.isAvailable === false;
-      });
-    }
-    const dbItem = findItem(dish.id);
-    return dbItem ? dbItem.isAvailable !== false : false; // False if completely deleted
-  };
-
   const headerRightComponent = (
     <View style={styles.headerRight}>
       <CartBadgeIcon onPress={() => router.push('/cart')} />
+      <HomeIcon onPress={() => router.push('/(tabs)')} />
     </View>
   );
 
@@ -144,7 +206,7 @@ export default function FavoriteScreen() {
           <RefreshControl 
             refreshing={refreshing} 
             onRefresh={onRefresh} 
-            tintColor={Colors.primary} 
+            tintColor={isDark ? "#FFF" : Colors.primary} // High visibility contrast spinner
             colors={[Colors.primary]} 
             progressBackgroundColor={isDark ? colors.surface : '#FFF'} 
           />
@@ -161,12 +223,14 @@ export default function FavoriteScreen() {
             <View style={[styles.gridContainer, { gap: GRID_GAP }]}>
               {favorites.map((dish) => {
                 const isAvail = checkAvailability(dish);
+                const livePrice = getLivePrice(dish);
+
                 return (
                   <View style={{ width: CARD_WIDTH }} key={dish.id}>
                     <GridDishCard 
                       category={dish.category} 
                       name={dish.name} 
-                      price={`₦${dish.price.toLocaleString()}`} 
+                      price={`₦${livePrice.toLocaleString()}`} 
                       rating={dish.rating} 
                       image={dish.image} 
                       isAvailable={isAvail} 
@@ -210,96 +274,18 @@ export default function FavoriteScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-  },
-  headerRight: { 
-    flexDirection: 'row', 
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-  },
-  scrollContent: { 
-    paddingTop: scale(15),
-  },
-  headerRow: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'center', 
-    paddingHorizontal: scale(20), 
-    marginBottom: scale(15),
-  },
-  resultCount: { 
-    fontSize: scale(14), 
-    fontWeight: 'bold',
-  },
-  gridContainer: { 
-    flexDirection: 'row', 
-    flexWrap: 'wrap', 
-    paddingHorizontal: scale(20),
-  },
-  emptyContainer: { 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    paddingHorizontal: scale(40), 
-    paddingBottom: scale(50),
-  },
-  iconCircle: { 
-    width: scale(140), 
-    height: scale(140), 
-    borderRadius: scale(70), 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    marginBottom: scale(20),
-  },
-  emptyTitle: { 
-    fontSize: scale(24), 
-    fontWeight: 'bold', 
-    marginBottom: scale(10), 
-    textAlign: 'center',
-  },
-  emptySubtitle: { 
-    fontSize: scale(16), 
-    textAlign: 'center', 
-    lineHeight: scale(24), 
-    marginBottom: scale(35),
-  },
-  browseBtn: { 
-    backgroundColor: Colors.primary, 
-    paddingVertical: scale(16), 
-    paddingHorizontal: scale(35), 
-    borderRadius: scale(30),
-    elevation: 3,
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: scale(4) },
-    shadowOpacity: 0.3,
-    shadowRadius: scale(5),
-  },
-  browseBtnText: { 
-    color: '#FFF', 
-    fontSize: scale(18), 
-    fontWeight: 'bold',
-  },
-  toastContainer: { 
-    position: 'absolute', 
-    left: scale(20), 
-    right: scale(20), 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    paddingVertical: scale(14), 
-    paddingHorizontal: scale(20), 
-    borderRadius: scale(30), 
-    elevation: 10, 
-    shadowColor: '#000', 
-    shadowOffset: { width: 0, height: scale(5) }, 
-    shadowOpacity: 0.3, 
-    shadowRadius: scale(8), 
-    zIndex: 100, 
-    justifyContent: 'center', 
-    gap: scale(10),
-  },
-  toastText: { 
-    color: '#FFF', 
-    fontSize: scale(16), 
-    fontWeight: 'bold',
-  }
+  container: { flex: 1 },
+  headerRight: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: scale(10) },
+  scrollContent: { paddingTop: scale(15) },
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: scale(20), marginBottom: scale(15) },
+  resultCount: { fontSize: scale(14), fontWeight: 'bold' },
+  gridContainer: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: scale(20) },
+  emptyContainer: { justifyContent: 'center', alignItems: 'center', paddingHorizontal: scale(40), paddingBottom: scale(50) },
+  iconCircle: { width: scale(140), height: scale(140), borderRadius: scale(70), justifyContent: 'center', alignItems: 'center', marginBottom: scale(20) },
+  emptyTitle: { fontSize: scale(24), fontWeight: 'bold', marginBottom: scale(10), textAlign: 'center' },
+  emptySubtitle: { fontSize: scale(16), textAlign: 'center', lineHeight: scale(24), marginBottom: scale(35) },
+  browseBtn: { backgroundColor: Colors.primary, paddingVertical: scale(16), paddingHorizontal: scale(35), borderRadius: scale(30), elevation: 3, shadowColor: Colors.primary, shadowOffset: { width: 0, height: scale(4) }, shadowOpacity: 0.3, shadowRadius: scale(5) },
+  browseBtnText: { color: '#FFF', fontSize: scale(18), fontWeight: 'bold' },
+  toastContainer: { position: 'absolute', left: scale(20), right: scale(20), flexDirection: 'row', alignItems: 'center', paddingVertical: scale(14), paddingHorizontal: scale(20), borderRadius: scale(30), elevation: 10, shadowColor: '#000', shadowOffset: { width: 0, height: scale(5) }, shadowOpacity: 0.3, shadowRadius: scale(8), zIndex: 100, justifyContent: 'center', gap: scale(10) },
+  toastText: { color: '#FFF', fontSize: scale(16), fontWeight: 'bold' }
 });

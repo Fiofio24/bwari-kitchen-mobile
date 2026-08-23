@@ -36,7 +36,6 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [agreed, setAgreed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const { refresh: refreshNotifications } = useNotifications();
@@ -44,7 +43,7 @@ export default function LoginScreen() {
   const { refresh: refreshFavorites } = useFavorites();
 
   const handleLogin = async () => {
-    if (!email || !password || !agreed) return;
+    if (!email || !password) return;
 
     setErrorMessage('');
     setIsLoading(true);
@@ -131,27 +130,6 @@ export default function LoginScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* AGREEMENT CHECKBOX */}
-          <View style={styles.agreementRow}>
-            <TouchableOpacity 
-              style={[
-                styles.checkbox, 
-                { 
-                  borderColor: agreed ? Colors.primary : colors.border,
-                  backgroundColor: agreed ? Colors.primary : 'transparent' 
-                }
-              ]}
-              activeOpacity={0.8}
-              onPress={() => setAgreed(!agreed)}
-            >
-              {agreed && <Ionicons name="checkmark" size={scale(14)} color="#FFF" />}
-            </TouchableOpacity>
-
-            <Text style={[styles.agreementText, { color: colors.textMuted }]}>
-              I&apos;ve read and agreed to <Text style={{ color: Colors.primary, fontWeight: 'bold' }}>User Agreement</Text> and <Text style={{ color: Colors.primary, fontWeight: 'bold' }}>Privacy Policy</Text>
-            </Text>
-          </View>
-
           {errorMessage ? (
             <Text style={{ color: '#D32F2F', fontSize: scale(12), marginBottom: scale(15), textAlign: 'center', fontWeight: '500' }}>{errorMessage}</Text>
           ) : null}
@@ -160,9 +138,9 @@ export default function LoginScreen() {
           <TouchableOpacity 
             style={[
               styles.primaryBtn, 
-              { backgroundColor: (!email || !password || !agreed) ? colors.border : Colors.primary }
+              { backgroundColor: (!email || !password) ? colors.border : Colors.primary }
             ]} 
-            disabled={!email || !password || !agreed || isLoading}
+            disabled={!email || !password || isLoading}
             activeOpacity={0.8}
             onPress={handleLogin}
           >
@@ -171,7 +149,7 @@ export default function LoginScreen() {
             ) : (
               <Text style={[
                 styles.primaryBtnText, 
-                { color: (!email || !password || !agreed) ? colors.textMuted : '#FFF' }
+                { color: (!email || !password) ? colors.textMuted : '#FFF' }
               ]}>
                 Sign in
               </Text>
@@ -183,7 +161,7 @@ export default function LoginScreen() {
             <Text style={[styles.footerText, { color: colors.textMuted }]}>
               Don&apos;t have an account?
             </Text>
-            <TouchableOpacity onPress={() => router.push('/signup')} activeOpacity={0.7}>
+            <TouchableOpacity onPress={() => router.replace('/signup')} activeOpacity={0.7}>
               <Text style={[styles.footerLink, { color: Colors.primary }]}>
                 Sign Up
               </Text>
@@ -253,33 +231,13 @@ const styles = StyleSheet.create({
   },
   forgotPasswordBtn: {
     alignSelf: 'flex-end',
-    marginTop: scale(10),
+    marginTop: scale(15), // Gave it a tiny bit more breathing room
     marginRight: scale(5),
+    marginBottom: scale(10),
   },
   forgotPasswordText: {
     fontSize: scale(12),
     fontWeight: '600',
-  },
-  agreementRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: scale(30),
-    paddingHorizontal: scale(5),
-  },
-  checkbox: {
-    width: scale(20),
-    height: scale(20),
-    borderRadius: scale(6),
-    borderWidth: scale(2),
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: scale(10),
-    marginTop: scale(2),
-  },
-  agreementText: {
-    flex: 1,
-    fontSize: scale(12),
-    lineHeight: scale(18),
   },
   primaryBtn: {
     height: scale(56),
@@ -299,34 +257,6 @@ const styles = StyleSheet.create({
   primaryBtnText: {
     fontSize: scale(16),
     fontWeight: 'bold',
-  },
-  socialSection: {
-    alignItems: 'center',
-    marginBottom: scale(30),
-  },
-  socialDividerText: {
-    fontSize: scale(12),
-    marginBottom: scale(20),
-  },
-  socialButtonsRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: scale(20),
-  },
-  socialBtn: {
-    width: scale(50),
-    height: scale(50),
-    borderRadius: scale(25),
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: scale(2),
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: scale(4),
   },
   footerContainer: {
     flexDirection: 'row',

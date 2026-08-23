@@ -20,7 +20,8 @@ import { StatusBar } from 'expo-status-bar';
 import { useUser } from '../context/UserContext';
 import TopNav from '../components/TopNav';
 import api from './lib/api';
-import { scale } from '../constants/Sizes'; // <-- IMPORTED MASTER SCALE
+import { scale } from '../constants/Sizes'; 
+import HomeIcon from '../components/HomeIcon';
 
 export default function PersonalInfoScreen() {
   const router = useSafeRouter();
@@ -97,6 +98,11 @@ export default function PersonalInfoScreen() {
           title="Personal Info"
           leftIcon="arrow-back"
           onLeftPress={() => router.back()}
+          rightComponent={
+            <View style={styles.headerRight}>
+              <HomeIcon onPress={() => router.push('/(tabs)')} />
+            </View>
+          }
           isAbsolute={false} 
           isScrolled={true}
           showDivider={false}
@@ -192,6 +198,11 @@ export default function PersonalInfoScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  headerRight: { 
+    flexDirection: 'row', 
+    gap: scale(10), 
+    alignItems: 'center',
+  },
   scrollContent: { paddingTop: scale(20), paddingHorizontal: scale(20) },
   headerSection: { marginBottom: scale(25), paddingHorizontal: scale(5) },
   titleText: { fontSize: scale(24), fontWeight: 'bold', marginBottom: scale(8) },

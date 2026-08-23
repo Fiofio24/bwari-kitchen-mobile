@@ -17,12 +17,13 @@ import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient'; 
 import { useTheme } from '../context/ThemeContext'; 
 import { useUser } from '../context/UserContext'; 
+import { useAddresses } from '../context/AddressContext'; 
 import { useSafeAreaInsets } from 'react-native-safe-area-context'; 
 import { useSafeRouter } from '../hooks/useSafeRouter'; 
 import api from '../app/lib/api'; 
 import * as SecureStore from 'expo-secure-store';
 import ActionModal from './ActionModal';
-import { scale } from '../constants/Sizes'; // <-- IMPORTED MASTER SCALE
+import { scale } from '../constants/Sizes'; 
 
 const { width } = Dimensions.get('window');
 const SIDEBAR_WIDTH = width * 0.75; 
@@ -58,6 +59,7 @@ export default function Sidebar({ visible, onClose, menuItems, profileOverride }
   
   const { colors, mode, setThemeMode, isDark } = useTheme();
   const { userData, resetToDefault } = useUser(); 
+  const { setActiveAddress } = useAddresses(); 
   const insets = useSafeAreaInsets();
   const router = useSafeRouter(); 
   
@@ -141,6 +143,7 @@ export default function Sidebar({ visible, onClose, menuItems, profileOverride }
     
     await SecureStore.deleteItemAsync('authToken');
     resetToDefault();
+    setActiveAddress(null); 
     
     setTimeout(() => {
       router.replace('/welcome');

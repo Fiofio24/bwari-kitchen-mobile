@@ -43,6 +43,9 @@ interface AddressContextType {
   }) => Promise<{ success: boolean; error?: string }>;
   removeAddress: (id: string) => Promise<void>;
   setDefaultAddress: (id: string) => Promise<void>;
+  
+  // NEW: Function to set a temporary address for the current order
+  setActiveAddress: (id: string | null) => void; 
 }
 
 const AddressContext = createContext<AddressContextType | undefined>(undefined);
@@ -50,6 +53,9 @@ const AddressContext = createContext<AddressContextType | undefined>(undefined);
 export function AddressProvider({ children }: { children: React.ReactNode }) {
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // NEW: State to hold the temporary address selected for this specific session
+  const [tempActiveId, setTempActiveId] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -90,9 +96,6 @@ export function AddressProvider({ children }: { children: React.ReactNode }) {
     await refresh();
   };
 
-  // Captures device GPS coordinates, then saves an address with them attached.
-  // Returns a result object instead of throwing, so calling screens can show
-  // a friendly message without needing their own try/catch for location errors.
   const addCurrentLocationAddress = async (details: {
     label?: string;
     streetAddress: string;
@@ -130,10 +133,24 @@ export function AddressProvider({ children }: { children: React.ReactNode }) {
 
   const setDefaultAddress = async (id: string) => {
     await api.patch(`/api/addresses/${id}/default`);
+    // Clear the temporary selection if they manually change the permanent default
+    setTempActiveId(null); 
     await refresh();
   };
 
-  const activeAddress = addresses.find(a => a.isDefault) || addresses[0] || null;
+  const setActiveAddress = (id: string | null) => {
+    setTempActiveId(id);
+  };
+
+  // MODIFIED: Smart Active Address Calculation
+  // 1. Try the temporary session address first.
+  // 2. If none, fall back to the database default.
+  // 3. If no default, just grab the first address they have.
+  const activeAddress = 
+    (tempActiveId ? addresses.find(a => a.id === tempActiveId) : null) || 
+    addresses.find(a => a.isDefault) || 
+    addresses[0] || 
+    null;
 
   return (
     <AddressContext.Provider value={{
@@ -146,6 +163,7 @@ export function AddressProvider({ children }: { children: React.ReactNode }) {
       updateAddress,
       removeAddress,
       setDefaultAddress,
+      setActiveAddress, // <-- Provided globally
     }}>
       {children}
     </AddressContext.Provider>

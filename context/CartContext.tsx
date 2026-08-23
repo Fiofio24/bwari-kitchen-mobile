@@ -2,7 +2,6 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// BULLETPROOF STORAGE WRAPPER
 const safeStorage = {
   getItem: async (key: string) => {
     try {
@@ -50,11 +49,15 @@ interface CartContextType {
   cartItems: CartItem[];
   addToCart: (item: CartItem) => void;
   removeFromCart: (id: string) => void;
-  removeMultipleFromCart: (ids: string[]) => void; // <-- PRO UX FIX: Added this!
+  removeMultipleFromCart: (ids: string[]) => void; 
   increaseQuantity: (id: string) => void;
   decreaseQuantity: (id: string) => void;
   clearCart: () => void;
   cartCount: number; 
+  
+  // NEW: Global Package Builder State
+  customPlate: Record<string, number>;
+  setCustomPlate: React.Dispatch<React.SetStateAction<Record<string, number>>>;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -63,6 +66,9 @@ const CART_STORAGE_KEY = '@bwari_kitchen_cart';
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
+  
+  // NEW: Holding area for the package being built
+  const [customPlate, setCustomPlate] = useState<Record<string, number>>({});
 
   useEffect(() => {
     const loadCart = async () => {
@@ -81,15 +87,26 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     saveAndSync();
   }, [cartItems, isLoaded]);
 
-  const addToCart = (newItem: CartItem) => {
-    setCartItems(prev => {
-      const existingItem = prev.find(item => item.id === newItem.id);
-      if (existingItem) {
-        return prev.map(item => 
-          item.id === newItem.id ? { ...item, quantity: item.quantity + (newItem.quantity || 1) } : item
-        );
+  const addToCart = (newItem: any) => {
+    setCartItems(prevItems => {
+      // Check if the exact same item/package already exists in the cart
+      const existingIndex = prevItems.findIndex(item => item.id === newItem.id);
+
+      if (existingIndex > -1) {
+        // 1. Item exists: update its quantity
+        const updatedItems = [...prevItems];
+        const existingItem = updatedItems[existingIndex];
+        
+        const newQuantity = (existingItem.quantity || 1) + (newItem.quantity || 1);
+        const updatedItem = { ...existingItem, quantity: newQuantity };
+
+        // 2. Remove it from its current position and move it to the TOP (index 0)
+        updatedItems.splice(existingIndex, 1);
+        return [updatedItem, ...updatedItems];
+      } else {
+        // Brand new item: add it directly to the top of the list
+        return [newItem, ...prevItems];
       }
-      return [{ ...newItem, quantity: newItem.quantity || 1 }, ...prev];
     });
   };
 
@@ -97,7 +114,6 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setCartItems(prev => prev.filter(item => item.id !== id));
   };
 
-  // PRO UX FIX: New function to safely remove only checked-out items!
   const removeMultipleFromCart = (ids: string[]) => {
     setCartItems(prev => prev.filter(item => !ids.includes(item.id)));
   };
@@ -129,7 +145,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       increaseQuantity, 
       decreaseQuantity, 
       clearCart, 
-      cartCount 
+      cartCount,
+      customPlate, // Provided globally
+      setCustomPlate // Provided globally
     }}>
       {children}
     </CartContext.Provider>
