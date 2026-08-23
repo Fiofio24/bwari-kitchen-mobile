@@ -143,12 +143,19 @@ function CategoriesTab() {
   }
 
   const handleToggle = async (cat: Category) => {
+    const previousCategories = categories
+    const newActive = !cat.isActive
+
+    setCategories((prev) =>
+      prev.map((c) => (c.id === cat.id ? { ...c, isActive: newActive } : c))
+    )
+
     setTogglingId(cat.id)
     try {
       const res = await api.patch(`/api/admin/menu/categories/${cat.id}/availability`)
-      fetchCategories()
       showSuccess(res.data.message)
     } catch (err: any) {
+      setCategories(previousCategories)
       showError(getErrorMessage(err))
     } finally {
       setTogglingId(null)
@@ -195,15 +202,23 @@ function CategoriesTab() {
             {loading ? (
               <tr><td colSpan={4} className="text-center py-8 text-gray-400">Loading...</td></tr>
             ) : categories.map((cat) => (
-              <tr key={cat.id} className="border-t border-gray-100">
+              <tr
+                key={cat.id}
+                onClick={() => openEdit(cat)}
+                className="border-t border-gray-100 hover:bg-gray-50 cursor-pointer"
+              >
                 <td className="px-4 py-3 font-medium">{cat.name}</td>
                 <td className="px-4 py-3 text-gray-500">{cat._count.menuItems}</td>
-                <td className="px-4 py-3">
+                <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                   <Toggle checked={cat.isActive} onChange={() => handleToggle(cat)} />
                 </td>
-                <td className="px-4 py-3 text-right space-x-3">
-                  <button onClick={() => openEdit(cat)} className="text-brand-600 font-medium">Edit</button>
-                  <button onClick={() => setDeleteTarget(cat)} className="text-red-500 font-medium">Delete</button>
+                <td className="px-4 py-3 text-right">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setDeleteTarget(cat) }}
+                    className="text-red-500 font-medium"
+                  >
+                    Delete
+                  </button>
                 </td>
               </tr>
             ))}
@@ -386,12 +401,19 @@ function ItemsTab() {
   }
 
   const handleToggle = async (item: MenuItem) => {
+    const previousItems = items
+    const newAvailable = !item.isAvailable
+
+    setItems((prev) =>
+      prev.map((i) => (i.id === item.id ? { ...i, isAvailable: newAvailable } : i))
+    )
+
     setTogglingId(item.id)
     try {
       const res = await api.patch(`/api/admin/menu/items/${item.id}/availability`)
-      fetchItems()
       showSuccess(res.data.message)
     } catch (err: any) {
+      setItems(previousItems)
       showError(getErrorMessage(err))
     } finally {
       setTogglingId(null)
@@ -451,7 +473,11 @@ function ItemsTab() {
             ) : items.length === 0 ? (
               <tr><td colSpan={5} className="text-center py-8 text-gray-400">No items in this category</td></tr>
             ) : items.map((item) => (
-              <tr key={item.id} className="border-t border-gray-100">
+              <tr
+                key={item.id}
+                onClick={() => openEdit(item)}
+                className="border-t border-gray-100 hover:bg-gray-50 cursor-pointer"
+              >
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-3">
                     {item.imageUrl ? (
@@ -474,12 +500,16 @@ function ItemsTab() {
                     </span>
                   ) : formatCurrency(item.basePrice)}
                 </td>
-                <td className="px-4 py-3">
+                <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                   <Toggle checked={item.isAvailable} onChange={() => handleToggle(item)} />
                 </td>
-                <td className="px-4 py-3 text-right space-x-3">
-                  <button onClick={() => openEdit(item)} className="text-brand-600 font-medium">Edit</button>
-                  <button onClick={() => setDeleteTarget(item)} className="text-red-500 font-medium">Delete</button>
+                <td className="px-4 py-3 text-right">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setDeleteTarget(item) }}
+                    className="text-red-500 font-medium"
+                  >
+                    Delete
+                  </button>
                 </td>
               </tr>
             ))}
@@ -734,12 +764,19 @@ function PackagesTab() {
   }
 
   const handleToggle = async (pkg: Package) => {
+    const previousPackages = packages
+    const newAvailable = !pkg.isAvailable
+
+    setPackages((prev) =>
+      prev.map((p) => (p.id === pkg.id ? { ...p, isAvailable: newAvailable } : p))
+    )
+
     setTogglingId(pkg.id)
     try {
       const res = await api.patch(`/api/admin/menu/packages/${pkg.id}/availability`)
-      fetchPackages()
       showSuccess(res.data.message)
     } catch (err: any) {
+      setPackages(previousPackages)
       showError(getErrorMessage(err))
     } finally {
       setTogglingId(null)
@@ -778,7 +815,11 @@ function PackagesTab() {
         {loading ? (
           <p className="text-gray-400">Loading...</p>
         ) : packages.map((pkg) => (
-          <div key={pkg.id} className="bg-white rounded-xl border border-gray-100 p-4">
+          <div
+            key={pkg.id}
+            onClick={() => openEdit(pkg)}
+            className="bg-white rounded-xl border border-gray-100 p-4 cursor-pointer hover:border-brand-200 transition-colors"
+          >
             <div className="flex gap-3 mb-2">
               {pkg.imageUrl ? (
                 <img src={pkg.imageUrl} className="w-14 h-14 rounded-lg object-cover flex-shrink-0" />
@@ -790,7 +831,9 @@ function PackagesTab() {
                   <p className="font-medium">{pkg.name}</p>
                   <p className="text-sm text-gray-500">{formatCurrency(pkg.totalPrice)}</p>
                 </div>
-                <Toggle checked={pkg.isAvailable} onChange={() => handleToggle(pkg)} />
+                <div onClick={(e) => e.stopPropagation()}>
+                  <Toggle checked={pkg.isAvailable} onChange={() => handleToggle(pkg)} />
+                </div>
               </div>
             </div>
             <ul className="text-sm text-gray-500 mb-3 space-y-0.5">
@@ -799,8 +842,12 @@ function PackagesTab() {
               ))}
             </ul>
             <div className="flex gap-3 text-sm">
-              <button onClick={() => openEdit(pkg)} className="text-brand-600 font-medium">Edit</button>
-              <button onClick={() => setDeleteTarget(pkg)} className="text-red-500 font-medium">Delete</button>
+              <button
+                onClick={(e) => { e.stopPropagation(); setDeleteTarget(pkg) }}
+                className="text-red-500 font-medium"
+              >
+                Delete
+              </button>
             </div>
           </div>
         ))}

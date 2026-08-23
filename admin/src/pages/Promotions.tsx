@@ -115,13 +115,24 @@ export default function Promotions() {
   }
 
   const handleToggle = async (promo: Promotion) => {
+    const previousPromos = promos
+    const previousSelected = selectedPromo
+    const newActive = !promo.isActive
+
+    setPromos((prev) =>
+      prev.map((p) => (p.id === promo.id ? { ...p, isActive: newActive } : p))
+    )
+    if (selectedPromo?.id === promo.id) {
+      setSelectedPromo({ ...selectedPromo, isActive: newActive })
+    }
+
     setTogglingId(promo.id)
     try {
       await api.patch(`/api/admin/promotions/${promo.id}/toggle`)
-      fetchPromos()
-      if (selectedPromo?.id === promo.id) openDetail(promo.id)
-      showSuccess(`${promo.code} ${promo.isActive ? 'deactivated' : 'activated'}`)
+      showSuccess(`${promo.code} ${newActive ? 'activated' : 'deactivated'}`)
     } catch (err: any) {
+      setPromos(previousPromos)
+      setSelectedPromo(previousSelected)
       showError(getErrorMessage(err))
     } finally {
       setTogglingId(null)
@@ -179,8 +190,12 @@ export default function Promotions() {
             const expired = promo.validUntil && new Date(promo.validUntil) < new Date()
             const usedUp = promo.maxUses !== null && promo.usesCount >= promo.maxUses
 
-            return (
-              <div key={promo.id} className="bg-white rounded-xl border border-gray-100 p-4">
+              return (
+              <div
+                key={promo.id}
+                onClick={() => openDetail(promo.id)}
+                className="bg-white rounded-xl border border-gray-100 p-4 cursor-pointer hover:border-brand-200 transition-colors"
+              >
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <div className="w-9 h-9 rounded-lg bg-brand-50 flex items-center justify-center">
@@ -191,7 +206,9 @@ export default function Promotions() {
                       <p className="text-xs text-gray-400">{typeLabels[promo.type]}</p>
                     </div>
                   </div>
-                  <Toggle checked={promo.isActive} onChange={() => handleToggle(promo)} />
+                  <div onClick={(e) => e.stopPropagation()}>
+                    <Toggle checked={promo.isActive} onChange={() => handleToggle(promo)} />
+                  </div>
                 </div>
 
                 <p className="text-sm font-medium mb-1">{getValueDisplay(promo)}</p>
@@ -218,10 +235,10 @@ export default function Promotions() {
                 )}
 
                 <div className="flex gap-3 text-sm pt-2 border-t border-gray-100">
-                  <button onClick={() => openDetail(promo.id)} className="text-brand-600 font-medium">
-                    View usage
-                  </button>
-                  <button onClick={() => setDeleteTarget(promo)} className="text-red-500 font-medium">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setDeleteTarget(promo) }}
+                    className="text-red-500 font-medium"
+                  >
                     Delete
                   </button>
                 </div>

@@ -7,7 +7,7 @@ import Toggle from '../components/Toggle'
 import Pagination from '../components/Pagination'
 import StatusBadge from '../components/StatusBadge'
 import api from '../lib/api'
-import { Phone, Mail, MapPin, Search, ShieldCheck, ShieldOff } from 'lucide-react'
+import { Phone, Mail, MapPin, Search, ShieldCheck, ShieldOff, ChevronRight } from 'lucide-react'
 
 interface Customer {
   id: string
@@ -83,18 +83,31 @@ export default function Customers() {
   }
 
   const handleToggleActive = async (customer: Customer) => {
+    const previousCustomers = customers
+    const previousSelected = selectedCustomer
+    const newActive = !customer.isActive
+
+    // Optimistically update both the table and the open modal (if this customer is selected)
+    setCustomers((prev) =>
+      prev.map((c) => (c.id === customer.id ? { ...c, isActive: newActive } : c))
+    )
+    if (selectedCustomer?.id === customer.id) {
+      setSelectedCustomer({ ...selectedCustomer, isActive: newActive })
+    }
+
     setTogglingId(customer.id)
     try {
       await api.patch(`/api/admin/users/${customer.id}/toggle-active`)
-      fetchCustomers()
-      if (selectedCustomer?.id === customer.id) openDetail(customer.id)
-      showSuccess(`${customer.fullName} ${customer.isActive ? 'deactivated' : 'activated'}`)
+      showSuccess(`${customer.fullName} ${newActive ? 'activated' : 'deactivated'}`)
     } catch (err: any) {
+      setCustomers(previousCustomers)
+      setSelectedCustomer(previousSelected)
       showError(getErrorMessage(err))
     } finally {
       setTogglingId(null)
     }
   }
+
   const formatDate = (date: string) =>
     new Date(date).toLocaleDateString('en-NG', { dateStyle: 'medium' })
   const formatCurrency = (amount: number) => `₦${Number(amount).toLocaleString()}`
@@ -139,7 +152,11 @@ export default function Customers() {
               <tr><td colSpan={7} className="text-center py-8 text-gray-400">No customers found</td></tr>
             ) : (
               customers.map((customer) => (
-                <tr key={customer.id} className="border-t border-gray-100 hover:bg-gray-50">
+                <tr
+                  key={customer.id}
+                  onClick={() => openDetail(customer.id)}
+                  className="border-t border-gray-100 hover:bg-gray-50 cursor-pointer"
+                >
                   <td className="px-4 py-3 font-medium">{customer.fullName}</td>
                   <td className="px-4 py-3 text-gray-500">{customer.phoneNumber}</td>
                   <td className="px-4 py-3 text-gray-500">{customer._count.orders}</td>
@@ -150,12 +167,12 @@ export default function Customers() {
                       <ShieldOff size={16} className="text-gray-300" />
                     )}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                     <Toggle checked={customer.isActive} onChange={() => handleToggleActive(customer)} />
                   </td>
                   <td className="px-4 py-3 text-gray-500">{formatDate(customer.createdAt)}</td>
-                  <td className="px-4 py-3 text-right space-x-3 whitespace-nowrap">
-                    <button onClick={() => openDetail(customer.id)} className="text-brand-600 font-medium">View</button>
+                  <td className="px-4 py-3 text-right text-gray-300">
+                    <ChevronRight size={16} className="inline" />
                   </td>
                 </tr>
               ))

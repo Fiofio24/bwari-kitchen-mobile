@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Bike, Phone, Mail, Search } from 'lucide-react'
+import { Bike, Phone, Mail, Search, ChevronRight } from 'lucide-react'
 import LoadingButton from '../components/LoadingButton'
 import { showSuccess, showError, getErrorMessage } from '../lib/toast'
 import Layout from '../components/Layout'
@@ -97,15 +97,25 @@ export default function Riders() {
     setSelectedRider(res.data.rider)
   }
 
-  // AFTER
   const handleToggleActive = async (rider: Rider) => {
+    const previousRiders = riders
+    const previousSelected = selectedRider
+    const newActive = !rider.isActive
+
+    setRiders((prev) =>
+      prev.map((r) => (r.id === rider.id ? { ...r, isActive: newActive } : r))
+    )
+    if (selectedRider?.id === rider.id) {
+      setSelectedRider({ ...selectedRider, isActive: newActive })
+    }
+
     setTogglingId(rider.id)
     try {
       await api.patch(`/api/admin/users/${rider.id}/toggle-active`)
-      fetchRiders()
-      if (selectedRider?.id === rider.id) openDetail(rider.id)
-      showSuccess(`${rider.fullName} ${rider.isActive ? 'deactivated' : 'activated'}`)
+      showSuccess(`${rider.fullName} ${newActive ? 'activated' : 'deactivated'}`)
     } catch (err: any) {
+      setRiders(previousRiders)
+      setSelectedRider(previousSelected)
       showError(getErrorMessage(err))
     } finally {
       setTogglingId(null)
@@ -163,16 +173,20 @@ export default function Riders() {
               <tr><td colSpan={6} className="text-center py-8 text-gray-400">No riders found</td></tr>
             ) : (
               riders.map((rider) => (
-                <tr key={rider.id} className="border-t border-gray-100 hover:bg-gray-50">
+                <tr
+                  key={rider.id}
+                  onClick={() => openDetail(rider.id)}
+                  className="border-t border-gray-100 hover:bg-gray-50 cursor-pointer"
+                >
                   <td className="px-4 py-3 font-medium">{rider.fullName}</td>
                   <td className="px-4 py-3 text-gray-500">{rider.phoneNumber}</td>
                   <td className="px-4 py-3 text-gray-500">{rider._count.assignedDeliveries}</td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                     <Toggle checked={rider.isActive} onChange={() => handleToggleActive(rider)} />
                   </td>
                   <td className="px-4 py-3 text-gray-500">{formatDate(rider.createdAt)}</td>
-                  <td className="px-4 py-3 text-right space-x-3 whitespace-nowrap">
-                    <button onClick={() => openDetail(rider.id)} className="text-brand-600 font-medium">View</button>
+                  <td className="px-4 py-3 text-right text-gray-300">
+                    <ChevronRight size={16} className="inline" />
                   </td>
                 </tr>
               ))

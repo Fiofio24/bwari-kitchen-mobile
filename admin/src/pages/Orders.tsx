@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { ChevronRight } from 'lucide-react'
 import { showSuccess, showError, getErrorMessage } from '../lib/toast'
 import LoadingButton from '../components/LoadingButton'
 import Layout from '../components/Layout'
@@ -103,13 +104,22 @@ export default function Orders() {
 
   const handleUpdateStatus = async (newStatus: string) => {
     if (!selectedOrder) return
+
+    const previousOrder = selectedOrder
+    const previousOrders = orders
+
+    // Optimistically update both the modal and the table immediately
+    setSelectedOrder({ ...selectedOrder, status: newStatus })
+    setOrders((prev) => prev.map((o) => (o.id === selectedOrder.id ? { ...o, status: newStatus } : o)))
+
     setActionLoading(true)
     try {
       await api.patch(`/api/admin/orders/${selectedOrder.id}/status`, { status: newStatus })
-      await openOrderDetail(selectedOrder.id)
-      fetchOrders()
       showSuccess(`Order marked as ${newStatus.replace('_', ' ')}`)
     } catch (err: any) {
+      // Roll back on failure
+      setSelectedOrder(previousOrder)
+      setOrders(previousOrders)
       showError(getErrorMessage(err))
     } finally {
       setActionLoading(false)
@@ -118,14 +128,22 @@ export default function Orders() {
 
   const handleAssignRider = async () => {
     if (!selectedOrder || !selectedRiderId) return
+
+    const rider = riders.find((r) => r.id === selectedRiderId)
+    const previousOrder = selectedOrder
+
+    if (rider) {
+      setSelectedOrder({ ...selectedOrder, rider: { id: rider.id, fullName: rider.fullName, phoneNumber: '' } })
+    }
+
     setActionLoading(true)
     try {
       await api.patch(`/api/admin/orders/${selectedOrder.id}/assign-rider`, { riderId: selectedRiderId })
-      await openOrderDetail(selectedOrder.id)
-      fetchOrders()
+      await openOrderDetail(selectedOrder.id) // refresh once to get the real phoneNumber
       setSelectedRiderId('')
       showSuccess('Rider assigned successfully')
     } catch (err: any) {
+      setSelectedOrder(previousOrder)
       showError(getErrorMessage(err))
     } finally {
       setActionLoading(false)
@@ -134,13 +152,20 @@ export default function Orders() {
 
   const confirmCancelOrder = async (reason: string) => {
     if (!selectedOrder) return
+
+    const previousOrder = selectedOrder
+    const previousOrders = orders
+
+    setSelectedOrder({ ...selectedOrder, status: 'cancelled' })
+    setOrders((prev) => prev.map((o) => (o.id === selectedOrder.id ? { ...o, status: 'cancelled' } : o)))
+
     setActionLoading(true)
     try {
       await api.patch(`/api/admin/orders/${selectedOrder.id}/cancel`, { reason })
-      await openOrderDetail(selectedOrder.id)
-      fetchOrders()
       showSuccess('Order cancelled')
     } catch (err: any) {
+      setSelectedOrder(previousOrder)
+      setOrders(previousOrders)
       showError(getErrorMessage(err))
     } finally {
       setActionLoading(false)
@@ -221,8 +246,12 @@ export default function Orders() {
             ) : orders.length === 0 ? (
               <tr><td colSpan={7} className="text-center py-8 text-gray-400">No orders found</td></tr>
             ) : (
-              orders.map((order) => (
-                <tr key={order.id} className="border-t border-gray-100 hover:bg-gray-50">
+                            orders.map((order) => (
+                <tr
+                  key={order.id}
+                  onClick={() => openOrderDetail(order.id)}
+                  className="border-t border-gray-100 hover:bg-gray-50 cursor-pointer"
+                >
                   <td className="px-4 py-3 font-medium">{order.orderNumber}</td>
                   <td className="px-4 py-3">
                     <div>{order.customer.fullName}</div>
@@ -232,13 +261,8 @@ export default function Orders() {
                   <td className="px-4 py-3"><StatusBadge status={order.status} /></td>
                   <td className="px-4 py-3 font-medium">{formatCurrency(order.totalAmount)}</td>
                   <td className="px-4 py-3 text-gray-500">{formatDate(order.createdAt)}</td>
-                  <td className="px-4 py-3">
-                    <button
-                      onClick={() => openOrderDetail(order.id)}
-                      className="text-brand-600 hover:text-brand-700 font-medium"
-                    >
-                      View
-                    </button>
+                  <td className="px-4 py-3 text-right text-gray-300">
+                    <ChevronRight size={16} className="inline" />
                   </td>
                 </tr>
               ))

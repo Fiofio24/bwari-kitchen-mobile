@@ -54,12 +54,19 @@ export default function Reviews() {
   }
 
   const handleToggleVisibility = async (review: Review) => {
+    const previousReviews = reviews
+    const newVisible = !review.isVisible
+
+    setReviews((prev) =>
+      prev.map((r) => (r.id === review.id ? { ...r, isVisible: newVisible } : r))
+    )
+
     setTogglingId(review.id)
     try {
       const res = await api.patch(`/api/admin/reviews/${review.id}/visibility`)
-      fetchReviews()
       showSuccess(res.data.message)
     } catch (err: any) {
+      setReviews(previousReviews)
       showError(getErrorMessage(err))
     } finally {
       setTogglingId(null)
@@ -84,18 +91,21 @@ export default function Reviews() {
   const formatDate = (date: string) =>
     new Date(date).toLocaleDateString('en-NG', { dateStyle: 'medium' })
 
-  const renderStars = (rating: number) => (
-    <div className="flex items-center gap-0.5">
-      {[1, 2, 3, 4, 5].map((i) => (
-        <Star
-          key={i}
-          size={14}
-          className={i <= Math.round(rating) ? 'fill-amber-400 text-amber-400' : 'text-gray-200'}
-        />
-      ))}
-      <span className="text-xs text-gray-500 ml-1">{rating.toFixed(1)}</span>
-    </div>
-  )
+    const renderStars = (rating: number) => {
+    const numericRating = Number(rating) || 0
+    return (
+      <div className="flex items-center gap-0.5">
+        {[1, 2, 3, 4, 5].map((i) => (
+          <Star
+            key={i}
+            size={14}
+            className={i <= Math.round(numericRating) ? 'fill-amber-400 text-amber-400' : 'text-gray-200'}
+          />
+        ))}
+        <span className="text-xs text-gray-500 ml-1">{numericRating.toFixed(1)}</span>
+      </div>
+    )
+  }
 
   return (
     <Layout>
