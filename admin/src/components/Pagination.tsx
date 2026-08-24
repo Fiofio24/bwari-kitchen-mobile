@@ -1,3 +1,6 @@
+import { motion } from 'framer-motion'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
+
 interface PaginationProps {
   page: number
   totalPages: number
@@ -8,24 +11,30 @@ export default function Pagination({ page, totalPages, onPageChange }: Paginatio
   if (totalPages <= 1) return null
 
   return (
-    <div className="flex items-center justify-between mt-4">
-      <button
+    <div className="flex items-center justify-between mt-6">
+      <motion.button
+        whileTap={{ scale: 0.95 }}
         onClick={() => onPageChange(page - 1)}
         disabled={page === 1}
-        className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50"
+        className="flex items-center gap-1 px-3.5 py-2 text-sm font-medium text-surface-600 bg-white border border-surface-200 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed hover:bg-surface-50 hover:text-surface-900 transition-colors"
       >
+        <ChevronLeft size={15} />
         Previous
-      </button>
-      <span className="text-sm text-gray-500">
-        Page {page} of {totalPages}
+      </motion.button>
+
+      <span className="text-sm text-surface-500 font-medium">
+        Page <span className="text-surface-900">{page}</span> of {totalPages}
       </span>
-      <button
+
+      <motion.button
+        whileTap={{ scale: 0.95 }}
         onClick={() => onPageChange(page + 1)}
         disabled={page === totalPages}
-        className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50"
+        className="flex items-center gap-1 px-3.5 py-2 text-sm font-medium text-surface-600 bg-white border border-surface-200 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed hover:bg-surface-50 hover:text-surface-900 transition-colors"
       >
         Next
-      </button>
+        <ChevronRight size={15} />
+      </motion.button>
     </div>
   )
 }
