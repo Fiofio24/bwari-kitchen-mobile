@@ -1,37 +1,59 @@
 import { useEffect, useState } from 'react'
-import { ChevronRight } from 'lucide-react'
-import { showSuccess, showError, getErrorMessage } from '../lib/toast'
-import LoadingButton from '../components/LoadingButton'
+import { ChevronRight, Clock, Archive } from 'lucide-react'
+import { motion } from 'framer-motion'
 import Layout from '../components/Layout'
 import StatusBadge from '../components/StatusBadge'
 import Pagination from '../components/Pagination'
-import Modal from '../components/Modal'
+import OrderDetailModal, { Order } from '../components/OrderDetailModal'
 import api from '../lib/api'
-import ReasonDialog from '../components/ReasonDialog'
 
-interface Order {
-  id: string
-  orderNumber: string
-  orderType: string
-  status: string
-  subtotal: number
-  deliveryFee: number
-  totalAmount: number
-  specialInstructions: string | null
-  estimatedDeliveryTime: string | null
-  createdAt: string
-  customer: { id: string; fullName: string; phoneNumber: string }
-  rider: { id: string; fullName: string; phoneNumber: string } | null
-  deliveryAddress: { streetAddress: string; landmark: string | null; area: string | null } | null
-  orderPackages: {
-    packageName: string
-    totalPrice: number
-    items: { itemName: string; quantity: number; unitPrice: number }[]
-  }[]
-  payment: { paymentMethod: string; paymentStatus: string; amount: number } | null
-}
+const ACTIVE_STATUSES = ['pending', 'confirmed', 'preparing', 'ready', 'picked_up', 'on_the_way']
+const SETTLED_STATUSES = ['delivered', 'cancelled', 'refunded']
+
+type Tab = 'active' | 'settled'
 
 export default function Orders() {
+  const [tab, setTab] = useState<Tab>('active')
+
+  const tabIcons = {
+    active: Clock,
+    settled: Archive,
+  }
+
+  return (
+    <Layout>
+      <h2 className="text-2xl font-bold text-surface-900 mb-4">Orders</h2>
+
+      <div className="flex gap-1 mb-6 border-b border-surface-200 overflow-x-auto">
+        {(['active', 'settled'] as Tab[]).map((t) => {
+          const Icon = tabIcons[t]
+          return (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium capitalize border-b-2 transition-colors whitespace-nowrap ${
+                tab === t
+                  ? 'border-primary-500 text-primary-600'
+                  : 'border-transparent text-surface-500 hover:text-surface-800'
+              }`}
+            >
+              <Icon size={16} />
+              {t === 'active' ? 'Active Orders' : 'Settled Orders'}
+            </button>
+          )
+        })}
+      </div>
+
+      {tab === 'active' && <OrdersTable statuses={ACTIVE_STATUSES} emptyLabel="No active orders right now" />}
+      {tab === 'settled' && <OrdersTable statuses={SETTLED_STATUSES} emptyLabel="No settled orders found" />}
+    </Layout>
+  )
+}
+
+// ═══════════════════════════════════════════
+// SHARED TABLE (used by both tabs, scoped by status set)
+// ═══════════════════════════════════════════
+function OrdersTable({ statuses, emptyLabel }: { statuses: string[]; emptyLabel: string }) {
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
@@ -39,41 +61,40 @@ export default function Orders() {
   const [statusFilter, setStatusFilter] = useState('')
   const [typeFilter, setTypeFilter] = useState('')
   const [search, setSearch] = useState('')
-
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
-  const [riders, setRiders] = useState<{ id: string; fullName: string }[]>([])
-  const [selectedRiderId, setSelectedRiderId] = useState('')
-  const [actionLoading, setActionLoading] = useState(false)
-  const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
-  const [cancelReason, setCancelReason] = useState('')
+
+  useEffect(() => {
+    setPage(1)
+    setStatusFilter('')
+  }, [statuses])
 
   useEffect(() => {
     fetchOrders()
-  }, [page, statusFilter, typeFilter])
+  }, [page, statusFilter, typeFilter, statuses])
 
   const fetchOrders = async () => {
-  setLoading(true)
-  try {
-    const params = new URLSearchParams()
-    params.append('page', String(page))
-    params.append('limit', '15')
-    if (statusFilter) params.append('status', statusFilter)
-    if (typeFilter) params.append('orderType', typeFilter)
-    if (search) params.append('search', search)
+    setLoading(true)
+    try {
+      const params = new URLSearchParams()
+      params.append('limit', '100') // fetch generously since we filter client-side by status set
+      if (statusFilter) params.append('status', statusFilter)
+      if (typeFilter) params.append('orderType', typeFilter)
+      if (search) params.append('search', search)
 
-    const res = await api.get(`/api/admin/orders?${params.toString()}`)
+      const res = await api.get(`/api/admin/orders?${params.toString()}`)
+      const scoped = res.data.orders.filter((o: Order) => statuses.includes(o.status))
+      const sorted = [...scoped].sort(
+        (a: Order, b: Order) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      )
 
-    // Sort by order number ascending (BWK-00001 before BWK-00002)
-    const sorted = [...res.data.orders].sort((a: Order, b: Order) =>
-      a.orderNumber.localeCompare(b.orderNumber, undefined, { numeric: true })
-    )
-
-    setOrders(sorted)
-    setTotalPages(res.data.meta.totalPages)
-  } finally {
-    setLoading(false)
+      const perPage = 15
+      const start = (page - 1) * perPage
+      setOrders(sorted.slice(start, start + perPage))
+      setTotalPages(Math.max(1, Math.ceil(sorted.length / perPage)))
+    } finally {
+      setLoading(false)
+    }
   }
-}
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
@@ -84,92 +105,15 @@ export default function Orders() {
   const openOrderDetail = async (orderId: string) => {
     const res = await api.get(`/api/admin/orders/${orderId}`)
     setSelectedOrder(res.data.order)
-
-    // Fetch riders for assignment dropdown
-    const riderRes = await api.get('/api/admin/users/riders?limit=50')
-    setRiders(riderRes.data.riders.filter((r: any) => r.isActive))
   }
 
-  const getNextStatus = (current: string) => {
-    const flow: Record<string, string> = {
-      pending: 'confirmed',
-      confirmed: 'preparing',
-      preparing: 'ready',
-      ready: selectedOrder?.orderType === 'pickup' ? 'delivered' : 'picked_up',
-      picked_up: 'on_the_way',
-      on_the_way: 'delivered',
-    }
-    return flow[current]
-  }
-
-  const handleUpdateStatus = async (newStatus: string) => {
-    if (!selectedOrder) return
-
-    const previousOrder = selectedOrder
-    const previousOrders = orders
-
-    // Optimistically update both the modal and the table immediately
-    setSelectedOrder({ ...selectedOrder, status: newStatus })
-    setOrders((prev) => prev.map((o) => (o.id === selectedOrder.id ? { ...o, status: newStatus } : o)))
-
-    setActionLoading(true)
-    try {
-      await api.patch(`/api/admin/orders/${selectedOrder.id}/status`, { status: newStatus })
-      showSuccess(`Order marked as ${newStatus.replace('_', ' ')}`)
-    } catch (err: any) {
-      // Roll back on failure
-      setSelectedOrder(previousOrder)
-      setOrders(previousOrders)
-      showError(getErrorMessage(err))
-    } finally {
-      setActionLoading(false)
-    }
-  }
-
-  const handleAssignRider = async () => {
-    if (!selectedOrder || !selectedRiderId) return
-
-    const rider = riders.find((r) => r.id === selectedRiderId)
-    const previousOrder = selectedOrder
-
-    if (rider) {
-      setSelectedOrder({ ...selectedOrder, rider: { id: rider.id, fullName: rider.fullName, phoneNumber: '' } })
-    }
-
-    setActionLoading(true)
-    try {
-      await api.patch(`/api/admin/orders/${selectedOrder.id}/assign-rider`, { riderId: selectedRiderId })
-      await openOrderDetail(selectedOrder.id) // refresh once to get the real phoneNumber
-      setSelectedRiderId('')
-      showSuccess('Rider assigned successfully')
-    } catch (err: any) {
-      setSelectedOrder(previousOrder)
-      showError(getErrorMessage(err))
-    } finally {
-      setActionLoading(false)
-    }
-  }
-
-  const confirmCancelOrder = async (reason: string) => {
-    if (!selectedOrder) return
-
-    const previousOrder = selectedOrder
-    const previousOrders = orders
-
-    setSelectedOrder({ ...selectedOrder, status: 'cancelled' })
-    setOrders((prev) => prev.map((o) => (o.id === selectedOrder.id ? { ...o, status: 'cancelled' } : o)))
-
-    setActionLoading(true)
-    try {
-      await api.patch(`/api/admin/orders/${selectedOrder.id}/cancel`, { reason })
-      showSuccess('Order cancelled')
-    } catch (err: any) {
-      setSelectedOrder(previousOrder)
-      setOrders(previousOrders)
-      showError(getErrorMessage(err))
-    } finally {
-      setActionLoading(false)
-      setCancelDialogOpen(false)
+  const handleOrderUpdated = (updated: Order) => {
+    setSelectedOrder(updated)
+    if (statuses.includes(updated.status)) {
+      setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)))
+    } else {
+      // Status moved out of this tab's scope — drop it from the visible list
+      setOrders((prev) => prev.filter((o) => o.id !== updated.id))
     }
   }
 
@@ -178,22 +122,19 @@ export default function Orders() {
     new Date(date).toLocaleString('en-NG', { dateStyle: 'medium', timeStyle: 'short' })
 
   return (
-    <Layout>
-      <h2 className="text-2xl font-bold text-gray-900 mb-6">Orders</h2>
-
-      {/* Filters */}
-      <div className="bg-white rounded-xl border border-gray-100 p-4 mb-4 flex flex-wrap gap-3 items-center">
+    <div>
+      <div className="bg-white rounded-2xl border border-surface-100 p-4 mb-4 flex flex-wrap gap-3 items-center">
         <form onSubmit={handleSearch} className="flex gap-2">
           <input
             type="text"
             placeholder="Search order number..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm w-56"
+            className="border border-surface-200 rounded-xl px-3.5 py-2 text-sm w-56 focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400 transition-shadow"
           />
           <button
             type="submit"
-            className="px-3 py-2 text-sm bg-gray-100 rounded-lg hover:bg-gray-200"
+            className="px-3.5 py-2 text-sm font-medium bg-surface-100 text-surface-700 rounded-xl hover:bg-surface-200 transition-colors"
           >
             Search
           </button>
@@ -202,23 +143,18 @@ export default function Orders() {
         <select
           value={statusFilter}
           onChange={(e) => { setStatusFilter(e.target.value); setPage(1) }}
-          className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+          className="border border-surface-200 rounded-xl px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400 transition-shadow"
         >
           <option value="">All statuses</option>
-          <option value="pending">Pending</option>
-          <option value="confirmed">Confirmed</option>
-          <option value="preparing">Preparing</option>
-          <option value="ready">Ready</option>
-          <option value="picked_up">Picked up</option>
-          <option value="on_the_way">On the way</option>
-          <option value="delivered">Delivered</option>
-          <option value="cancelled">Cancelled</option>
+          {statuses.map((s) => (
+            <option key={s} value={s}>{s.replace('_', ' ')}</option>
+          ))}
         </select>
 
         <select
           value={typeFilter}
           onChange={(e) => { setTypeFilter(e.target.value); setPage(1) }}
-          className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+          className="border border-surface-200 rounded-xl px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400 transition-shadow"
         >
           <option value="">All types</option>
           <option value="delivery">Delivery</option>
@@ -226,11 +162,10 @@ export default function Orders() {
         </select>
       </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-xl border border-gray-100 overflow-x-auto">
+      <div className="bg-white rounded-2xl border border-surface-100 overflow-x-auto">
         <table className="w-full text-sm min-w-[700px]">
           <thead>
-            <tr className="bg-gray-50 text-left text-gray-500 text-xs uppercase">
+            <tr className="bg-surface-50 text-left text-surface-500 text-xs uppercase">
               <th className="px-4 py-3">Order</th>
               <th className="px-4 py-3">Customer</th>
               <th className="px-4 py-3">Type</th>
@@ -242,29 +177,32 @@ export default function Orders() {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={7} className="text-center py-8 text-gray-400">Loading orders...</td></tr>
+              <tr><td colSpan={7} className="text-center py-8 text-surface-400">Loading orders...</td></tr>
             ) : orders.length === 0 ? (
-              <tr><td colSpan={7} className="text-center py-8 text-gray-400">No orders found</td></tr>
+              <tr><td colSpan={7} className="text-center py-8 text-surface-400">{emptyLabel}</td></tr>
             ) : (
-                            orders.map((order) => (
-                <tr
+              orders.map((order, i) => (
+                <motion.tr
                   key={order.id}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.2, delay: i * 0.02 }}
                   onClick={() => openOrderDetail(order.id)}
-                  className="border-t border-gray-100 hover:bg-gray-50 cursor-pointer"
+                  className="border-t border-surface-100 hover:bg-surface-50 cursor-pointer"
                 >
-                  <td className="px-4 py-3 font-medium">{order.orderNumber}</td>
+                  <td className="px-4 py-3 font-medium text-surface-900">{order.orderNumber}</td>
                   <td className="px-4 py-3">
-                    <div>{order.customer.fullName}</div>
-                    <div className="text-gray-400 text-xs">{order.customer.phoneNumber}</div>
+                    <div className="text-surface-800">{order.customer.fullName}</div>
+                    <div className="text-surface-400 text-xs">{order.customer.phoneNumber}</div>
                   </td>
-                  <td className="px-4 py-3 capitalize">{order.orderType}</td>
+                  <td className="px-4 py-3 capitalize text-surface-600">{order.orderType}</td>
                   <td className="px-4 py-3"><StatusBadge status={order.status} /></td>
-                  <td className="px-4 py-3 font-medium">{formatCurrency(order.totalAmount)}</td>
-                  <td className="px-4 py-3 text-gray-500">{formatDate(order.createdAt)}</td>
-                  <td className="px-4 py-3 text-right text-gray-300">
+                  <td className="px-4 py-3 font-medium text-surface-900">{formatCurrency(order.totalAmount)}</td>
+                  <td className="px-4 py-3 text-surface-500">{formatDate(order.createdAt)}</td>
+                  <td className="px-4 py-3 text-right text-surface-300">
                     <ChevronRight size={16} className="inline" />
                   </td>
-                </tr>
+                </motion.tr>
               ))
             )}
           </tbody>
@@ -273,155 +211,11 @@ export default function Orders() {
 
       <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
 
-      {/* Order Detail Modal */}
-      <Modal
-        isOpen={!!selectedOrder}
+      <OrderDetailModal
+        order={selectedOrder}
         onClose={() => setSelectedOrder(null)}
-        title={selectedOrder ? `Order ${selectedOrder.orderNumber}` : ''}
-        maxWidth="max-w-2xl"
-      >
-        {selectedOrder && (
-          <div className="space-y-5">
-            <div className="flex items-center justify-between">
-              <StatusBadge status={selectedOrder.status} />
-              <span className="text-sm text-gray-500 capitalize">{selectedOrder.orderType}</span>
-            </div>
-
-            {/* Customer Info */}
-            <div className="bg-gray-50 rounded-lg p-3">
-              <p className="text-xs text-gray-500 mb-1">Customer</p>
-              <p className="font-medium">{selectedOrder.customer.fullName}</p>
-              <p className="text-sm text-gray-500">{selectedOrder.customer.phoneNumber}</p>
-            </div>
-
-            {/* Delivery Address */}
-            {selectedOrder.deliveryAddress && (
-              <div className="bg-gray-50 rounded-lg p-3">
-                <p className="text-xs text-gray-500 mb-1">Delivery Address</p>
-                <p className="text-sm">{selectedOrder.deliveryAddress.streetAddress}</p>
-                {selectedOrder.deliveryAddress.landmark && (
-                  <p className="text-sm text-gray-500">{selectedOrder.deliveryAddress.landmark}</p>
-                )}
-              </div>
-            )}
-
-            {/* Rider Info / Assignment */}
-            {selectedOrder.orderType === 'delivery' && (
-              <div className="bg-gray-50 rounded-lg p-3">
-                <p className="text-xs text-gray-500 mb-2">Rider</p>
-                {selectedOrder.rider ? (
-                  <div>
-                    <p className="font-medium">{selectedOrder.rider.fullName}</p>
-                    <p className="text-sm text-gray-500">{selectedOrder.rider.phoneNumber}</p>
-                  </div>
-                ) : ['confirmed', 'preparing', 'ready'].includes(selectedOrder.status) ? (
-                  <div className="flex gap-2">
-                    <select
-                      value={selectedRiderId}
-                      onChange={(e) => setSelectedRiderId(e.target.value)}
-                      className="flex-1 border border-gray-300 rounded-lg px-2 py-1.5 text-sm"
-                    >
-                      <option value="">Select a rider...</option>
-                      {riders.map((r) => (
-                        <option key={r.id} value={r.id}>{r.fullName}</option>
-                      ))}
-                    </select>
-                    <LoadingButton
-                      loading={actionLoading}
-                      disabled={!selectedRiderId}
-                      onClick={handleAssignRider}
-                      className="px-3 py-1.5"
-                    >
-                      Assign
-                    </LoadingButton>
-                  </div>
-                ) : (
-                  <p className="text-sm text-gray-400">No rider assigned</p>
-                )}
-              </div>
-            )}
-
-            {/* Items */}
-            <div>
-              <p className="text-xs text-gray-500 mb-2">Items</p>
-              {selectedOrder.orderPackages.map((pkg, i) => (
-                <div key={i} className="border border-gray-100 rounded-lg p-3 mb-2">
-                  <p className="font-medium text-sm mb-2">{pkg.packageName}</p>
-                  {pkg.items.map((item, j) => (
-                    <div key={j} className="flex justify-between text-sm text-gray-600">
-                      <span>{item.itemName} × {item.quantity}</span>
-                      <span>{formatCurrency(item.unitPrice * item.quantity)}</span>
-                    </div>
-                  ))}
-                </div>
-              ))}
-            </div>
-
-            {/* Totals */}
-            <div className="border-t border-gray-100 pt-3 space-y-1 text-sm">
-              <div className="flex justify-between text-gray-500">
-                <span>Subtotal</span>
-                <span>{formatCurrency(selectedOrder.subtotal)}</span>
-              </div>
-              <div className="flex justify-between text-gray-500">
-                <span>Delivery fee</span>
-                <span>{formatCurrency(selectedOrder.deliveryFee)}</span>
-              </div>
-              <div className="flex justify-between font-semibold text-base pt-1">
-                <span>Total</span>
-                <span>{formatCurrency(selectedOrder.totalAmount)}</span>
-              </div>
-            </div>
-
-            {/* Payment */}
-            {selectedOrder.payment && (
-              <div className="bg-gray-50 rounded-lg p-3 flex justify-between items-center">
-                <div>
-                  <p className="text-xs text-gray-500">Payment</p>
-                  <p className="text-sm capitalize">{selectedOrder.payment.paymentMethod.replace('_', ' ')}</p>
-                </div>
-                <StatusBadge status={selectedOrder.payment.paymentStatus} />
-              </div>
-            )}
-
-            {selectedOrder.specialInstructions && (
-              <div className="bg-amber-50 rounded-lg p-3">
-                <p className="text-xs text-amber-700 mb-1">Special Instructions</p>
-                <p className="text-sm text-amber-800">{selectedOrder.specialInstructions}</p>
-              </div>
-            )}
-
-            {/* Actions */}
-            {!['delivered', 'cancelled', 'refunded'].includes(selectedOrder.status) && (
-              <div className="flex gap-2 pt-2">
-                {getNextStatus(selectedOrder.status) && (
-                  <LoadingButton
-                    loading={actionLoading}
-                    onClick={() => handleUpdateStatus(getNextStatus(selectedOrder.status))}
-                    className="flex-1 py-2"
-                  >
-                    Mark as {getNextStatus(selectedOrder.status).replace('_', ' ')}
-                  </LoadingButton>
-                )}
-                <LoadingButton
-                  loading={actionLoading}
-                  onClick={() => setCancelDialogOpen(true)}
-                  className="px-4 py-2 border border-red-200 text-red-600 rounded-lg text-sm font-medium hover:bg-red-50"
-                >
-                  Cancel Order
-                </LoadingButton>
-              </div>
-            )}
-          </div>
-        )}
-      </Modal>
-      <ReasonDialog
-        isOpen={cancelDialogOpen}
-        title="Cancel Order"
-        onConfirm={confirmCancelOrder}
-        onCancel={() => setCancelDialogOpen(false)}
-        loading={actionLoading}
+        onOrderUpdated={handleOrderUpdated}
       />
-    </Layout>
+    </div>
   )
 }
