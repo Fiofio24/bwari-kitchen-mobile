@@ -7,9 +7,12 @@ import { scale } from '../constants/Sizes'; // <-- IMPORTED MASTER SCALE
 const { width } = Dimensions.get('window');
 
 const PROMO_DATA = [
-  { id: '1', title: 'Special Rice', description: 'Get 10% off on your first full package order', price: '₦5,400', originalPrice: '₦6,000', discount: '10% OFF', image: { uri: 'https://i.pinimg.com/736x/45/56/a2/4556a2517acf250f53f9d3b499841ed6.jpg' } },
-  { id: '2', title: 'Spicy Pasta', description: 'Free delivery on orders above ₦10,000', price: '₦4,500', originalPrice: '₦5,000', discount: 'FREE DEL', image: { uri: 'https://images.unsplash.com/photo-1551183053-bf91a1d81141?q=80&w=800&auto=format&fit=crop' } },
   { id: '3', title: 'Weekend Combo', description: 'Perfect for you and your friends', price: '₦12,000', originalPrice: '₦15,000', discount: '20% OFF', image: { uri: 'https://i.pinimg.com/736x/b6/34/81/b6348151e6180cfedf53bc08b5b21cc1.jpg' } },
+  { id: '4', title: 'Family Feast', description: 'Enjoy a hearty meal with your family', price: '₦18,000', originalPrice: '₦22,000', discount: '15% OFF', image: { uri: 'https://images.unsplash.com/photo-1600891964599-f61ba0e24092?q=80&w=800&auto=format&fit=crop' } },
+  { id: '5', title: 'Occasion for 200 guests', description: 'Perfect for your special event', price: '₦1,600,000', originalPrice: '₦2,000,000', discount: '20% OFF', buttonText: 'Book Now', image: { uri: 'https://i.pinimg.com/1200x/d2/2f/84/d22f84c03f838638f32ba66c2b632ef8.jpg' } },
+  { id: '7', title: 'Cake Delight', description: 'Sweet treats for your sweet tooth', price: '₦2,500', originalPrice: '₦3,000', discount: 'NEW Recipe', buttonText: 'Add to Package', image: { uri: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?q=80&w=800&auto=format&fit=crop' } },
+  { id: '10', title: 'Valentine\'s Special', description: 'Celebrate love with our special menu', price: '₦40,000', originalPrice: '₦50,000', discount: '20% OFF', image: { uri: 'https://images.unsplash.com/photo-1556911073-52527ac437f5?q=80&w=800&auto=format&fit=crop' } },
+  { id: '12', title: 'Biryani Rice', description: 'Aromatic and flavorful biryani rice', price: '₦3,000', originalPrice: '₦3,500', discount: 'NEW Recipe', buttonText: 'Add to Package', image: { uri: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?q=80&w=800&auto=format&fit=crop' } },
 ];
 
 export default function PromoSlider() {
@@ -57,7 +60,7 @@ export default function PromoSlider() {
             </View>
 
             <TouchableOpacity style={[styles.orderButton, { backgroundColor: colors.primary }]} activeOpacity={0.8}>
-              <Text style={styles.orderButtonText}>Order Now</Text>
+              <Text style={styles.orderButtonText}>{item.buttonText || 'Order Now'}</Text>
             </TouchableOpacity>
           </View>
 

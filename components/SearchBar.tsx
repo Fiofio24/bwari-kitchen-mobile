@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, TextInput, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext'; 
@@ -9,12 +9,25 @@ interface SearchBarProps {
   autoFocus?: boolean;
   onSubmit?: (text: string) => void; 
   onChangeText?: (text: string) => void;
+  value?: string; // FIX: Added value prop so parent screens can control the text
 }
 
-export default function SearchBar({ onPress, autoFocus, onSubmit, onChangeText }: SearchBarProps) {
+export default function SearchBar({ onPress, autoFocus, onSubmit, onChangeText, value }: SearchBarProps) {
   const { colors, isDark } = useTheme();
   
-  const [searchText, setSearchText] = useState('');
+  const [searchText, setSearchText] = useState(value || '');
+
+  // FIX: Sync internal text state with parent component's value
+  useEffect(() => {
+    if (value !== undefined) {
+      setSearchText(value);
+    }
+  }, [value]);
+
+  const handleClear = () => {
+    setSearchText('');
+    onChangeText?.('');
+  };
 
   const Container: any = onPress ? TouchableOpacity : View;
 
@@ -27,7 +40,7 @@ export default function SearchBar({ onPress, autoFocus, onSubmit, onChangeText }
       <Ionicons name="search" size={scale(20)} color={colors.textMuted} style={styles.searchIcon} />
       
       <TextInput 
-        placeholder="Search food" 
+        placeholder="Search food or categories..." 
         placeholderTextColor={colors.textMuted} 
         autoFocus={autoFocus}
         editable={!onPress} 
@@ -56,10 +69,18 @@ export default function SearchBar({ onPress, autoFocus, onSubmit, onChangeText }
           }
         ]} 
       />
+
+      {/* NEW: Clear Button (Only shows when typing and when it's an actual input box) */}
+      {searchText.length > 0 && !onPress && (
+        <TouchableOpacity 
+          style={styles.clearIcon} 
+          onPress={handleClear}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="close-circle" size={scale(20)} color={colors.textMuted} />
+        </TouchableOpacity>
+      )}
       
-      {/* <TouchableOpacity style={[styles.filterButton, { backgroundColor: colors.primary }]}>
-        <Ionicons name="options" size={scale(20)} color="#FFF" />
-      </TouchableOpacity> */}
     </Container>
   );
 }
@@ -68,7 +89,6 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    // paddingHorizontal: scale(20),
     zIndex: 0,
   },
   searchInput: {
@@ -76,13 +96,19 @@ const styles = StyleSheet.create({
     height: scale(50),
     width: '100%',
     borderRadius: scale(25),
-    paddingHorizontal: scale(40),
+    paddingHorizontal: scale(40), // This padding already gives enough room for both left and right icons!
     fontSize: scale(15),
   },
   searchIcon: {
     position: 'absolute',
     left: scale(15),
     zIndex: 1,
+  },
+  clearIcon: {
+    position: 'absolute',
+    right: scale(15),
+    zIndex: 2,
+    padding: scale(2),
   },
   filterButton: {
     height: scale(50),

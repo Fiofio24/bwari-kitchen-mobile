@@ -73,6 +73,12 @@ To Do List:
 57. Make sure to update the user agreement and privacy policy according to the client's approved taste
 58. (Victor) does the backend save the cart data? if not please it should
 59. (✅Done)the orders in profile page is not showing the right total numbers of order history it only shows 0 when empty and 1 no matter how many. make sure it doesn't calculate orders that are pending or cancled
+60. (Victor) Fix the 404 error in the admin page
+61. (Victor) There should be a print receipt feature on the admin to print orders receipt 
+62. (Victor) Work on the delivery fee, it's not refleccting on the customer app
+63. (Victor) for the search page use should be able to search by categories also eg. "Drinks" then all items under drinks will appear
+64. after user clicks a search under "others also searches" that search eg. "Jollof Rice" should auto fill the search box with same "Jollof Rice" instead of leaving it empty
+65. Fix the accuracy of get location feature it is very poor currently
 
 Future updates:
 1. 

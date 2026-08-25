@@ -97,8 +97,18 @@ export default function SearchScreen() {
     const q = query.trim().toLowerCase();
     if (!q) return { itemResults: [], packageResults: [] };
 
-    const itemResults = items.filter(item => item.name.toLowerCase().includes(q));
-    const packageResults = packages.filter(pkg => pkg.name.toLowerCase().includes(q));
+    // FIX: Filter by item name AND category name!
+    const itemResults = items.filter(item => {
+      const categoryName = typeof item.category === 'string' ? item.category : (item.category?.name || '');
+      return item.name.toLowerCase().includes(q) || categoryName.toLowerCase().includes(q);
+    });
+
+    const packageResults = packages.filter(pkg => {
+      // Packages might not have direct category mappings easily accessible on search, 
+      // but we will safely check it if it exists.
+      const categoryName = typeof (pkg as any).category === 'string' ? (pkg as any).category : ((pkg as any).category?.name || '');
+      return pkg.name.toLowerCase().includes(q) || categoryName.toLowerCase().includes(q);
+    });
 
     return { itemResults, packageResults };
   }, [query, items, packages]);
@@ -108,7 +118,7 @@ export default function SearchScreen() {
 
   // Trending searches remain a static suggestion list for now — no analytics
   // backend exists yet to compute genuinely popular terms.
-  const trendingSearches = ['Jollof Rice', 'Egusi Soup', 'Suya', 'Pounded Yam'];
+  const trendingSearches = ['Jollof Rice', 'Egusi Soup', 'Drinks', 'Pounded Yam'];
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background, paddingTop }]}>
@@ -126,6 +136,7 @@ export default function SearchScreen() {
         <View style={styles.searchWrapper}>
           <SearchBar 
             autoFocus={true} 
+            value={query} // FIX: Ensures tapping a tag populates the text box!
             onSubmit={(text: string) => handleAddSearch(text)} 
             onChangeText={setQuery}
           />
@@ -145,7 +156,10 @@ export default function SearchScreen() {
                       key={item.id} 
                       style={styles.resultRow} 
                       activeOpacity={0.7}
-                      onPress={() => router.push({ pathname: '/details', params: { id: item.id } })}
+                      onPress={() => {
+                        handleAddSearch(item.name);
+                        router.push({ pathname: '/details', params: { id: item.id } });
+                      }}
                     >
                       {item.imageUrl ? (
                         <Image source={{ uri: item.imageUrl }} style={styles.resultImage} />
@@ -170,7 +184,10 @@ export default function SearchScreen() {
                       key={pkg.id} 
                       style={styles.resultRow} 
                       activeOpacity={0.7}
-                      onPress={() => router.push({ pathname: '/details', params: { id: pkg.id } })}
+                      onPress={() => {
+                        handleAddSearch(pkg.name);
+                        router.push({ pathname: '/details', params: { id: pkg.id } });
+                      }}
                     >
                       {pkg.imageUrl ? (
                         <Image source={{ uri: pkg.imageUrl }} style={styles.resultImage} />
