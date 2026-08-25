@@ -190,7 +190,7 @@ export default function DraggableOrderButton() {
         {hasActiveOrders && (
           <View style={styles.badgeContainer}>
             <Text style={styles.badgeText}>
-              {activeOrderCount > 9 ? '9+' : activeOrderCount}
+              {activeOrderCount > 99 ? '99+' : activeOrderCount}
             </Text>
           </View>
         )}

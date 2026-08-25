@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   View, 
   Text, 
@@ -8,6 +8,9 @@ import {
   Platform, 
   Keyboard,
   Image,
+  Animated,
+  PanResponder,
+  Dimensions
 } from 'react-native';
 import { useSafeRouter } from '../hooks/useSafeRouter';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,8 +21,9 @@ import { useMenu } from '../context/MenuContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { StatusBar } from 'expo-status-bar';
 import { Colors } from '../constants/Colors';
-import { scale } from '../constants/Sizes'; // <-- IMPORTED MASTER SCALE
+import { scale } from '../constants/Sizes'; 
 
+const { height } = Dimensions.get('window');
 const STORAGE_KEY = '@bwari_kitchen_recent_searches';
 
 const safeStorage = {
@@ -64,6 +68,40 @@ export default function SearchScreen() {
   const [query, setQuery] = useState('');
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
 
+  const slideAnim = useRef(new Animated.Value(0)).current;
+  const scrollY = useRef(0);
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, gestureState) => {
+        // THE MAGIC FIX: Only steal the gesture if we are at the very top of the list!
+        return scrollY.current <= 5 && gestureState.dy > 10 && Math.abs(gestureState.dy) > Math.abs(gestureState.dx);
+      },
+      onPanResponderMove: (_, gestureState) => {
+        if (gestureState.dy > 0) {
+          slideAnim.setValue(gestureState.dy);
+        }
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        if (gestureState.dy > scale(100) || gestureState.vy > 1.0) {
+          Keyboard.dismiss();
+          Animated.timing(slideAnim, {
+            toValue: height,
+            duration: 250,
+            useNativeDriver: true
+          }).start(() => router.back());
+        } else {
+          Animated.spring(slideAnim, {
+            toValue: 0,
+            friction: 8,
+            tension: 60,
+            useNativeDriver: true
+          }).start();
+        }
+      }
+    })
+  ).current;
+
   useEffect(() => {
     const loadSearches = async () => {
       const savedData = await safeStorage.getItem(STORAGE_KEY);
@@ -97,15 +135,12 @@ export default function SearchScreen() {
     const q = query.trim().toLowerCase();
     if (!q) return { itemResults: [], packageResults: [] };
 
-    // FIX: Filter by item name AND category name!
     const itemResults = items.filter(item => {
       const categoryName = typeof item.category === 'string' ? item.category : (item.category?.name || '');
       return item.name.toLowerCase().includes(q) || categoryName.toLowerCase().includes(q);
     });
 
     const packageResults = packages.filter(pkg => {
-      // Packages might not have direct category mappings easily accessible on search, 
-      // but we will safely check it if it exists.
       const categoryName = typeof (pkg as any).category === 'string' ? (pkg as any).category : ((pkg as any).category?.name || '');
       return pkg.name.toLowerCase().includes(q) || categoryName.toLowerCase().includes(q);
     });
@@ -116,12 +151,20 @@ export default function SearchScreen() {
   const hasResults = results.itemResults.length > 0 || results.packageResults.length > 0;
   const isSearching = query.trim().length > 0;
 
-  // Trending searches remain a static suggestion list for now — no analytics
-  // backend exists yet to compute genuinely popular terms.
   const trendingSearches = ['Jollof Rice', 'Egusi Soup', 'Drinks', 'Pounded Yam'];
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background, paddingTop }]}>
+    <Animated.View 
+      {...panResponder.panHandlers}
+      style={[
+        styles.container, 
+        { 
+          backgroundColor: colors.background, 
+          paddingTop,
+          transform: [{ translateY: slideAnim }]
+        }
+      ]}
+    >
       <StatusBar style={isDark ? "light" : "dark"} />
       
       <View style={styles.header}>
@@ -136,14 +179,19 @@ export default function SearchScreen() {
         <View style={styles.searchWrapper}>
           <SearchBar 
             autoFocus={true} 
-            value={query} // FIX: Ensures tapping a tag populates the text box!
+            value={query} 
             onSubmit={(text: string) => handleAddSearch(text)} 
             onChangeText={setQuery}
           />
         </View>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+      <ScrollView 
+        showsVerticalScrollIndicator={false} 
+        contentContainerStyle={styles.scrollContent}
+        onScroll={(e) => { scrollY.current = e.nativeEvent.contentOffset.y; }}
+        scrollEventThrottle={16}
+      >
         
         {isSearching ? (
           hasResults ? (
@@ -271,7 +319,7 @@ export default function SearchScreen() {
           </>
         )}
       </ScrollView>
-    </View>
+    </Animated.View>
   );
 }
 

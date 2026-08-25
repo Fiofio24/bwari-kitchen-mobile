@@ -1,29 +1,29 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  TouchableOpacity, 
-  Animated, 
-  Dimensions, 
-  TouchableWithoutFeedback, 
-  Platform, 
-  Modal,
-  Image,
-  ScrollView
-} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur'; 
-import { LinearGradient } from 'expo-linear-gradient'; 
-import { useTheme } from '../context/ThemeContext'; 
-import { useUser } from '../context/UserContext'; 
-import { useAddresses } from '../context/AddressContext'; 
-import { useSafeAreaInsets } from 'react-native-safe-area-context'; 
-import { useSafeRouter } from '../hooks/useSafeRouter'; 
-import api from '../app/lib/api'; 
+import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
 import * as SecureStore from 'expo-secure-store';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  Animated,
+  Dimensions,
+  Image,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import api from '../app/lib/api';
+import { scale } from '../constants/Sizes';
+import { useAddresses } from '../context/AddressContext';
+import { useTheme } from '../context/ThemeContext';
+import { useUser } from '../context/UserContext';
+import { useSafeRouter } from '../hooks/useSafeRouter';
 import ActionModal from './ActionModal';
-import { scale } from '../constants/Sizes'; 
 
 const { width } = Dimensions.get('window');
 const SIDEBAR_WIDTH = width * 0.75; 
@@ -302,7 +302,7 @@ export default function Sidebar({ visible, onClose, menuItems, profileOverride }
 
             <View style={styles.versionContainer}>
               <Text style={[styles.versionText, { color: colors.textMuted }]}>Bwari Kitchen v2.4.0</Text>
-              <Text style={[styles.legalText, { color: colors.textMuted }]}>© 2026 fioTecz Studio</Text>
+              <Text style={[styles.legalText, { color: colors.textMuted }]}>© 2026 fiowebIN Studio</Text>
             </View>
           </ScrollView>
           
