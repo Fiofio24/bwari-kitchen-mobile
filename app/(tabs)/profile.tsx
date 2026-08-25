@@ -9,7 +9,8 @@ import {
   Switch, 
   Share, 
   Image, 
-  Alert 
+  Alert,
+  ActivityIndicator
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker'; 
@@ -38,20 +39,26 @@ export default function ProfileScreen() {
   
   const [isSignOutModalVisible, setIsSignOutModalVisible] = useState(false);
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
-  const [totalOrders, setTotalOrders] = useState(0);
+  
+  // FIX: Start as null to distinguish between "loading" and "zero orders"
+  const [totalOrders, setTotalOrders] = useState<number | null>(null);
 
   const userStats = { points: 450, referralCode: "BWARI-SERIFF-99" };
 
-  // FIX: useFocusEffect ensures the number updates every time you open the profile tab!
+  // FIX: Silent Background Fetching
+  // Shows a spinner ONLY on the very first load. On subsequent tab visits, 
+  // it shows the known number immediately while silently updating in the background.
   useFocusEffect(
     useCallback(() => {
+      let isActive = true;
+
       const fetchOrdersCount = async () => {
         try {
-          // Fetch a larger list to accurately count history
           const res = await api.get('/api/orders?limit=100'); 
+          if (!isActive) return;
+
           const ordersList = res.data.orders || [];
           
-          // Filter out pending, cancelled, and refunded orders
           const completedOrders = ordersList.filter((order: any) => {
             const status = order.status?.toLowerCase() || '';
             return !['pending', 'cancelled', 'refunded'].includes(status);
@@ -60,10 +67,18 @@ export default function ProfileScreen() {
           setTotalOrders(completedOrders.length);
         } catch (e) {
           console.warn('Failed to load order count', e);
+          // Only fallback to 0 if we completely failed and have no previous data to show
+          if (isActive && totalOrders === null) {
+            setTotalOrders(0);
+          }
         }
       };
       
       fetchOrdersCount();
+
+      return () => {
+        isActive = false;
+      };
     }, [])
   );
 
@@ -169,7 +184,11 @@ export default function ProfileScreen() {
               onPress={() => router.push('/my-orders')}
               activeOpacity={0.7}
             >
-              <Text style={[styles.statValue, { color: colors.text }]}>{totalOrders}</Text>
+              {totalOrders === null ? (
+                <ActivityIndicator size="small" color={colors.primary} style={{ height: scale(19) }} />
+              ) : (
+                <Text style={[styles.statValue, { color: colors.text }]}>{totalOrders}</Text>
+              )}
               <Text style={[styles.statLabel, { color: colors.textMuted }]}>Orders</Text>
             </TouchableOpacity>
             

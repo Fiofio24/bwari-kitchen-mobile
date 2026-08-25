@@ -73,6 +73,19 @@ To Do List:
 57. Make sure to update the user agreement and privacy policy according to the client's approved taste
 58. (Victor) does the backend save the cart data? if not please it should
 59. (✅Done)the orders in profile page is not showing the right total numbers of order history it only shows 0 when empty and 1 no matter how many. make sure it doesn't calculate orders that are pending or cancled
+60. (Victor) Fix the 404 error in the admin page
+61. (Victor) There should be a print receipt feature on the admin to print orders receipt 
+62. (Victor) Work on the delivery fee, it's not refleccting on the customer app
+63. (✅Done) for the search page use should be able to search by categories also eg. "Drinks" then all items under drinks will appear
+64. (✅Done) after user clicks a search under "others also searches" that search eg. "Jollof Rice" should auto fill the search box with same "Jollof Rice" instead of leaving it empty
+65. Fix the accuracy of get location feature it is very poor currently
+66. (Victor) add "Notifications" in the admin dashboard menu
+67. (✅sesarch page Done remain QuickEditPackage)when on search page and QuickEditPackage.tsx user should be able to exit that page or modal by sliding down not only by clicking the back button or close icon
+68. (✅Done)on the preofile page the orders at the top that shows the total orders instead of just showing "0" when it is still fetching the total numbers of orders it should show a loading spinner and it shouldn't be that everytime user goes to profile that it will always want to reload and fetch it should only fetch when it sense that a +1 order exist so it will add
+69. (Victor) in admin settings there should be space to add social media handles link so the social media button in the profile page of customer app at the very end on click can navigate to the kitchen's social media page
+70. For the app icon try and do dark and light mode for it
+71. work on the notification preferences page, make sure to remove any unecessary option
+72. Remove searchBar from the quick edit package page
 
 Future updates:
 1. 
@@ -103,10 +116,10 @@ User testing feedbacks
 11. (✅Done) (from help page) From this frequent question what about adding when someone plays an other due to network he was debited but the receiver wasn't credited
 12. (from profile page) This refer and earn how will the customer get the money , if it will be there maybe there should be a wallet in the app some one an send money directly to the app. (✅Done????)At that orders showing 24 I clicked it 👉🏻...Comes out empty (change the hard coded number of order in the profile page from 24 to actually show total numbers of orders customer had placed in that account)
 13. (✅Done)(in the home page)There are no categories for soups and bakes sir. (this is because home and menu share same categories list so even though packages have not been created under bakes and soups it will still show but say "This category is not available in the Kitchen"...instead it should be that when there is no package under those categories the category shouldn't show at all in the list even though that category exits in the menu).
-14. 
 
 
 IOS UI/UX problems
 1. the slide down to load for the index page is not working it is just over sliding the page that the red greeting section totally slides down and start showing the white background of the app but it is working fine on android...Note:the menu, favorite etc pages slide down to reload feature are working just fine 
 2. the reload spinner is not showing on the home page 
 3. the slide down to load for the details page is not working it is just over sliding the page that the item or package image section totally slides down and start showing the white background of the app but it is working fine on android...Note:the menu, favorite etc pages slide down to reload feature are working just fine
+4. After searching on the search page when user clicks the item or package they searched the details page then slides up partially like a animated modal instead of it to go to the details page as a full page then when you keep navigating to various pages from that details page the next page acts same way then it looks like the search page is minimizing these other pages. but clicking on a package on the home page the details page comes out normally like a full page just the search page that may be the cause...note this problem only happens on IOS
