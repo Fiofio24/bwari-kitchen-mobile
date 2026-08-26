@@ -40,7 +40,12 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
   
   const [inputText, setInputText] = useState(''); 
   const [isRendering, setIsRendering] = useState(visible);
+  
   const [isCapturingLocation, setIsCapturingLocation] = useState(false);
+  const [isSavingAddress, setIsSavingAddress] = useState(false);
+  
+  const [isWaitingToSelect, setIsWaitingToSelect] = useState(false);
+  const prevAddressIds = useRef(new Set(addresses.map(a => a.id)));
   
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   
@@ -68,21 +73,60 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
     if (visible) {
       setIsRendering(true);
       setInputText('');
+      
+      setIsWaitingToSelect(false);
+      setIsCapturingLocation(false);
+      setIsSavingAddress(false);
+      prevAddressIds.current = new Set(addresses.map(a => a.id));
+      
       Animated.parallel([
         Animated.timing(fadeAnim, { toValue: 1, duration: 300, useNativeDriver: true }),
         Animated.timing(slideAnim, { toValue: 0, duration: 350, easing: Easing.out(Easing.poly(4)), useNativeDriver: true })
       ]).start();
     } else if (!visible && isRendering) {
       Keyboard.dismiss();
+      
+      setIsCapturingLocation(false);
+      setIsSavingAddress(false);
+      setIsWaitingToSelect(false);
+
       Animated.parallel([
         Animated.timing(fadeAnim, { toValue: 0, duration: 250, useNativeDriver: true }),
         Animated.timing(slideAnim, { toValue: scale(500), duration: 250, useNativeDriver: true })
       ]).start(() => setIsRendering(false));
     }
-  }, [visible, fadeAnim, slideAnim, isRendering]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible, fadeAnim, slideAnim, isRendering]); 
 
-  // PRO UX FIX: We set the active address instantly, then wait a split second before closing
-  // so the user actually sees the red checkmark appear on their selection!
+  // --- THE SMART LISTENER ---
+  useEffect(() => {
+    // FIX: Using ReturnType allows it to seamlessly handle Web/Node/Native timeout IDs
+    let timeout: ReturnType<typeof setTimeout>;
+    
+    if (isWaitingToSelect) {
+      const currentIds = addresses.map(a => a.id);
+      const newId = currentIds.find(id => !prevAddressIds.current.has(id));
+
+      if (newId) {
+        setActiveAddress(newId);
+        setIsWaitingToSelect(false);
+        setTimeout(() => {
+          onClose();
+        }, 350);
+      } else {
+        timeout = setTimeout(() => {
+          setIsWaitingToSelect(false);
+          onClose(); 
+        }, 3000);
+      }
+    }
+    
+    prevAddressIds.current = new Set(addresses.map(a => a.id));
+    
+    return () => clearTimeout(timeout);
+    // FIX: Added onClose and setActiveAddress to satisfy ESLint
+  }, [addresses, isWaitingToSelect, onClose, setActiveAddress]);
+
   const handleSelectAddress = (id: string) => { 
     setActiveAddress(id); 
     setTimeout(() => {
@@ -113,7 +157,8 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
       } else {
         setInputText('Unknown Location');
       }
-    } catch (error) {
+    } catch (err) {
+      console.warn("Location fetch error:", err);
       Alert.alert('Location Error', 'Could not fetch your precise location.');
     } finally {
       setIsCapturingLocation(false);
@@ -122,7 +167,7 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
 
   const handleSaveAndUse = async () => {
     const rawText = inputText.trim() || 'My current location';
-    setIsCapturingLocation(true);
+    setIsSavingAddress(true); 
     
     try {
       const parts = rawText.split(',').map(p => p.trim());
@@ -135,19 +180,30 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
         parsedArea = parts.slice(1).join(', '); 
       }
 
-      const result = await addCurrentLocationAddress({
+      const result: any = await addCurrentLocationAddress({
         label: 'Current Location',
         streetAddress: parsedStreet,
         area: parsedArea,
       });
       
       if (result.success) {
-        onClose();
+        const newAddressId = result.id || result.address?.id || result.data?.id;
+        
+        if (newAddressId) {
+          setActiveAddress(newAddressId);
+          setTimeout(() => {
+            onClose();
+          }, 350);
+        } else {
+          setIsWaitingToSelect(true);
+        }
       } else {
         Alert.alert('Location Error', result.error || 'Could not save your location.');
       }
+    } catch (err) {
+      console.warn("Save Error:", err);
     } finally {
-      setIsCapturingLocation(false);
+      setIsSavingAddress(false); 
     }
   };
   
@@ -222,7 +278,7 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
               activeOpacity={0.7} 
               disabled={isCapturingLocation}
             >
-              {isCapturingLocation ? (
+              {isCapturingLocation && !isWaitingToSelect ? (
                 <ActivityIndicator size="small" color={Colors.primary} />
               ) : (
                 <Ionicons name="locate" size={scale(20)} color={Colors.primary} />
@@ -234,9 +290,13 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
               style={[styles.actionBtn, styles.saveBtn, { opacity: inputText.trim().length > 0 ? 1 : 0.5 }]} 
               onPress={handleSaveAndUse} 
               activeOpacity={0.7} 
-              disabled={inputText.trim().length === 0 || isCapturingLocation}
+              disabled={inputText.trim().length === 0 || isSavingAddress || isWaitingToSelect}
             >
-              <Text style={styles.saveBtnText}>Save & Use</Text>
+              {isSavingAddress || isWaitingToSelect ? (
+                <ActivityIndicator size="small" color="#FFF" />
+              ) : (
+                <Text style={styles.saveBtnText}>Save & Use</Text>
+              )}
             </TouchableOpacity>
           </View>
           
@@ -249,7 +309,6 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
             {inputText.length === 0 && <Text style={[styles.savedTitle, { color: colors.textMuted }]}>Saved Addresses</Text>}
             
             {filteredAddresses.map((item) => {
-              // FOOLPROOF FIX: We wrap both IDs in String() to completely prevent Type Mismatches
               const isActive = activeAddress != null && String(activeAddress.id) === String(item.id);
               
               return (
@@ -274,7 +333,6 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
                     />
                   </View>
                   
-                  {/* flex: 1 on this View naturally pushes the checkmark to the far right! */}
                   <View style={styles.addressTextStack}>
                     <Text style={[styles.quickAddressTitle, { color: isActive ? Colors.primary : colors.text }]}>
                       {item.label || 'Address'} {item.isDefault && <Text style={{ color: Colors.primary, fontSize: scale(12) }}>(Default)</Text>}
@@ -284,7 +342,6 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
                     </Text>
                   </View>
                   
-                  {/* The Active Checkmark */}
                   {isActive && (
                     <Ionicons name="checkmark-circle" size={scale(24)} color={Colors.primary} />
                   )}
@@ -333,4 +390,4 @@ const styles = StyleSheet.create({
   noResultsText: { textAlign: 'center', marginTop: scale(20), marginBottom: scale(10), fontStyle: 'italic', paddingHorizontal: scale(10) },
   manageBtn: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: scale(20), marginTop: scale(5), borderTopWidth: 1 },
   manageBtnText: { fontSize: scale(16), fontWeight: 'bold' },
-});
+}); 

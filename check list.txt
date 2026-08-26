@@ -26,7 +26,7 @@ To Do List:
 26. (Victor) the admin page is too sluggish it will frustrate them
 27. (✅Done) ON changing location on checkout page or home page the newly changed location shouldn't automatically change to default location onless they change it right from Manage Addresses page
 28. (Victor) In the admin menu page under items, the list of items is not scrollable to the right on mobile view. it should be just like the categories list is scrollable to the right on mobile view
-29. (🚩Need confirmation)in case of a situation where admin completely deletes an item in the menu page of the app the item disappears that's good but in the combo package in home page and packages in cart they stay as if nothing happened then when i want to edit a plate that the item no longer exist the item name becomes "unknown item" only whe i want to edit that a user can realise something is wrong with that particular item
+29. (✅Done) in case of a situation where admin completely deletes an item in the menu page of the app the item disappears that's good but in the combo package in home page and packages in cart they stay as if nothing happened then when i want to edit a plate that the item no longer exist the item name becomes "unknown item" only whe i want to edit that a user can realise something is wrong with that particular item
 30. (✅Done)The image in QuickEditPackage.tsx above "Your package is empty" is not showing the right image which is "../assets/images/Icon&logo/empty-package.png"
 31. (✅Done) Don't forget to remove the user testing feadback feature when ready for real build for official lunch version
 32. (✅Done)Add a home button in every page's topnav
@@ -83,9 +83,10 @@ To Do List:
 67. (✅sesarch page Done remain QuickEditPackage)when on search page and QuickEditPackage.tsx user should be able to exit that page or modal by sliding down not only by clicking the back button or close icon
 68. (✅Done)on the preofile page the orders at the top that shows the total orders instead of just showing "0" when it is still fetching the total numbers of orders it should show a loading spinner and it shouldn't be that everytime user goes to profile that it will always want to reload and fetch it should only fetch when it sense that a +1 order exist so it will add
 69. (Victor) in admin settings there should be space to add social media handles link so the social media button in the profile page of customer app at the very end on click can navigate to the kitchen's social media page
-70. For the app icon try and do dark and light mode for it
-71. work on the notification preferences page, make sure to remove any unecessary option
-72. Remove searchBar from the quick edit package page
+70. (✅Atempte, not confirmed)For the app icon try and do dark and light mode for it
+71. () Work on the notification preferences page, make sure to remove any unecessary option
+72. (✅Done) Remove searchBar from the quick edit package page
+73. (Victor) in the admin settings page there should be control to disable dilivery or pickup on the checkout page so incase delivery riders have closed user won't be able to select delivery they'll have to come pickup
 
 Future updates:
 1. 
