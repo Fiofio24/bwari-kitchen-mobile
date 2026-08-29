@@ -17,6 +17,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location'; 
+import MapView, { Region } from 'react-native-maps'; // <-- MAP IMPORT
 import { Colors } from '../constants/Colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context'; 
 import { useTheme } from '../context/ThemeContext';
@@ -32,8 +33,20 @@ interface AddressSelectorModalProps {
   onClose: () => void;
 }
 
+// SMART ICON IDENTIFIER
+const getIconForLabel = (label?: string | null): any => {
+  const text = (label || '').toLowerCase();
+  if (text.includes('home')) return 'home';
+  if (text.includes('work') || text.includes('office')) return 'briefcase';
+  if (text.includes('school') || text.includes('college') || text.includes('university') || text.includes('campus')) return 'school';
+  if (text.includes('gym') || text.includes('fitness')) return 'barbell';
+  if (text.includes('friend') || text.includes('family') || text.includes('parent')) return 'people';
+  if (text.includes('hotel') || text.includes('lodge')) return 'bed';
+  return 'location';
+};
+
 export default function AddressSelectorModal({ visible, onClose }: AddressSelectorModalProps) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const router = useSafeRouter();
   const { addresses, activeAddress, setActiveAddress, addCurrentLocationAddress } = useAddresses();
@@ -48,6 +61,11 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
   const prevAddressIds = useRef(new Set(addresses.map(a => a.id)));
   
   const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  // MAP STATES
+  const [isMapMode, setIsMapMode] = useState(false);
+  const [mapRegion, setMapRegion] = useState<Region | null>(null);
+  const [isConfirmingMap, setIsConfirmingMap] = useState(false);
   
   const fadeAnim = useRef(new Animated.Value(0)).current; 
   const slideAnim = useRef(new Animated.Value(scale(500))).current; 
@@ -77,6 +95,7 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
       setIsWaitingToSelect(false);
       setIsCapturingLocation(false);
       setIsSavingAddress(false);
+      setIsMapMode(false);
       prevAddressIds.current = new Set(addresses.map(a => a.id));
       
       Animated.parallel([
@@ -89,6 +108,7 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
       setIsCapturingLocation(false);
       setIsSavingAddress(false);
       setIsWaitingToSelect(false);
+      setIsConfirmingMap(false);
 
       Animated.parallel([
         Animated.timing(fadeAnim, { toValue: 0, duration: 250, useNativeDriver: true }),
@@ -98,9 +118,7 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible, fadeAnim, slideAnim, isRendering]); 
 
-  // --- THE SMART LISTENER ---
   useEffect(() => {
-    // FIX: Using ReturnType allows it to seamlessly handle Web/Node/Native timeout IDs
     let timeout: ReturnType<typeof setTimeout>;
     
     if (isWaitingToSelect) {
@@ -124,7 +142,6 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
     prevAddressIds.current = new Set(addresses.map(a => a.id));
     
     return () => clearTimeout(timeout);
-    // FIX: Added onClose and setActiveAddress to satisfy ESLint
   }, [addresses, isWaitingToSelect, onClose, setActiveAddress]);
 
   const handleSelectAddress = (id: string) => { 
@@ -134,7 +151,13 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
     }, 350);
   };
 
+  // OPENS THE MAP
   const handleGetLocation = async () => {
+    if (isMapMode) {
+      setIsMapMode(false); 
+      return;
+    }
+
     setIsCapturingLocation(true);
     try {
       let { status } = await Location.requestForegroundPermissionsAsync();
@@ -144,24 +167,62 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
         return;
       }
 
-      let location = await Location.getCurrentPositionAsync({});
-      let geocode = await Location.reverseGeocodeAsync({
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude
+      let location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Highest,
       });
 
-      if (geocode && geocode.length > 0) {
-        const place = geocode[0];
-        const addressString = [place.street || place.name, place.city, place.region].filter(Boolean).join(', ');
-        setInputText(addressString); 
-      } else {
-        setInputText('Unknown Location');
-      }
+      setMapRegion({
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+        latitudeDelta: 0.005,
+        longitudeDelta: 0.005,
+      });
+      setIsMapMode(true);
     } catch (err) {
       console.warn("Location fetch error:", err);
       Alert.alert('Location Error', 'Could not fetch your precise location.');
     } finally {
       setIsCapturingLocation(false);
+    }
+  };
+
+  // CONFIRMS PIN AND GETS ADDRESS
+  const handleConfirmMapLocation = async () => {
+    if (!mapRegion) return;
+    setIsConfirmingMap(true);
+
+    try {
+      let geocode = await Location.reverseGeocodeAsync({
+        latitude: mapRegion.latitude,
+        longitude: mapRegion.longitude
+      });
+
+      if (geocode && geocode.length > 0) {
+        const place = geocode[0];
+        
+        const name = place.name;
+        const street = place.street;
+        let localArea = '';
+
+        if (name && street && name !== street) {
+          localArea = `${name}, ${street}`; 
+        } else {
+          localArea = name || street || '';
+        }
+
+        const cityOrDistrict = place.city || place.district;
+        const addressString = [localArea, cityOrDistrict, place.region].filter(Boolean).join(', ');
+        
+        setInputText(addressString); 
+      } else {
+        setInputText('Unknown Location');
+      }
+      setIsMapMode(false); 
+    } catch (error) {
+      console.warn("Geocode error:", error);
+      Alert.alert('Location Error', 'Could not translate this pin into an address.');
+    } finally {
+      setIsConfirmingMap(false);
     }
   };
 
@@ -276,21 +337,23 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
               style={[styles.actionBtn, styles.locationBtn]} 
               onPress={handleGetLocation} 
               activeOpacity={0.7} 
-              disabled={isCapturingLocation}
+              disabled={isCapturingLocation || isWaitingToSelect}
             >
-              {isCapturingLocation && !isWaitingToSelect ? (
+              {isCapturingLocation ? (
                 <ActivityIndicator size="small" color={Colors.primary} />
               ) : (
-                <Ionicons name="locate" size={scale(20)} color={Colors.primary} />
+                <Ionicons name={isMapMode ? "close" : "locate"} size={scale(20)} color={Colors.primary} />
               )}
-              <Text style={[styles.actionBtnText, { color: Colors.primary }]}>Get Location</Text>
+              <Text style={[styles.actionBtnText, { color: Colors.primary }]}>
+                {isMapMode ? "Cancel Map" : "Get Location"}
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity 
               style={[styles.actionBtn, styles.saveBtn, { opacity: inputText.trim().length > 0 ? 1 : 0.5 }]} 
               onPress={handleSaveAndUse} 
               activeOpacity={0.7} 
-              disabled={inputText.trim().length === 0 || isSavingAddress || isWaitingToSelect}
+              disabled={inputText.trim().length === 0 || isSavingAddress || isWaitingToSelect || isMapMode}
             >
               {isSavingAddress || isWaitingToSelect ? (
                 <ActivityIndicator size="small" color="#FFF" />
@@ -300,66 +363,100 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
             </TouchableOpacity>
           </View>
           
-          <ScrollView 
-            showsVerticalScrollIndicator={false} 
-            keyboardShouldPersistTaps="handled"
-            style={{ maxHeight: scale(400) }}
-          >
-            
-            {inputText.length === 0 && <Text style={[styles.savedTitle, { color: colors.textMuted }]}>Saved Addresses</Text>}
-            
-            {filteredAddresses.map((item) => {
-              const isActive = activeAddress != null && String(activeAddress.id) === String(item.id);
+          {isMapMode && mapRegion ? (
+            <View style={styles.mapContainer}>
+              <MapView 
+                style={styles.mapView}
+                initialRegion={mapRegion}
+                onRegionChangeComplete={(region) => setMapRegion(region)}
+                showsUserLocation={true}
+                userInterfaceStyle={isDark ? "dark" : "light"}
+              />
               
-              return (
-                <TouchableOpacity 
-                  key={item.id} 
-                  style={[
-                    styles.quickAddressRow, 
-                    { 
-                      borderBottomColor: colors.border,
-                      backgroundColor: isActive ? 'rgba(211, 47, 47, 0.05)' : 'transparent', 
-                      paddingHorizontal: isActive ? scale(10) : 0, 
-                      borderRadius: isActive ? scale(12) : 0,
-                    }
-                  ]} 
-                  onPress={() => handleSelectAddress(item.id)}
-                >
-                  <View style={[styles.iconBox, { backgroundColor: isActive ? 'rgba(211, 47, 47, 0.1)' : 'rgba(150,150,150,0.1)' }]}>
-                    <Ionicons 
-                      name={item.label?.toLowerCase() === 'home' ? 'home' : 'location'} 
-                      size={scale(20)} 
-                      color={isActive ? Colors.primary : colors.textMuted} 
-                    />
-                  </View>
-                  
-                  <View style={styles.addressTextStack}>
-                    <Text style={[styles.quickAddressTitle, { color: isActive ? Colors.primary : colors.text }]}>
-                      {item.label || 'Address'} {item.isDefault && <Text style={{ color: Colors.primary, fontSize: scale(12) }}>(Default)</Text>}
-                    </Text>
-                    <Text style={[styles.quickAddressDetail, { color: colors.textMuted }]}>
-                      {getAddressLine(item)}
-                    </Text>
-                  </View>
-                  
-                  {isActive && (
-                    <Ionicons name="checkmark-circle" size={scale(24)} color={Colors.primary} />
-                  )}
-                </TouchableOpacity>
-              );
-            })}
-            
-            {inputText.length > 0 && filteredAddresses.length === 0 && (
-              <Text style={[styles.noResultsText, { color: colors.textMuted }]}>
-                No saved addresses match &rdquo;{inputText}&rdquo;. Hit &rdquo;Save & Use&rdquo; to add it!
-              </Text>
-            )}
-          </ScrollView>
+              <View style={styles.mapCenterPin} pointerEvents="none">
+                <Ionicons name="location" size={scale(40)} color={Colors.primary} />
+                <View style={styles.pinShadow} />
+              </View>
+
+              <View style={styles.mapInstructions}>
+                <Text style={[styles.mapInstructionText, { color: colors.text }]}>Drag map to adjust pin</Text>
+              </View>
+
+              <TouchableOpacity 
+                style={[styles.confirmMapBtn, { backgroundColor: Colors.primary }]}
+                onPress={handleConfirmMapLocation}
+                disabled={isConfirmingMap}
+              >
+                {isConfirmingMap ? (
+                  <ActivityIndicator size="small" color="#FFF" />
+                ) : (
+                  <Text style={styles.confirmMapBtnText}>Confirm this location</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <ScrollView 
+              showsVerticalScrollIndicator={false} 
+              keyboardShouldPersistTaps="handled"
+              style={{ maxHeight: scale(400) }}
+            >
+              {inputText.length === 0 && <Text style={[styles.savedTitle, { color: colors.textMuted }]}>Saved Addresses</Text>}
+              
+              {filteredAddresses.map((item) => {
+                const isActive = activeAddress != null && String(activeAddress.id) === String(item.id);
+                
+                return (
+                  <TouchableOpacity 
+                    key={item.id} 
+                    style={[
+                      styles.quickAddressRow, 
+                      { 
+                        borderBottomColor: colors.border,
+                        backgroundColor: isActive ? 'rgba(211, 47, 47, 0.05)' : 'transparent', 
+                        paddingHorizontal: isActive ? scale(10) : 0, 
+                        borderRadius: isActive ? scale(12) : 0,
+                      }
+                    ]} 
+                    onPress={() => handleSelectAddress(item.id)}
+                  >
+                    <View style={[styles.iconBox, { backgroundColor: isActive ? 'rgba(211, 47, 47, 0.1)' : 'rgba(150,150,150,0.1)' }]}>
+                      <Ionicons 
+                        name={getIconForLabel(item.label)} 
+                        size={scale(20)} 
+                        color={isActive ? Colors.primary : colors.textMuted} 
+                      />
+                    </View>
+                    
+                    <View style={styles.addressTextStack}>
+                      <Text style={[styles.quickAddressTitle, { color: isActive ? Colors.primary : colors.text }]}>
+                        {item.label || 'Address'} {item.isDefault && <Text style={{ color: Colors.primary, fontSize: scale(12) }}>(Default)</Text>}
+                      </Text>
+                      <Text style={[styles.quickAddressDetail, { color: colors.textMuted }]}>
+                        {getAddressLine(item)}
+                      </Text>
+                    </View>
+                    
+                    {isActive && (
+                      <Ionicons name="checkmark-circle" size={scale(24)} color={Colors.primary} />
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+              
+              {inputText.length > 0 && filteredAddresses.length === 0 && (
+                <Text style={[styles.noResultsText, { color: colors.textMuted }]}>
+                  No saved addresses match &rdquo;{inputText}&rdquo;. Hit &rdquo;Save & Use&rdquo; to add it!
+                </Text>
+              )}
+            </ScrollView>
+          )}
           
-          <TouchableOpacity style={[styles.manageBtn, { borderTopColor: colors.border }]} onPress={handleManageAddresses} activeOpacity={0.7}>
-            <Text style={[styles.manageBtnText, { color: colors.text }]}>Manage Addresses</Text>
-            <Ionicons name="chevron-forward" size={scale(20)} color={colors.textMuted} />
-          </TouchableOpacity>
+          {!isMapMode && (
+            <TouchableOpacity style={[styles.manageBtn, { borderTopColor: colors.border }]} onPress={handleManageAddresses} activeOpacity={0.7}>
+              <Text style={[styles.manageBtnText, { color: colors.text }]}>Manage Addresses</Text>
+              <Ionicons name="chevron-forward" size={scale(20)} color={colors.textMuted} />
+            </TouchableOpacity>
+          )}
         </Animated.View>
       </View>
     </Modal>
@@ -381,6 +478,16 @@ const styles = StyleSheet.create({
   actionBtnText: { fontSize: scale(14), fontWeight: 'bold', marginLeft: scale(8) },
   saveBtnText: { color: '#FFF', fontSize: scale(14), fontWeight: 'bold' },
 
+  // MAP STYLES
+  mapContainer: { height: scale(350), borderRadius: scale(15), overflow: 'hidden', marginBottom: scale(20), backgroundColor: '#EFEFEF' },
+  mapView: { flex: 1 },
+  mapCenterPin: { position: 'absolute', top: '50%', left: '50%', marginTop: -scale(35), marginLeft: -scale(20), alignItems: 'center' },
+  pinShadow: { width: scale(10), height: scale(4), backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: scale(5), marginTop: -scale(6) },
+  mapInstructions: { position: 'absolute', top: scale(15), alignSelf: 'center', backgroundColor: 'rgba(255,255,255,0.9)', paddingHorizontal: scale(15), paddingVertical: scale(8), borderRadius: scale(20), elevation: 3 },
+  mapInstructionText: { fontSize: scale(12), fontWeight: 'bold' },
+  confirmMapBtn: { position: 'absolute', bottom: scale(15), left: scale(15), right: scale(15), height: scale(50), borderRadius: scale(25), justifyContent: 'center', alignItems: 'center', elevation: 4 },
+  confirmMapBtnText: { color: '#FFF', fontSize: scale(16), fontWeight: 'bold' },
+
   savedTitle: { fontSize: scale(14), fontWeight: 'bold', marginBottom: scale(5), letterSpacing: 0.5 },
   quickAddressRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: scale(12), borderBottomWidth: 1 },
   iconBox: { width: scale(36), height: scale(36), borderRadius: scale(18), justifyContent: 'center', alignItems: 'center' },
@@ -390,4 +497,4 @@ const styles = StyleSheet.create({
   noResultsText: { textAlign: 'center', marginTop: scale(20), marginBottom: scale(10), fontStyle: 'italic', paddingHorizontal: scale(10) },
   manageBtn: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: scale(20), marginTop: scale(5), borderTopWidth: 1 },
   manageBtnText: { fontSize: scale(16), fontWeight: 'bold' },
-}); 
+});
