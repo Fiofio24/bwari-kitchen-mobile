@@ -87,6 +87,7 @@ To Do List:
 71. () Work on the notification preferences page, make sure to remove any unecessary option
 72. (✅Done) Remove searchBar from the quick edit package page
 73. (Victor) in the admin settings page there should be control to disable dilivery or pickup on the checkout page so incase delivery riders have closed user won't be able to select delivery they'll have to come pickup
+74. (Victor) add a control in admin that allows them to edit the FAQ in help.tsx
 
 Future updates:
 1. 
@@ -115,7 +116,7 @@ User testing feedbacks
 9. (✅Done) Nice app bro. All working well. Issue I noticed, The input boxes should go up along with the keyboard, so you can see what you are typing. Nice work !
 10. (Victor make sure the backend has quantity for packages) I selected a 6k package in the cart and increase the quantity to 3 that is 18k total, but after clicking place order in the checkout page i saw "...Pay N6,000" also in the my orders page the price there is also something different...Summary the math is not mathing.
 11. (✅Done) (from help page) From this frequent question what about adding when someone plays an other due to network he was debited but the receiver wasn't credited
-12. (from profile page) This refer and earn how will the customer get the money , if it will be there maybe there should be a wallet in the app some one an send money directly to the app. (✅Done????)At that orders showing 24 I clicked it 👉🏻...Comes out empty (change the hard coded number of order in the profile page from 24 to actually show total numbers of orders customer had placed in that account)
+12. (from profile page) This refer and earn how will the customer get the money , if it will be there maybe there should be a wallet in the app some one an send money directly to the app. (✅Done)At that orders showing 24 I clicked it 👉🏻...Comes out empty (change the hard coded number of order in the profile page from 24 to actually show total numbers of orders customer had placed in that account)
 13. (✅Done)(in the home page)There are no categories for soups and bakes sir. (this is because home and menu share same categories list so even though packages have not been created under bakes and soups it will still show but say "This category is not available in the Kitchen"...instead it should be that when there is no package under those categories the category shouldn't show at all in the list even though that category exits in the menu).
 
 
