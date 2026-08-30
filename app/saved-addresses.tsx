@@ -144,7 +144,6 @@ export default function SavedAddressesScreen() {
     setStreetAddress(item.streetAddress);
     setLandmark(item.landmark || '');
     setArea(item.area || '');
-    // FIX: Load coordinates if they exist in the backend data
     setCoordinates((item as any).coordinates || ''); 
     setModalVisible(true);
   };
@@ -157,9 +156,27 @@ export default function SavedAddressesScreen() {
 
     setIsCapturingLocation(true);
     try {
+      if (coordinates) {
+        const [latStr, lngStr] = coordinates.split(',');
+        const lat = parseFloat(latStr?.trim());
+        const lng = parseFloat(lngStr?.trim());
+        
+        if (!isNaN(lat) && !isNaN(lng)) {
+          setMapRegion({
+            latitude: lat,
+            longitude: lng,
+            latitudeDelta: 0.005,
+            longitudeDelta: 0.005,
+          });
+          setIsMapMode(true);
+          setIsCapturingLocation(false);
+          return;
+        }
+      }
+
       let { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Permission Denied', 'Please grant location access in your device settings.');
+        Alert.alert('Permission Denied', 'Please grant location access in your device settings to use the map.');
         setIsCapturingLocation(false);
         return;
       }
@@ -176,7 +193,7 @@ export default function SavedAddressesScreen() {
       });
       setIsMapMode(true);
     } catch (error) {
-      Alert.alert('Location Error', 'Could not fetch your precise location.');
+      Alert.alert('Location Error', 'Could not fetch your precise location. Please ensure GPS is turned on.');
     } finally {
       setIsCapturingLocation(false);
     }
@@ -216,7 +233,8 @@ export default function SavedAddressesScreen() {
       setIsMapMode(false);
     } catch (error) {
       console.warn("Geocode error:", error);
-      Alert.alert('Location Error', 'Could not translate this pin into an address.');
+      Alert.alert('Location Error', 'Could not translate this pin into an address, but your coordinates were saved.');
+      setIsMapMode(false);
     } finally {
       setIsConfirmingMap(false);
     }
@@ -256,7 +274,6 @@ export default function SavedAddressesScreen() {
     }
   };
 
-  // FIX: Added coordinates to visual display in case user wants to see them
   const getAddressLine = (item: any) =>
     [item.streetAddress, item.landmark, item.area, item.coordinates ? `GPS: ${item.coordinates}` : null].filter(Boolean).join(', ');
 
@@ -330,6 +347,12 @@ export default function SavedAddressesScreen() {
               <Text style={[styles.addressText, { color: colors.textMuted }]}>
                 {getAddressLine(item)}
               </Text>
+
+              {(item as any).createdAt && (
+                <Text style={[styles.timestampText, { color: colors.textMuted }]}>
+                  Added: {new Date((item as any).createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                </Text>
+              )}
 
               <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
@@ -423,32 +446,7 @@ export default function SavedAddressesScreen() {
               >
                 <View style={{ gap: scale(12) }}>
                   
-                  {!editingId && (
-                    <TouchableOpacity
-                      onPress={handleGetLocation}
-                      disabled={isCapturingLocation}
-                      style={{ 
-                        flexDirection: 'row', 
-                        alignItems: 'center', 
-                        backgroundColor: 'rgba(229, 57, 53, 0.1)', 
-                        padding: scale(12), 
-                        borderRadius: scale(12), 
-                        marginBottom: scale(5),
-                        justifyContent: 'center' 
-                      }}
-                    >
-                      {isCapturingLocation ? (
-                        <ActivityIndicator size="small" color={Colors.primary} style={{ marginRight: scale(8) }} />
-                      ) : (
-                        <Ionicons name={isMapMode ? "close" : "locate"} size={scale(20)} color={Colors.primary} style={{ marginRight: scale(8) }} />
-                      )}
-                      <Text style={{ color: Colors.primary, fontWeight: 'bold', fontSize: scale(14) }}>
-                        {isCapturingLocation ? 'Fetching...' : isMapMode ? 'Cancel Map' : 'Auto-fill with Current Location'}
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-
-                  {isMapMode && mapRegion && (
+                  {isMapMode && mapRegion ? (
                     <View style={styles.mapContainer}>
                       <MapView 
                         style={styles.mapView}
@@ -476,10 +474,62 @@ export default function SavedAddressesScreen() {
                         )}
                       </TouchableOpacity>
                     </View>
-                  )}
+                  ) : !coordinates && !editingId ? (
+                    
+                    /* --- THE GATEWAY --- */
+                    <View style={styles.gatewayContainer}>
+                      <View style={[styles.gatewayIconBox, { backgroundColor: 'rgba(229, 57, 53, 0.1)' }]}>
+                        <Ionicons name="map-outline" size={scale(40)} color={Colors.primary} />
+                      </View>
+                      <Text style={[styles.gatewayTitle, { color: colors.text }]}>Pin Your Location</Text>
+                      <Text style={[styles.gatewaySub, { color: colors.textMuted }]}>
+                        To ensure accurate delivery fees and direct routing for our riders, you must select your exact location on the map first.
+                      </Text>
+                      
+                      <TouchableOpacity
+                        onPress={handleGetLocation}
+                        disabled={isCapturingLocation}
+                        style={[styles.gatewayBtn, { backgroundColor: Colors.primary }]}
+                      >
+                        {isCapturingLocation ? (
+                          <ActivityIndicator size="small" color="#FFF" />
+                        ) : (
+                          <>
+                            <Ionicons name="locate" size={scale(20)} color="#FFF" style={{ marginRight: scale(8) }} />
+                            <Text style={styles.gatewayBtnText}>Open Map & Find Me</Text>
+                          </>
+                        )}
+                      </TouchableOpacity>
+                    </View>
 
-                  {!isMapMode && (
+                  ) : (
+                    
+                    /* --- THE UNLOCKED FORM --- */
                     <React.Fragment>
+                      
+                      <TouchableOpacity
+                        onPress={handleGetLocation}
+                        disabled={isCapturingLocation}
+                        style={{ 
+                          flexDirection: 'row', 
+                          alignItems: 'center', 
+                          backgroundColor: 'rgba(229, 57, 53, 0.1)', 
+                          padding: scale(12), 
+                          borderRadius: scale(12), 
+                          marginBottom: scale(5),
+                          justifyContent: 'center' 
+                        }}
+                      >
+                        {isCapturingLocation ? (
+                          <ActivityIndicator size="small" color={Colors.primary} style={{ marginRight: scale(8) }} />
+                        ) : (
+                          <Ionicons name="map" size={scale(18)} color={Colors.primary} style={{ marginRight: scale(8) }} />
+                        )}
+                        <Text style={{ color: Colors.primary, fontWeight: 'bold', fontSize: scale(13) }}>
+                          {isCapturingLocation ? 'Loading Map...' : 'Adjust Pin on Map'}
+                        </Text>
+                      </TouchableOpacity>
+
                       <View>
                         <Text style={{ fontSize: scale(13), fontWeight: '600', marginBottom: scale(6), color: colors.text }}>Label (e.g. Home, Work)</Text>
                         <TextInput
@@ -490,16 +540,27 @@ export default function SavedAddressesScreen() {
                           style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: scale(12), padding: scale(12), color: colors.text }}
                         />
                       </View>
+
+                      {/* LOCKED FIELDS */}
                       <View>
-                        <Text style={{ fontSize: scale(13), fontWeight: '600', marginBottom: scale(6), color: colors.text }}>Street Address *</Text>
+                        <Text style={{ fontSize: scale(13), fontWeight: '600', marginBottom: scale(6), color: colors.text }}>Street Address (Locked) *</Text>
                         <TextInput
                           value={streetAddress}
-                          onChangeText={setStreetAddress}
-                          placeholder="No 6 Kuje Street"
+                          editable={false}
+                          selectTextOnFocus={true} 
+                          placeholder="Auto-filled via map pin..."
                           placeholderTextColor={colors.textMuted}
-                          style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: scale(12), padding: scale(12), color: colors.text }}
+                          style={{ 
+                            backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F5F5F5', 
+                            borderWidth: 1, 
+                            borderColor: colors.border, 
+                            borderRadius: scale(12), 
+                            padding: scale(12), 
+                            color: colors.textMuted 
+                          }}
                         />
                       </View>
+                      
                       <View>
                         <Text style={{ fontSize: scale(13), fontWeight: '600', marginBottom: scale(6), color: colors.text }}>Landmark</Text>
                         <TextInput
@@ -510,25 +571,42 @@ export default function SavedAddressesScreen() {
                           style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: scale(12), padding: scale(12), color: colors.text }}
                         />
                       </View>
+                      
                       <View>
-                        <Text style={{ fontSize: scale(13), fontWeight: '600', marginBottom: scale(6), color: colors.text }}>Area</Text>
+                        <Text style={{ fontSize: scale(13), fontWeight: '600', marginBottom: scale(6), color: colors.text }}>Area (Locked)</Text>
                         <TextInput
                           value={area}
-                          onChangeText={setArea}
-                          placeholder="Kuje"
+                          editable={false}
+                          selectTextOnFocus={true} 
+                          placeholder="Auto-filled via map pin..."
                           placeholderTextColor={colors.textMuted}
-                          style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: scale(12), padding: scale(12), color: colors.text }}
+                          style={{ 
+                            backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F5F5F5', 
+                            borderWidth: 1, 
+                            borderColor: colors.border, 
+                            borderRadius: scale(12), 
+                            padding: scale(12), 
+                            color: colors.textMuted 
+                          }}
                         />
                       </View>
                       
                       <View>
-                        <Text style={{ fontSize: scale(13), fontWeight: '600', marginBottom: scale(6), color: colors.text }}>Coordinates (GPS)</Text>
+                        <Text style={{ fontSize: scale(13), fontWeight: '600', marginBottom: scale(6), color: colors.text }}>Coordinates (Locked)</Text>
                         <TextInput
                           value={coordinates}
-                          onChangeText={setCoordinates}
-                          placeholder="e.g. 9.28330, 7.38220"
+                          editable={false}
+                          selectTextOnFocus={true} 
+                          placeholder="Auto-filled via map pin..."
                           placeholderTextColor={colors.textMuted}
-                          style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: scale(12), padding: scale(12), color: colors.text }}
+                          style={{ 
+                            backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F5F5F5', 
+                            borderWidth: 1, 
+                            borderColor: colors.border, 
+                            borderRadius: scale(12), 
+                            padding: scale(12), 
+                            color: colors.textMuted 
+                          }}
                         />
                       </View>
 
@@ -573,6 +651,7 @@ const styles = StyleSheet.create({
   defaultBadge: { paddingHorizontal: scale(10), paddingVertical: scale(4), borderRadius: scale(8) },
   defaultBadgeText: { color: '#FFF', fontSize: scale(11), fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: 1 },
   addressText: { fontSize: scale(14), lineHeight: scale(20), paddingRight: scale(10) },
+  timestampText: { fontSize: scale(11), marginTop: scale(8), fontStyle: 'italic', opacity: 0.7 },
   divider: { height: 1, marginVertical: scale(15) },
   actionRow: { flexDirection: 'row', justifyContent: 'flex-start', gap: scale(20) },
   actionBtn: { flexDirection: 'row', alignItems: 'center', paddingVertical: scale(5), paddingHorizontal: scale(10), marginLeft: scale(-10) },
@@ -591,4 +670,10 @@ const styles = StyleSheet.create({
   mapInstructionText: { fontSize: scale(12), fontWeight: 'bold' },
   confirmMapBtn: { position: 'absolute', bottom: scale(15), left: scale(15), right: scale(15), height: scale(50), borderRadius: scale(25), justifyContent: 'center', alignItems: 'center', elevation: 4 },
   confirmMapBtnText: { color: '#FFF', fontSize: scale(16), fontWeight: 'bold' },
+  gatewayContainer: { alignItems: 'center', paddingVertical: scale(30), paddingHorizontal: scale(10) },
+  gatewayIconBox: { width: scale(80), height: scale(80), borderRadius: scale(40), justifyContent: 'center', alignItems: 'center', marginBottom: scale(20) },
+  gatewayTitle: { fontSize: scale(20), fontWeight: 'bold', marginBottom: scale(10) },
+  gatewaySub: { fontSize: scale(14), textAlign: 'center', lineHeight: scale(22), marginBottom: scale(30) },
+  gatewayBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: '100%', paddingVertical: scale(15), borderRadius: scale(20), elevation: 3, shadowColor: '#000', shadowOffset: { width: 0, height: scale(3) }, shadowOpacity: 0.2, shadowRadius: scale(4) },
+  gatewayBtnText: { color: '#FFF', fontSize: scale(16), fontWeight: 'bold' },
 });

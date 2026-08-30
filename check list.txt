@@ -83,7 +83,7 @@ To Do List:
 67. (✅sesarch page Done remain QuickEditPackage)when on search page and QuickEditPackage.tsx user should be able to exit that page or modal by sliding down not only by clicking the back button or close icon
 68. (✅Done)on the preofile page the orders at the top that shows the total orders instead of just showing "0" when it is still fetching the total numbers of orders it should show a loading spinner and it shouldn't be that everytime user goes to profile that it will always want to reload and fetch it should only fetch when it sense that a +1 order exist so it will add
 69. (Victor) in admin settings there should be space to add social media handles link so the social media button in the profile page of customer app at the very end on click can navigate to the kitchen's social media page
-70. (✅Atempte, not confirmed)For the app icon try and do dark and light mode for it
+70. (✅Atempted, not confirmed) For the app icon try and do dark and light mode for it
 71. () Work on the notification preferences page, make sure to remove any unecessary option
 72. (✅Done) Remove searchBar from the quick edit package page
 73. (Victor) in the admin settings page there should be control to disable dilivery or pickup on the checkout page so incase delivery riders have closed user won't be able to select delivery they'll have to come pickup
@@ -92,7 +92,8 @@ To Do List:
 76. (Victor) in the admin page after setting a varient for a food item like rice then saved it actually reflects on the app but, when i click to edit that item i couldn't find the varient i previously saved i'll have to readd new varient to override the previous ones
 77. (Victor) the discount feature is not working in the item prizing 
 78. (Victor) for customer address add coordinates and time stamp (createdAt) cuz the map i did also generates the coordinate for accuracy but it doesn't save in the admin page cuz backend doesn't recognise coordinate and creatAt
-79. 
+79. (Victor) fix the server crash everytime delivery radius exceeds it's limit, it should handle the error safely without crashing it should restrict the admin and give the admin a warning not to exceed km. also the delivery fee is only showing ₦500 even when i changed the delivery fee per km.
+80. (Victor) (maybe this is for me to handle but first the calculation needs to be working first) when customer's location is further than the delivery readius from rrestaurant to customer it should give an error or something. 
 
 Future updates:
 1. 

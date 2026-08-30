@@ -4,8 +4,7 @@ import {
   Text, 
   StyleSheet, 
   TouchableOpacity, 
-  ScrollView, 
-  Platform,
+  ScrollView,
   Alert,
   TextInput,
   Switch,
@@ -20,7 +19,6 @@ import { useSafeRouter } from '../hooks/useSafeRouter';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context'; 
 import { WebView } from 'react-native-webview';
-import * as WebBrowser from 'expo-web-browser';
 import { useTheme } from '../context/ThemeContext';
 import { Colors } from '../constants/Colors';
 import { StatusBar } from 'expo-status-bar';
@@ -152,7 +150,8 @@ export default function CheckoutScreen() {
       try {
         const res = await api.post('/api/addresses/delivery-fee', { addressId: activeAddress.id });
         setEstimatedDeliveryFee(res.data.deliveryFee);
-      } catch {
+      } catch (error: any) {
+        console.log("DELIVERY FEE ERROR:", error.response?.data || error.message);
         setEstimatedDeliveryFee(0);
       }
     };
