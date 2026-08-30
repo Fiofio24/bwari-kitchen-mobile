@@ -1,30 +1,30 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  TouchableOpacity, 
-  Modal, 
-  TextInput, 
-  TouchableWithoutFeedback, 
-  Animated, 
-  Easing, 
-  Keyboard, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Modal,
+  TextInput,
+  TouchableWithoutFeedback,
+  Animated,
+  Easing,
+  Keyboard,
   ScrollView,
   ActivityIndicator,
   Alert,
   Platform
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import * as Location from 'expo-location'; 
-import MapView, { Region } from 'react-native-maps'; // <-- MAP IMPORT
+import * as Location from 'expo-location';
+import MapView, { Region } from 'react-native-maps';
 import { Colors } from '../constants/Colors';
-import { useSafeAreaInsets } from 'react-native-safe-area-context'; 
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
 import { BlurView } from 'expo-blur';
 import { useSafeRouter } from '../hooks/useSafeRouter';
-import { useAddresses } from '../context/AddressContext'; 
-import { scale } from '../constants/Sizes'; 
+import { useAddresses } from '../context/AddressContext';
+import { scale } from '../constants/Sizes';
 
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 
@@ -33,7 +33,6 @@ interface AddressSelectorModalProps {
   onClose: () => void;
 }
 
-// SMART ICON IDENTIFIER
 const getIconForLabel = (label?: string | null): any => {
   const text = (label || '').toLowerCase();
   if (text.includes('home')) return 'home';
@@ -50,25 +49,24 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
   const insets = useSafeAreaInsets();
   const router = useSafeRouter();
   const { addresses, activeAddress, setActiveAddress, addCurrentLocationAddress } = useAddresses();
-  
-  const [inputText, setInputText] = useState(''); 
+
+  const [inputText, setInputText] = useState('');
   const [isRendering, setIsRendering] = useState(visible);
-  
+
   const [isCapturingLocation, setIsCapturingLocation] = useState(false);
   const [isSavingAddress, setIsSavingAddress] = useState(false);
-  
+
   const [isWaitingToSelect, setIsWaitingToSelect] = useState(false);
   const prevAddressIds = useRef(new Set(addresses.map(a => a.id)));
-  
+
   const [keyboardHeight, setKeyboardHeight] = useState(0);
 
-  // MAP STATES
   const [isMapMode, setIsMapMode] = useState(false);
   const [mapRegion, setMapRegion] = useState<Region | null>(null);
   const [isConfirmingMap, setIsConfirmingMap] = useState(false);
-  
-  const fadeAnim = useRef(new Animated.Value(0)).current; 
-  const slideAnim = useRef(new Animated.Value(scale(500))).current; 
+
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(scale(500))).current;
 
   useEffect(() => {
     const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
@@ -91,13 +89,12 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
     if (visible) {
       setIsRendering(true);
       setInputText('');
-      
       setIsWaitingToSelect(false);
       setIsCapturingLocation(false);
       setIsSavingAddress(false);
       setIsMapMode(false);
       prevAddressIds.current = new Set(addresses.map(a => a.id));
-      
+
       Animated.parallel([
         Animated.timing(fadeAnim, { toValue: 1, duration: 300, useNativeDriver: true }),
         Animated.timing(slideAnim, { toValue: 0, duration: 350, easing: Easing.out(Easing.poly(4)), useNativeDriver: true })
@@ -116,11 +113,11 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
       ]).start(() => setIsRendering(false));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visible, fadeAnim, slideAnim, isRendering]); 
+  }, [visible, fadeAnim, slideAnim, isRendering]);
 
   useEffect(() => {
     let timeout: ReturnType<typeof setTimeout>;
-    
+
     if (isWaitingToSelect) {
       const currentIds = addresses.map(a => a.id);
       const newId = currentIds.find(id => !prevAddressIds.current.has(id));
@@ -138,23 +135,22 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
         }, 3000);
       }
     }
-    
+
     prevAddressIds.current = new Set(addresses.map(a => a.id));
-    
+
     return () => clearTimeout(timeout);
   }, [addresses, isWaitingToSelect, onClose, setActiveAddress]);
 
-  const handleSelectAddress = (id: string) => { 
-    setActiveAddress(id); 
+  const handleSelectAddress = (id: string) => {
+    setActiveAddress(id);
     setTimeout(() => {
-      onClose(); 
+      onClose();
     }, 350);
   };
 
-  // OPENS THE MAP
   const handleGetLocation = async () => {
     if (isMapMode) {
-      setIsMapMode(false); 
+      setIsMapMode(false);
       return;
     }
 
@@ -186,7 +182,6 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
     }
   };
 
-  // CONFIRMS PIN AND GETS ADDRESS
   const handleConfirmMapLocation = async () => {
     if (!mapRegion) return;
     setIsConfirmingMap(true);
@@ -197,13 +192,17 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
         longitude: mapRegion.longitude
       });
 
+      const lat = mapRegion.latitude.toFixed(5);
+      const lng = mapRegion.longitude.toFixed(5);
+      const coordsStr = `${lat}, ${lng}`;
+
       if (geocode && geocode.length > 0) {
         const place = geocode[0];
-        
         const name = place.name;
         const street = place.street;
         let localArea = '';
-
+        
+        // FIX: Proper generation -> Landmark, Street, Area, Coords
         if (name && street && name !== street) {
           localArea = `${name}, ${street}`; 
         } else {
@@ -211,11 +210,11 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
         }
 
         const cityOrDistrict = place.city || place.district;
-        const addressString = [localArea, cityOrDistrict, place.region].filter(Boolean).join(', ');
+        const addressString = [localArea, cityOrDistrict, place.region, coordsStr].filter(Boolean).join(', ');
         
         setInputText(addressString); 
       } else {
-        setInputText('Unknown Location');
+        setInputText(`Unknown Location, ${coordsStr}`);
       }
       setIsMapMode(false); 
     } catch (error) {
@@ -228,24 +227,51 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
 
   const handleSaveAndUse = async () => {
     const rawText = inputText.trim() || 'My current location';
-    setIsSavingAddress(true); 
-    
+    setIsSavingAddress(true);
+
     try {
       const parts = rawText.split(',').map(p => p.trim());
       
       let parsedStreet = rawText;
+      let parsedLandmark = undefined;
       let parsedArea = undefined;
+      let parsedCoords = undefined;
 
-      if (parts.length > 1) {
-        parsedStreet = parts[0]; 
-        parsedArea = parts.slice(1).join(', '); 
+      // FIX: Robust Reverse Parser
+      if (parts.length >= 3) {
+        const lastPart = parts[parts.length - 1];
+        const secondToLast = parts[parts.length - 2];
+        
+        // Detect Coordinates at the end
+        if (/^[-+]?[0-9]*\.?[0-9]+$/.test(lastPart) && /^[-+]?[0-9]*\.?[0-9]+$/.test(secondToLast)) {
+          parsedCoords = `${secondToLast}, ${lastPart}`;
+          parts.splice(parts.length - 2, 2); 
+        }
       }
 
-      const result: any = await addCurrentLocationAddress({
+      if (parts.length === 1) {
+        parsedStreet = parts[0];
+      } else if (parts.length === 2) {
+        parsedStreet = parts[0];
+        parsedArea = parts[1];
+      } else if (parts.length === 3) {
+        parsedStreet = parts[0];
+        parsedArea = `${parts[1]}, ${parts[2]}`; 
+      } else if (parts.length >= 4) {
+        parsedLandmark = parts[0];
+        parsedStreet = parts[1];
+        parsedArea = parts.slice(2).join(', '); 
+      }
+
+      const payload: any = {
         label: 'Current Location',
         streetAddress: parsedStreet,
+        landmark: parsedLandmark,
         area: parsedArea,
-      });
+        coordinates: parsedCoords 
+      };
+
+      const result: any = await addCurrentLocationAddress(payload);
       
       if (result.success) {
         const newAddressId = result.id || result.address?.id || result.data?.id;
@@ -267,19 +293,20 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
       setIsSavingAddress(false); 
     }
   };
-  
-  const handleManageAddresses = () => { 
+
+  const handleManageAddresses = () => {
     onClose();
     setTimeout(() => {
-      router.push('/saved-addresses'); 
+      router.push('/saved-addresses');
     }, 300);
   };
 
-  const getAddressLine = (item: typeof addresses[number]) =>
-    [item.streetAddress, item.landmark, item.area].filter(Boolean).join(', ');
+  // FIX: Display coordinates visually in the list if they exist
+  const getAddressLine = (item: any) =>
+    [item.streetAddress, item.landmark, item.area, item.coordinates ? `GPS: ${item.coordinates}` : null].filter(Boolean).join(', ');
 
-  const filteredAddresses = addresses.filter(item => 
-    (item.label || '').toLowerCase().includes(inputText.toLowerCase()) || 
+  const filteredAddresses = addresses.filter((item: any) =>
+    (item.label || '').toLowerCase().includes(inputText.toLowerCase()) ||
     getAddressLine(item).toLowerCase().includes(inputText.toLowerCase())
   );
 
@@ -294,11 +321,11 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
       statusBarTranslucent={true}
     >
       <TouchableWithoutFeedback onPress={onClose}>
-        <AnimatedBlurView 
-          intensity={20} 
-          tint="dark" 
-          experimentalBlurMethod="dimezisBlurView" 
-          style={[StyleSheet.absoluteFill, { opacity: fadeAnim, backgroundColor: 'rgba(0,0,0,0.2)' }]} 
+        <AnimatedBlurView
+          intensity={20}
+          tint="dark"
+          experimentalBlurMethod="dimezisBlurView"
+          style={[StyleSheet.absoluteFill, { opacity: fadeAnim, backgroundColor: 'rgba(0,0,0,0.2)' }]}
         />
       </TouchableWithoutFeedback>
 
@@ -402,7 +429,7 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
             >
               {inputText.length === 0 && <Text style={[styles.savedTitle, { color: colors.textMuted }]}>Saved Addresses</Text>}
               
-              {filteredAddresses.map((item) => {
+              {filteredAddresses.map((item: any) => {
                 const isActive = activeAddress != null && String(activeAddress.id) === String(item.id);
                 
                 return (
@@ -445,7 +472,7 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
               
               {inputText.length > 0 && filteredAddresses.length === 0 && (
                 <Text style={[styles.noResultsText, { color: colors.textMuted }]}>
-                  No saved addresses match &rdquo;{inputText}&rdquo;. Hit &rdquo;Save & Use&rdquo; to add it!
+                  No saved addresses match "{inputText}". Hit "Save & Use" to add it!
                 </Text>
               )}
             </ScrollView>
@@ -470,15 +497,12 @@ const styles = StyleSheet.create({
   modalTitle: { fontSize: scale(20), fontWeight: 'bold' },
   inputContainer: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: scale(15), paddingHorizontal: scale(15), height: scale(50), marginBottom: scale(15) },
   input: { flex: 1, marginLeft: scale(10), fontSize: scale(16) },
-  
   actionButtonsRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: scale(20), gap: scale(10) },
   actionBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', height: scale(45), borderRadius: scale(12) },
   locationBtn: { backgroundColor: 'rgba(229, 57, 53, 0.1)' },
   saveBtn: { backgroundColor: Colors.primary },
   actionBtnText: { fontSize: scale(14), fontWeight: 'bold', marginLeft: scale(8) },
   saveBtnText: { color: '#FFF', fontSize: scale(14), fontWeight: 'bold' },
-
-  // MAP STYLES
   mapContainer: { height: scale(350), borderRadius: scale(15), overflow: 'hidden', marginBottom: scale(20), backgroundColor: '#EFEFEF' },
   mapView: { flex: 1 },
   mapCenterPin: { position: 'absolute', top: '50%', left: '50%', marginTop: -scale(35), marginLeft: -scale(20), alignItems: 'center' },
@@ -487,7 +511,6 @@ const styles = StyleSheet.create({
   mapInstructionText: { fontSize: scale(12), fontWeight: 'bold' },
   confirmMapBtn: { position: 'absolute', bottom: scale(15), left: scale(15), right: scale(15), height: scale(50), borderRadius: scale(25), justifyContent: 'center', alignItems: 'center', elevation: 4 },
   confirmMapBtnText: { color: '#FFF', fontSize: scale(16), fontWeight: 'bold' },
-
   savedTitle: { fontSize: scale(14), fontWeight: 'bold', marginBottom: scale(5), letterSpacing: 0.5 },
   quickAddressRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: scale(12), borderBottomWidth: 1 },
   iconBox: { width: scale(36), height: scale(36), borderRadius: scale(18), justifyContent: 'center', alignItems: 'center' },

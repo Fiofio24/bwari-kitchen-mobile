@@ -19,7 +19,7 @@ import {
 import { useSafeRouter } from '../hooks/useSafeRouter';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location'; 
-import MapView, { Region } from 'react-native-maps'; // <-- MAP IMPORT
+import MapView, { Region } from 'react-native-maps'; 
 import { useSafeAreaInsets } from 'react-native-safe-area-context'; 
 import { useTheme } from '../context/ThemeContext';
 import { Colors } from '../constants/Colors';
@@ -58,12 +58,12 @@ export default function SavedAddressesScreen() {
   const [streetAddress, setStreetAddress] = useState('');
   const [landmark, setLandmark] = useState('');
   const [area, setArea] = useState('');
+  const [coordinates, setCoordinates] = useState(''); 
   const [saving, setSaving] = useState(false);
   
   const [isCapturingLocation, setIsCapturingLocation] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
 
-  // NEW MAP STATES
   const [isMapMode, setIsMapMode] = useState(false);
   const [mapRegion, setMapRegion] = useState<Region | null>(null);
   const [isConfirmingMap, setIsConfirmingMap] = useState(false);
@@ -134,6 +134,7 @@ export default function SavedAddressesScreen() {
     setStreetAddress('');
     setLandmark('');
     setArea('');
+    setCoordinates(''); 
     setModalVisible(true);
   };
 
@@ -143,6 +144,8 @@ export default function SavedAddressesScreen() {
     setStreetAddress(item.streetAddress);
     setLandmark(item.landmark || '');
     setArea(item.area || '');
+    // FIX: Load coordinates if they exist in the backend data
+    setCoordinates((item as any).coordinates || ''); 
     setModalVisible(true);
   };
 
@@ -179,12 +182,15 @@ export default function SavedAddressesScreen() {
     }
   };
 
-  // CONFIRM PIN AND AUTO-FILL
   const handleConfirmMapLocation = async () => {
     if (!mapRegion) return;
     setIsConfirmingMap(true);
 
     try {
+      const lat = mapRegion.latitude.toFixed(5);
+      const lng = mapRegion.longitude.toFixed(5);
+      setCoordinates(`${lat}, ${lng}`);
+
       let geocode = await Location.reverseGeocodeAsync({
         latitude: mapRegion.latitude,
         longitude: mapRegion.longitude
@@ -205,7 +211,7 @@ export default function SavedAddressesScreen() {
         
         if (foundArea) setArea(foundArea);
       } else {
-        Alert.alert('Location Info', 'Coordinates fetched, but could not determine street name.');
+        setStreetAddress('Unknown Location');
       }
       setIsMapMode(false);
     } catch (error) {
@@ -224,21 +230,19 @@ export default function SavedAddressesScreen() {
 
     setSaving(true);
     try {
+      const payload: any = {
+        label: label || undefined,
+        streetAddress,
+        landmark: landmark || undefined,
+        area: area || undefined,
+        coordinates: coordinates || undefined
+      };
+      
       if (editingId) {
-        await updateAddress(editingId, {
-          label: label || undefined,
-          streetAddress,
-          landmark: landmark || undefined,
-          area: area || undefined,
-        });
+        await updateAddress(editingId, payload);
         setModalVisible(false);
       } else {
-        const result = await addCurrentLocationAddress({
-          label: label || undefined,
-          streetAddress,
-          landmark: landmark || undefined,
-          area: area || undefined,
-        });
+        const result: any = await addCurrentLocationAddress(payload);
         if (result.success) {
           setModalVisible(false);
         } else {
@@ -251,6 +255,10 @@ export default function SavedAddressesScreen() {
       setSaving(false);
     }
   };
+
+  // FIX: Added coordinates to visual display in case user wants to see them
+  const getAddressLine = (item: any) =>
+    [item.streetAddress, item.landmark, item.area, item.coordinates ? `GPS: ${item.coordinates}` : null].filter(Boolean).join(', ');
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -320,7 +328,7 @@ export default function SavedAddressesScreen() {
               </View>
 
               <Text style={[styles.addressText, { color: colors.textMuted }]}>
-                {[item.streetAddress, item.landmark, item.area].filter(Boolean).join(', ')}
+                {getAddressLine(item)}
               </Text>
 
               <View style={[styles.divider, { backgroundColor: colors.border }]} />
@@ -440,7 +448,6 @@ export default function SavedAddressesScreen() {
                     </TouchableOpacity>
                   )}
 
-                  {/* MAP VIEW INJECTION */}
                   {isMapMode && mapRegion && (
                     <View style={styles.mapContainer}>
                       <MapView 
@@ -471,9 +478,8 @@ export default function SavedAddressesScreen() {
                     </View>
                   )}
 
-                  {/* ONLY SHOW INPUTS IF MAP IS CLOSED */}
                   {!isMapMode && (
-                    <>
+                    <React.Fragment>
                       <View>
                         <Text style={{ fontSize: scale(13), fontWeight: '600', marginBottom: scale(6), color: colors.text }}>Label (e.g. Home, Work)</Text>
                         <TextInput
@@ -514,6 +520,17 @@ export default function SavedAddressesScreen() {
                           style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: scale(12), padding: scale(12), color: colors.text }}
                         />
                       </View>
+                      
+                      <View>
+                        <Text style={{ fontSize: scale(13), fontWeight: '600', marginBottom: scale(6), color: colors.text }}>Coordinates (GPS)</Text>
+                        <TextInput
+                          value={coordinates}
+                          onChangeText={setCoordinates}
+                          placeholder="e.g. 9.28330, 7.38220"
+                          placeholderTextColor={colors.textMuted}
+                          style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: scale(12), padding: scale(12), color: colors.text }}
+                        />
+                      </View>
 
                       <TouchableOpacity
                         onPress={handleSave}
@@ -528,7 +545,7 @@ export default function SavedAddressesScreen() {
                           </Text>
                         )}
                       </TouchableOpacity>
-                    </  >
+                    </React.Fragment>
                   )}
                 </View>
               </ScrollView>
@@ -536,164 +553,36 @@ export default function SavedAddressesScreen() {
           </View>
         </Modal>
       )}
-
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  headerRight: { 
-    flexDirection: 'row', 
-    gap: scale(10), 
-    alignItems: 'center',
-  },
-  scrollContent: {
-    paddingTop: scale(20),
-    paddingHorizontal: scale(20),
-  },
-  headerSection: {
-    marginBottom: scale(25),
-    paddingHorizontal: scale(5),
-  },
-  titleText: {
-    fontSize: scale(24),
-    fontWeight: 'bold',
-    marginBottom: scale(8),
-  },
-  subText: {
-    fontSize: scale(14),
-    lineHeight: scale(22),
-  },
-  addressCard: {
-    borderWidth: 1,
-    borderRadius: scale(20),
-    padding: scale(20),
-    marginBottom: scale(20),
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: scale(2) },
-    shadowOpacity: 0.05,
-    shadowRadius: scale(5),
-  },
-  defaultCardShadow: {
-    elevation: 4,
-    shadowOpacity: 0.1,
-    shadowRadius: scale(8),
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: scale(15),
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  iconBox: {
-    width: scale(40),
-    height: scale(40),
-    borderRadius: scale(12),
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: scale(12),
-  },
-  addressTitle: {
-    fontSize: scale(16),
-    fontWeight: 'bold',
-  },
-  defaultBadge: {
-    paddingHorizontal: scale(10),
-    paddingVertical: scale(4),
-    borderRadius: scale(8),
-  },
-  defaultBadgeText: {
-    color: '#FFF',
-    fontSize: scale(11),
-    fontWeight: 'bold',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-  addressText: {
-    fontSize: scale(14),
-    lineHeight: scale(20),
-    paddingRight: scale(10),
-  },
-  divider: {
-    height: 1,
-    marginVertical: scale(15),
-  },
-  actionRow: {
-    flexDirection: 'row',
-    justifyContent: 'flex-start',
-    gap: scale(20),
-  },
-  actionBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: scale(5),
-    paddingHorizontal: scale(10),
-    marginLeft: scale(-10),
-  },
-  actionBtnText: {
-    fontSize: scale(14),
-    fontWeight: '600',
-    marginLeft: scale(6),
-  },
-  emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: scale(50),
-  },
-  emptyTitle: {
-    fontSize: scale(20),
-    fontWeight: 'bold',
-    marginTop: scale(15),
-    marginBottom: scale(8),
-  },
-  emptySub: {
-    fontSize: scale(14),
-    textAlign: 'center',
-    paddingHorizontal: scale(40),
-  },
-  bottomBar: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    paddingHorizontal: scale(20),
-    paddingTop: scale(15),
-    borderTopLeftRadius: scale(30),
-    borderTopRightRadius: scale(30),
-    borderTopWidth: 1,
-    elevation: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: scale(-5) },
-    shadowOpacity: 0.1,
-    shadowRadius: scale(10),
-  },
-  addBtn: {
-    flexDirection: 'row',
-    paddingVertical: scale(16),
-    borderRadius: scale(20),
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: scale(4) },
-    shadowOpacity: 0.3,
-    shadowRadius: scale(5),
-  },
-  addBtnText: {
-    color: '#FFF',
-    fontSize: scale(16),
-    fontWeight: 'bold',
-  },
-
-  // MAP STYLES
+  container: { flex: 1 },
+  headerRight: { flexDirection: 'row', gap: scale(10), alignItems: 'center' },
+  scrollContent: { paddingTop: scale(20), paddingHorizontal: scale(20) },
+  headerSection: { marginBottom: scale(25), paddingHorizontal: scale(5) },
+  titleText: { fontSize: scale(24), fontWeight: 'bold', marginBottom: scale(8) },
+  subText: { fontSize: scale(14), lineHeight: scale(22) },
+  addressCard: { borderWidth: 1, borderRadius: scale(20), padding: scale(20), marginBottom: scale(20), elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: scale(2) }, shadowOpacity: 0.05, shadowRadius: scale(5) },
+  defaultCardShadow: { elevation: 4, shadowOpacity: 0.1, shadowRadius: scale(8) },
+  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: scale(15) },
+  headerLeft: { flexDirection: 'row', alignItems: 'center' },
+  iconBox: { width: scale(40), height: scale(40), borderRadius: scale(12), justifyContent: 'center', alignItems: 'center', marginRight: scale(12) },
+  addressTitle: { fontSize: scale(16), fontWeight: 'bold' },
+  defaultBadge: { paddingHorizontal: scale(10), paddingVertical: scale(4), borderRadius: scale(8) },
+  defaultBadgeText: { color: '#FFF', fontSize: scale(11), fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: 1 },
+  addressText: { fontSize: scale(14), lineHeight: scale(20), paddingRight: scale(10) },
+  divider: { height: 1, marginVertical: scale(15) },
+  actionRow: { flexDirection: 'row', justifyContent: 'flex-start', gap: scale(20) },
+  actionBtn: { flexDirection: 'row', alignItems: 'center', paddingVertical: scale(5), paddingHorizontal: scale(10), marginLeft: scale(-10) },
+  actionBtnText: { fontSize: scale(14), fontWeight: '600', marginLeft: scale(6) },
+  emptyState: { alignItems: 'center', justifyContent: 'center', marginTop: scale(50) },
+  emptyTitle: { fontSize: scale(20), fontWeight: 'bold', marginTop: scale(15), marginBottom: scale(8) },
+  emptySub: { fontSize: scale(14), textAlign: 'center', paddingHorizontal: scale(40) },
+  bottomBar: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: scale(20), paddingTop: scale(15), borderTopLeftRadius: scale(30), borderTopRightRadius: scale(30), borderTopWidth: 1, elevation: 15, shadowColor: '#000', shadowOffset: { width: 0, height: scale(-5) }, shadowOpacity: 0.1, shadowRadius: scale(10) },
+  addBtn: { flexDirection: 'row', paddingVertical: scale(16), borderRadius: scale(20), justifyContent: 'center', alignItems: 'center', elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: scale(4) }, shadowOpacity: 0.3, shadowRadius: scale(5) },
+  addBtnText: { color: '#FFF', fontSize: scale(16), fontWeight: 'bold' },
   mapContainer: { height: scale(350), borderRadius: scale(15), overflow: 'hidden', marginBottom: scale(20), backgroundColor: '#EFEFEF' },
   mapView: { flex: 1 },
   mapCenterPin: { position: 'absolute', top: '50%', left: '50%', marginTop: -scale(35), marginLeft: -scale(20), alignItems: 'center' },

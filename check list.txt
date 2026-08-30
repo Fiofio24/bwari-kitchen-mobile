@@ -88,6 +88,11 @@ To Do List:
 72. (✅Done) Remove searchBar from the quick edit package page
 73. (Victor) in the admin settings page there should be control to disable dilivery or pickup on the checkout page so incase delivery riders have closed user won't be able to select delivery they'll have to come pickup
 74. (Victor) add a control in admin that allows them to edit the FAQ in help.tsx
+75. (Victor) in the admin page add like an error or warning sign on the packages and menu items so when an item or category is switched off admin can have a visual inducation on the packages that some items are unavailable so they can now edit the package for customers to see the updated package
+76. (Victor) in the admin page after setting a varient for a food item like rice then saved it actually reflects on the app but, when i click to edit that item i couldn't find the varient i previously saved i'll have to readd new varient to override the previous ones
+77. (Victor) the discount feature is not working in the item prizing 
+78. (Victor) for customer address add coordinates and time stamp (createdAt) cuz the map i did also generates the coordinate for accuracy but it doesn't save in the admin page cuz backend doesn't recognise coordinate and creatAt
+79. 
 
 Future updates:
 1. 
