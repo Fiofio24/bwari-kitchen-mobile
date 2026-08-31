@@ -4,7 +4,7 @@ import {
   Text, 
   StyleSheet, 
   TouchableOpacity, 
-  ScrollView,
+  ScrollView, 
   Alert,
   TextInput,
   Switch,
@@ -149,9 +149,13 @@ export default function CheckoutScreen() {
       }
       try {
         const res = await api.post('/api/addresses/delivery-fee', { addressId: activeAddress.id });
+        
+        // NEW SUCCESS LOG: This will print the distance and fee calculation from Victor's backend
+        console.log("✅ DELIVERY FEE SUCCESS DATA:", res.data);
+        
         setEstimatedDeliveryFee(res.data.deliveryFee);
       } catch (error: any) {
-        console.log("DELIVERY FEE ERROR:", error.response?.data || error.message);
+        console.log("❌ DELIVERY FEE ERROR:", error.response?.data || error.message);
         setEstimatedDeliveryFee(0);
       }
     };

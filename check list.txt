@@ -91,9 +91,10 @@ To Do List:
 75. (Victor) in the admin page add like an error or warning sign on the packages and menu items so when an item or category is switched off admin can have a visual inducation on the packages that some items are unavailable so they can now edit the package for customers to see the updated package
 76. (Victor) in the admin page after setting a varient for a food item like rice then saved it actually reflects on the app but, when i click to edit that item i couldn't find the varient i previously saved i'll have to readd new varient to override the previous ones
 77. (Victor) the discount feature is not working in the item prizing 
-78. (Victor) for customer address add coordinates and time stamp (createdAt) cuz the map i did also generates the coordinate for accuracy but it doesn't save in the admin page cuz backend doesn't recognise coordinate and creatAt
-79. (Victor) fix the server crash everytime delivery radius exceeds it's limit, it should handle the error safely without crashing it should restrict the admin and give the admin a warning not to exceed km. also the delivery fee is only showing ₦500 even when i changed the delivery fee per km.
+78. (✅Done-i was meant to add "latitude" and "logitude" instead of "coordinates") for customer address add coordinates and time stamp (createdAt) cuz the map i did also generates the coordinate for accuracy but it doesn't save in the admin page cuz backend doesn't recognise coordinate and creatAt
+79. (Victor) fix the server crash everytime delivery radius exceeds it's limit, it should handle the error safely without crashing it should restrict the admin and give the admin a warning not to exceed km.
 80. (Victor) (maybe this is for me to handle but first the calculation needs to be working first) when customer's location is further than the delivery readius from rrestaurant to customer it should give an error or something. 
+81. (Victor) i've added "latitude" and "logitude" for the user address and the delivery is working now but the backend is wrongly calculating the km of user from kitchen. I dropped a map pin in Lagos, but the /api/addresses/delivery-fee endpoint calculated distanceKm: 0.76 . Because it thinks Lagos is less than 1km away, the fee keeps defaulting to the 500 base minimum. please correct the formular logic to correctly calculate distanceKm.
 
 Future updates:
 1. 

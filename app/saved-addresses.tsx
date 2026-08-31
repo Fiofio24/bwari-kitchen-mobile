@@ -58,7 +58,11 @@ export default function SavedAddressesScreen() {
   const [streetAddress, setStreetAddress] = useState('');
   const [landmark, setLandmark] = useState('');
   const [area, setArea] = useState('');
-  const [coordinates, setCoordinates] = useState(''); 
+  
+  // Replaced coordinates with explicit latitude and longitude
+  const [latitude, setLatitude] = useState(''); 
+  const [longitude, setLongitude] = useState(''); 
+
   const [saving, setSaving] = useState(false);
   
   const [isCapturingLocation, setIsCapturingLocation] = useState(false);
@@ -134,7 +138,8 @@ export default function SavedAddressesScreen() {
     setStreetAddress('');
     setLandmark('');
     setArea('');
-    setCoordinates(''); 
+    setLatitude(''); 
+    setLongitude(''); 
     setModalVisible(true);
   };
 
@@ -144,7 +149,8 @@ export default function SavedAddressesScreen() {
     setStreetAddress(item.streetAddress);
     setLandmark(item.landmark || '');
     setArea(item.area || '');
-    setCoordinates((item as any).coordinates || ''); 
+    setLatitude((item as any).latitude?.toString() || ''); 
+    setLongitude((item as any).longitude?.toString() || ''); 
     setModalVisible(true);
   };
 
@@ -156,10 +162,9 @@ export default function SavedAddressesScreen() {
 
     setIsCapturingLocation(true);
     try {
-      if (coordinates) {
-        const [latStr, lngStr] = coordinates.split(',');
-        const lat = parseFloat(latStr?.trim());
-        const lng = parseFloat(lngStr?.trim());
+      if (latitude && longitude) {
+        const lat = parseFloat(latitude.trim());
+        const lng = parseFloat(longitude.trim());
         
         if (!isNaN(lat) && !isNaN(lng)) {
           setMapRegion({
@@ -204,9 +209,9 @@ export default function SavedAddressesScreen() {
     setIsConfirmingMap(true);
 
     try {
-      const lat = mapRegion.latitude.toFixed(5);
-      const lng = mapRegion.longitude.toFixed(5);
-      setCoordinates(`${lat}, ${lng}`);
+      // Formatted to 6 decimal places to match db.Decimal(9, 6)
+      setLatitude(mapRegion.latitude.toFixed(6));
+      setLongitude(mapRegion.longitude.toFixed(6));
 
       let geocode = await Location.reverseGeocodeAsync({
         latitude: mapRegion.latitude,
@@ -253,7 +258,8 @@ export default function SavedAddressesScreen() {
         streetAddress,
         landmark: landmark || undefined,
         area: area || undefined,
-        coordinates: coordinates || undefined
+        latitude: latitude ? parseFloat(latitude) : undefined,
+        longitude: longitude ? parseFloat(longitude) : undefined
       };
       
       if (editingId) {
@@ -275,7 +281,7 @@ export default function SavedAddressesScreen() {
   };
 
   const getAddressLine = (item: any) =>
-    [item.streetAddress, item.landmark, item.area, item.coordinates ? `GPS: ${item.coordinates}` : null].filter(Boolean).join(', ');
+    [item.streetAddress, item.landmark, item.area, (item.latitude && item.longitude) ? `GPS: ${item.latitude}, ${item.longitude}` : null].filter(Boolean).join(', ');
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -474,7 +480,7 @@ export default function SavedAddressesScreen() {
                         )}
                       </TouchableOpacity>
                     </View>
-                  ) : !coordinates && !editingId ? (
+                  ) : !latitude && !editingId ? (
                     
                     /* --- THE GATEWAY --- */
                     <View style={styles.gatewayContainer}>
@@ -541,7 +547,6 @@ export default function SavedAddressesScreen() {
                         />
                       </View>
 
-                      {/* LOCKED FIELDS */}
                       <View>
                         <Text style={{ fontSize: scale(13), fontWeight: '600', marginBottom: scale(6), color: colors.text }}>Street Address (Locked) *</Text>
                         <TextInput
@@ -572,7 +577,7 @@ export default function SavedAddressesScreen() {
                         />
                       </View>
                       
-                      <View>
+                      <View style={{ marginBottom: scale(12) }}>
                         <Text style={{ fontSize: scale(13), fontWeight: '600', marginBottom: scale(6), color: colors.text }}>Area (Locked)</Text>
                         <TextInput
                           value={area}
@@ -591,23 +596,44 @@ export default function SavedAddressesScreen() {
                         />
                       </View>
                       
-                      <View>
-                        <Text style={{ fontSize: scale(13), fontWeight: '600', marginBottom: scale(6), color: colors.text }}>Coordinates (Locked)</Text>
-                        <TextInput
-                          value={coordinates}
-                          editable={false}
-                          selectTextOnFocus={true} 
-                          placeholder="Auto-filled via map pin..."
-                          placeholderTextColor={colors.textMuted}
-                          style={{ 
-                            backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F5F5F5', 
-                            borderWidth: 1, 
-                            borderColor: colors.border, 
-                            borderRadius: scale(12), 
-                            padding: scale(12), 
-                            color: colors.textMuted 
-                          }}
-                        />
+                      {/* SIDE-BY-SIDE COORDINATES ROW */}
+                      <View style={[styles.formGroup, { flexDirection: 'row', gap: scale(12) }]}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontSize: scale(12), fontWeight: '600', marginBottom: scale(4), color: colors.text }}>Latitude (Locked)</Text>
+                          <TextInput
+                            value={latitude}
+                            editable={false}
+                            selectTextOnFocus={true} 
+                            placeholder="Auto-filled..."
+                            placeholderTextColor={colors.textMuted}
+                            style={{ 
+                              backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F5F5F5', 
+                              borderWidth: 1, 
+                              borderColor: colors.border, 
+                              borderRadius: scale(12), 
+                              padding: scale(12), 
+                              color: colors.textMuted 
+                            }}
+                          />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontSize: scale(12), fontWeight: '600', marginBottom: scale(4), color: colors.text }}>Longitude (Locked)</Text>
+                          <TextInput
+                            value={longitude}
+                            editable={false}
+                            selectTextOnFocus={true} 
+                            placeholder="Auto-filled..."
+                            placeholderTextColor={colors.textMuted}
+                            style={{ 
+                              backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F5F5F5', 
+                              borderWidth: 1, 
+                              borderColor: colors.border, 
+                              borderRadius: scale(12), 
+                              padding: scale(12), 
+                              color: colors.textMuted 
+                            }}
+                          />
+                        </View>
                       </View>
 
                       <TouchableOpacity
@@ -676,4 +702,5 @@ const styles = StyleSheet.create({
   gatewaySub: { fontSize: scale(14), textAlign: 'center', lineHeight: scale(22), marginBottom: scale(30) },
   gatewayBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: '100%', paddingVertical: scale(15), borderRadius: scale(20), elevation: 3, shadowColor: '#000', shadowOffset: { width: 0, height: scale(3) }, shadowOpacity: 0.2, shadowRadius: scale(4) },
   gatewayBtnText: { color: '#FFF', fontSize: scale(16), fontWeight: 'bold' },
+  formGroup: { marginBottom: scale(12) },
 });

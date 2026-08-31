@@ -38,7 +38,8 @@ interface ConfirmedMapData {
   streetAddress: string;
   landmark: string;
   area: string;
-  coordinates: string;
+  latitude: string;
+  longitude: string;
 }
 
 const getIconForLabel = (label?: string | null): any => {
@@ -193,14 +194,13 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
     setIsConfirmingMap(true);
 
     try {
+      const lat = mapRegion.latitude.toFixed(6);
+      const lng = mapRegion.longitude.toFixed(6);
+
       let geocode = await Location.reverseGeocodeAsync({
         latitude: mapRegion.latitude,
         longitude: mapRegion.longitude
       });
-
-      const lat = mapRegion.latitude.toFixed(5);
-      const lng = mapRegion.longitude.toFixed(5);
-      const coordsStr = `${lat}, ${lng}`;
 
       let localStreet = 'Unknown Location';
       let localLandmark = '';
@@ -225,7 +225,8 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
         streetAddress: localStreet,
         landmark: localLandmark,
         area: localArea,
-        coordinates: coordsStr
+        latitude: lat,
+        longitude: lng
       });
       
       setIsMapMode(false); 
@@ -248,7 +249,8 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
         streetAddress: confirmedMapData.streetAddress,
         landmark: confirmedMapData.landmark || undefined,
         area: confirmedMapData.area || undefined,
-        coordinates: confirmedMapData.coordinates 
+        latitude: parseFloat(confirmedMapData.latitude), 
+        longitude: parseFloat(confirmedMapData.longitude) 
       };
 
       const result: any = await addCurrentLocationAddress(payload);
@@ -283,7 +285,7 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
   };
 
   const getAddressLine = (item: any) =>
-    [item.streetAddress, item.landmark, item.area, item.coordinates ? `GPS: ${item.coordinates}` : null].filter(Boolean).join(', ');
+    [item.streetAddress, item.landmark, item.area, (item.latitude && item.longitude) ? `GPS: ${item.latitude}, ${item.longitude}` : null].filter(Boolean).join(', ');
 
   const filteredAddresses = addresses.filter((item: any) =>
     (item.label || '').toLowerCase().includes(inputText.toLowerCase()) ||
@@ -397,8 +399,8 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
                 />
               </View>
 
-              <View style={styles.formGroup}>
-                <Text style={[styles.inputLabel, { color: colors.text }]}>Area (Locked)</Text>
+              <View style={{ marginBottom: scale(12) }}>
+                <Text style={{ fontSize: scale(12), fontWeight: '600', marginBottom: scale(4), color: colors.text }}>Area (Locked)</Text>
                 <TextInput 
                   style={[styles.formInput, styles.lockedInput, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F5F5F5', borderColor: colors.border, color: colors.textMuted }]} 
                   value={confirmedMapData.area} 
@@ -406,13 +408,23 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
                 />
               </View>
 
-              <View style={styles.formGroup}>
-                <Text style={[styles.inputLabel, { color: colors.text }]}>Coordinates (Locked)</Text>
-                <TextInput 
-                  style={[styles.formInput, styles.lockedInput, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F5F5F5', borderColor: colors.border, color: colors.textMuted }]} 
-                  value={confirmedMapData.coordinates} 
-                  editable={false}
-                />
+              <View style={[styles.formGroup, { flexDirection: 'row', gap: scale(12) }]}>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: scale(12), fontWeight: '600', marginBottom: scale(4), color: colors.text }}>Latitude (Locked)</Text>
+                  <TextInput 
+                    style={[styles.formInput, styles.lockedInput, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F5F5F5', borderColor: colors.border, color: colors.textMuted }]} 
+                    value={confirmedMapData.latitude} 
+                    editable={false}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: scale(12), fontWeight: '600', marginBottom: scale(4), color: colors.text }}>Longitude (Locked)</Text>
+                  <TextInput 
+                    style={[styles.formInput, styles.lockedInput, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F5F5F5', borderColor: colors.border, color: colors.textMuted }]} 
+                    value={confirmedMapData.longitude} 
+                    editable={false}
+                  />
+                </View>
               </View>
 
               <View style={styles.actionButtonsRow}>
@@ -522,7 +534,7 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
                 
                 {inputText.length > 0 && filteredAddresses.length === 0 && (
                   <Text style={[styles.noResultsText, { color: colors.textMuted }]}>
-                    No saved addresses match &rdquo;{inputText}&rdquo;. Click &rdquo;Pin New Address on Map&rdquo; to add it!
+                    No saved addresses match "{inputText}". Click "Pin New Address on Map" to add it!
                   </Text>
                 )}
               </ScrollView>
