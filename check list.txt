@@ -17,7 +17,8 @@ To Do List:
 16. (✅Done)creat a new component that appears when "sign out" is clicked that asks "Are you sure you want to sign out of Bwari kitchen?" the opions Yes and No
 17. for the package and menu images make a loading effect when their yet to fetch the actual image for that item also generally creat loading effects for any other thing like package details texts
 18. (✅Done)in the sign up page under password input section make that it will have a kind of must have features before the password will be accepted like showing message under "password must be up to 8-characters" etc
-19. (Victor)it's like cart packages are being saved to phone memory or something even when i created a new account on signig up successful the account already had items in the cart that i added when i was logged in on another account before20. (✅Done) in the promo page instead of the "copy code" button let it be copy icon so that there would be enough space in case of long promo code
+19. (Victor)it's like cart packages are being saved to phone memory or something even when i created a new account on signig up successful the account already had items in the cart that i added when i was logged in on another account before20. 
+    (✅Done) in the promo page instead of the "copy code" button let it be copy icon so that there would be enough space in case of long promo code
 21. (✅Done) in the sidebar the sign out button does not have allowance for the phone's navigation bar 
 22. (✅Done)the location area in the home page at the very top should show the selected address not "Select Location" and on new opening of the app the location that will show there will be the default location 
 23. (Victor) in the admin dashboard in menu page when creating a new package after adding a discription then saved the package, then in the main customer app the discription on the details page was showing a hardcoded discrition aside the perticular discription i just added to that new package
@@ -95,6 +96,7 @@ To Do List:
 79. (Victor) fix the server crash everytime delivery radius exceeds it's limit, it should handle the error safely without crashing it should restrict the admin and give the admin a warning not to exceed km.
 80. (Victor) (maybe this is for me to handle but first the calculation needs to be working first) when customer's location is further than the delivery readius from rrestaurant to customer it should give an error or something. 
 81. (Victor) i've added "latitude" and "logitude" for the user address and the delivery is working now but the backend is wrongly calculating the km of user from kitchen. I dropped a map pin in Lagos, but the /api/addresses/delivery-fee endpoint calculated distanceKm: 0.76 . Because it thinks Lagos is less than 1km away, the fee keeps defaulting to the 500 base minimum. please correct the formular logic to correctly calculate distanceKm.
+82. (Victor) in the checkout page under pickup section change the hardcoded "Bwari Kitchen - Bwari Main Branch" and "No 1 Kitchen Avenue, Central FCT" to actually fetch the Restaurant Name, Branch Name and Address from the admin saved settings
 
 Future updates:
 1. 
@@ -132,3 +134,4 @@ IOS UI/UX problems
 2. the reload spinner is not showing on the home page 
 3. the slide down to load for the details page is not working it is just over sliding the page that the item or package image section totally slides down and start showing the white background of the app but it is working fine on android...Note:the menu, favorite etc pages slide down to reload feature are working just fine
 4. After searching on the search page when user clicks the item or package they searched the details page then slides up partially like a animated modal instead of it to go to the details page as a full page then when you keep navigating to various pages from that details page the next page acts same way then it looks like the search page is minimizing these other pages. but clicking on a package on the home page the details page comes out normally like a full page just the search page that may be the cause...note this problem only happens on IOS
+5. Check if the app icon theme is working

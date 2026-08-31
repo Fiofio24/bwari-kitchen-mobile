@@ -369,7 +369,7 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
               </View>
               
               <View style={styles.formGroup}>
-                <Text style={[styles.inputLabel, { color: colors.text }]}>Label (e.g. Home)</Text>
+                <Text style={[styles.inputLabel, { color: colors.text }]}>Label (e.g. Home, Work)</Text>
                 <TextInput 
                   style={[styles.formInput, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }]} 
                   value={confirmedMapData.label} 

@@ -288,6 +288,12 @@ export default function CheckoutScreen() {
     }
   };
 
+  // Helper function to safely render the address label/title with a fallback
+  const getAddressTitle = (address: any) => {
+    if (!address) return "No address selected";
+    return address.title || address.label || "Address";
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar style="light" />
@@ -351,8 +357,9 @@ export default function CheckoutScreen() {
                   <Ionicons name="location" size={scale(24)} color={Colors.primary} />
                 </View>
                 <View style={styles.addressTextContainer}>
+                  {/* Updated address title logic here */}
                   <Text style={[styles.addressTitle, { color: colors.text }]} numberOfLines={1}>
-                    {(activeAddress as any)?.title || (activeAddress as any)?.label || "No address selected"}
+                    {getAddressTitle(activeAddress)}
                   </Text>
                   <Text style={[styles.addressDetail, { color: colors.textMuted }]} numberOfLines={1}>
                     {activeAddress ? [(activeAddress as any)?.address || (activeAddress as any)?.streetAddress, (activeAddress as any)?.area].filter(Boolean).join(', ') : "Please add a delivery address"}
@@ -380,7 +387,7 @@ export default function CheckoutScreen() {
                   <Ionicons name="storefront" size={scale(24)} color="#4CAF50" />
                 </View>
                 <View style={styles.addressTextContainer}>
-                  <Text style={[styles.addressTitle, { color: colors.text }]}>Bwari Kitchen Main Branch</Text>
+                  <Text style={[styles.addressTitle, { color: colors.text }]}>Bwari Kitchen - Bwari Main Branch</Text>
                   <Text style={[styles.addressDetail, { color: colors.textMuted }]}>No 1 Kitchen Avenue, Central FCT</Text>
                 </View>
               </View>
