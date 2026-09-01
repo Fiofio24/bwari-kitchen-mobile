@@ -16,6 +16,8 @@ Objective: Secure commercial-grade servers to prevent downtime.
 
     --Collect client's business debit/credit card.
 
+    --Collect client's newly created email and password for us to work with e.g bwarikitchen.tech@gmail.com.
+
     --Register Vercel Pro ($20/mo) for Frontend/Admin.
 
     --Register Railway Hobby Plan ($5/mo) for Backend/Database.

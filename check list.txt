@@ -149,9 +149,3 @@ IOS UI/UX problems
 3. the slide down to load for the details page is not working it is just over sliding the page that the item or package image section totally slides down and start showing the white background of the app but it is working fine on android...Note:the menu, favorite etc pages slide down to reload feature are working just fine
 4. After searching on the search page when user clicks the item or package they searched the details page then slides up partially like a animated modal instead of it to go to the details page as a full page then when you keep navigating to various pages from that details page the next page acts same way then it looks like the search page is minimizing these other pages. but clicking on a package on the home page the details page comes out normally like a full page just the search page that may be the cause...note this problem only happens on IOS
 5. Check if the app icon theme is working
-
-
-
-Client handover guide
-we will run this setup in various phases
-
