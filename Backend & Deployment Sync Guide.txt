@@ -1,0 +1,90 @@
+Deployment & Admin Blueprint: Bwari Kitchen
+
+To: Victor (Backend Lead)
+From: Project Management / Frontend
+Date: September 2026
+Strategy: "Done-For-You" (PM handles all account creations via a dedicated tech email to minimize client friction).
+
+
+
+
+***Phase 1: Infrastructure & Hosting
+
+Objective: Secure commercial-grade servers to prevent downtime.
+
+--PM Actions (Client Handover):
+
+    --Collect client's business debit/credit card.
+
+    --Register Vercel Pro ($20/mo) for Frontend/Admin.
+
+    --Register Railway Hobby Plan ($5/mo) for Backend/Database.
+
+--Backend Requirements:
+
+    --Prepare production .env variables.
+
+    --Sync local database schema to the Railway production database.
+
+    --Ensure server health check endpoint (/) is active.
+
+
+
+
+***Phase 2: Payment Gateway (Paystack)
+
+Objective: Connect live payout accounts and verify KYC compliance.
+
+--PM Actions (Client Handover):
+
+    --Collect business documents: CAC Certificate, Director's ID/BVN, Utility Bill, Corporate Account details.
+
+    --Push account through Paystack KYC to unlock Live Mode.
+
+    --Generate Test & Live API Keys.
+
+--Backend Requirements:
+
+    --Webhook Integration: Ensure /api/payments/webhook is configured to listen for Paystack events.
+
+    --Order Status: Database must automatically update order status to PAID upon receiving the successful webhook payload.
+
+
+
+
+***Phase 3: App Stores & 2026 Legal Setup
+
+Objective: Establish official Apple & Google Developer accounts and meet 2026 legal mandates.
+
+--PM Actions (Client Handover):
+
+    --Request D-U-N-S Number from Dun & Bradstreet (for Apple).
+
+    --Pay registration fees (Apple: $99/yr, Google: $25).
+
+    --Host required live Privacy Policy page on Vercel.
+
+--Backend Requirements:
+
+    --Data Deletion Mandate (CRITICAL): 2026 App Store policies mandate an in-app and web-based account deletion method.
+
+    --Action Item: Build a secure DELETE /api/users/me endpoint that completely wipes or anonymizes a user's PII (Name, Phone, Address history).
+
+
+
+
+***Phase 4: App Store Location Compliance
+
+Objective: Bypass strict 2026 App Store rejections regarding user location tracking.
+
+--PM Actions (Frontend):
+
+    --Build a custom "Prominent Disclosure" pop-up before triggering the system location prompt.
+
+    --Record a UI demonstration video proving compliance for App Store reviewers.
+
+--Backend Requirements:
+
+    --No Background Tracking (CRITICAL): Do not write or rely on any background location tracking or geofencing logic. Apps doing this are instantly suspended.
+
+    --Action Item: The backend must rely entirely on the static latitude and longitude coordinates explicitly passed by the frontend (either when a user saves an address in their profile, or selects a location during checkout). Do not implement any continuous live-tracking or background geofencing logic.

@@ -56,11 +56,11 @@ To Do List:
 47. (✅Done) In the favorite page it is not updating it's grid card with live data...when i added a package to fav when item was unavailable, after that item was available, in the fav page that grid card still shows that an item is not available in the package.
 48. (Victor) There should be an error message that says something like "This email is not registered with Bwari Kitchen" in caseses where a user without an account tries to login, also check there should be appropriate error massage that shows for various scenarios like bad network etc. 
 49. (Victor) Let us add delivery code on active orders so rider can confirm that order belongs to the customer by inserting code on rider page customer give...
-(✅Done...i've updated the ui)we are adding a secure OTP system for order handoffs. Can you please:
-*Generate a random 4-digit deliveryCode whenever an order is created successfully not pending oo and save it to the database.
-*Include that deliveryCode in the response when the frontend calls GET /api/orders.
-*Create a new endpoint for the Rider/Admin app where they can input this code to verify and successfully mark the order as 'Delivered' or 'Picked Up'."*
-*Once you're done remove the hardcoded (|| "8492") so the real code (order.deliveryCode) can appear in the my-orders.tsx page
+    (✅Done...i've updated the ui)we are adding a secure OTP system for order handoffs. Can you please:
+    *Generate a random 4-digit deliveryCode whenever an order is created successfully not pending oo and save it to the database.
+    *Include that deliveryCode in the response when the frontend calls GET /api/orders.
+    *Create a new endpoint for the Rider/Admin app where they can input this code to verify and successfully mark the order as 'Delivered' or 'Picked Up'."*
+    *Once you're done remove the hardcoded (|| "8492") so the real code (order.deliveryCode) can appear in the my-orders.tsx page
 50. (✅Done) the wlcome, login and sign up page are repeating themself when you click back button because i've entered them motiple times from one page to the other click on "already have an account? Sign in" and "Don't have an account? sign up" so ones i've navigated on this pages from each other when i press the phone's back button it then goes back to them again and again before it finally lands on the welcome page 
 51. (Victor) Let us not forget to resolve the: 
 *(partially ✅Done)save address features,
@@ -149,3 +149,9 @@ IOS UI/UX problems
 3. the slide down to load for the details page is not working it is just over sliding the page that the item or package image section totally slides down and start showing the white background of the app but it is working fine on android...Note:the menu, favorite etc pages slide down to reload feature are working just fine
 4. After searching on the search page when user clicks the item or package they searched the details page then slides up partially like a animated modal instead of it to go to the details page as a full page then when you keep navigating to various pages from that details page the next page acts same way then it looks like the search page is minimizing these other pages. but clicking on a package on the home page the details page comes out normally like a full page just the search page that may be the cause...note this problem only happens on IOS
 5. Check if the app icon theme is working
+
+
+
+Client handover guide
+we will run this setup in various phases
+
