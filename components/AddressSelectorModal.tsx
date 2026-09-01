@@ -57,7 +57,9 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
   const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const router = useSafeRouter();
-  const { addresses, activeAddress, setActiveAddress, addCurrentLocationAddress } = useAddresses();
+  
+  // FIX: Destructured addAddress instead of addCurrentLocationAddress
+  const { addresses, activeAddress, setActiveAddress, addAddress } = useAddresses();
 
   const [inputText, setInputText] = useState('');
   const [isRendering, setIsRendering] = useState(visible);
@@ -124,7 +126,6 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
         Animated.timing(slideAnim, { toValue: scale(500), duration: 250, useNativeDriver: true })
       ]).start(() => setIsRendering(false));
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible, fadeAnim, slideAnim, isRendering]);
 
   useEffect(() => {
@@ -253,7 +254,8 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
         longitude: parseFloat(confirmedMapData.longitude) 
       };
 
-      const result: any = await addCurrentLocationAddress(payload);
+      // FIX: Using addAddress so the true map coordinates are respected
+      const result: any = await addAddress(payload);
       
       if (result.success) {
         const newAddressId = result.id || result.address?.id || result.data?.id;

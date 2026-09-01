@@ -48,7 +48,7 @@ export default function SavedAddressesScreen() {
   const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   
-  const { addresses, loading, removeAddress, setDefaultAddress, addCurrentLocationAddress, updateAddress } = useAddresses();
+  const { addresses, loading, removeAddress, setDefaultAddress, addAddress, updateAddress } = useAddresses();
 
   const [modalVisible, setModalVisible] = useState(false);
   const [isRendering, setIsRendering] = useState(false); 
@@ -59,7 +59,6 @@ export default function SavedAddressesScreen() {
   const [landmark, setLandmark] = useState('');
   const [area, setArea] = useState('');
   
-  // Replaced coordinates with explicit latitude and longitude
   const [latitude, setLatitude] = useState(''); 
   const [longitude, setLongitude] = useState(''); 
 
@@ -209,7 +208,6 @@ export default function SavedAddressesScreen() {
     setIsConfirmingMap(true);
 
     try {
-      // Formatted to 6 decimal places to match db.Decimal(9, 6)
       setLatitude(mapRegion.latitude.toFixed(6));
       setLongitude(mapRegion.longitude.toFixed(6));
 
@@ -266,14 +264,14 @@ export default function SavedAddressesScreen() {
         await updateAddress(editingId, payload);
         setModalVisible(false);
       } else {
-        const result: any = await addCurrentLocationAddress(payload);
+        const result: any = await addAddress(payload);
         if (result.success) {
           setModalVisible(false);
         } else {
           Alert.alert('Location Error', result.error || 'Could not save this address.');
         }
       }
-    } catch (err) {
+    } catch (error) {
       Alert.alert('Error', 'Something went wrong saving this address. Please try again.');
     } finally {
       setSaving(false);
@@ -315,7 +313,7 @@ export default function SavedAddressesScreen() {
         {loading ? (
           <ActivityIndicator color={Colors.primary} style={{ marginTop: scale(40) }} />
         ) : addresses.length > 0 ? (
-          addresses.map((item) => (
+          addresses.map((item: Address) => (
             <TouchableOpacity 
               key={item.id} 
               style={[
