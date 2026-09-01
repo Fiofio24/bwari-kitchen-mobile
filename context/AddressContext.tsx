@@ -27,12 +27,14 @@ interface AddressContextType {
     latitude: number;
     longitude: number;
     isDefault?: boolean;
-  }) => Promise<void>;
+  }) => Promise<{ success: boolean; id?: string; error?: string }>;
   updateAddress: (id: string, updates: {
     label?: string;
     streetAddress?: string;
     landmark?: string;
     area?: string;
+    latitude?: number; 
+    longitude?: number;
   }) => Promise<void>;
   addCurrentLocationAddress: (details: {
     label?: string;
@@ -43,8 +45,6 @@ interface AddressContextType {
   }) => Promise<{ success: boolean; error?: string }>;
   removeAddress: (id: string) => Promise<void>;
   setDefaultAddress: (id: string) => Promise<void>;
-  
-  // NEW: Function to set a temporary address for the current order
   setActiveAddress: (id: string | null) => void; 
 }
 
@@ -53,8 +53,6 @@ const AddressContext = createContext<AddressContextType | undefined>(undefined);
 export function AddressProvider({ children }: { children: React.ReactNode }) {
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [loading, setLoading] = useState(true);
-  
-  // NEW: State to hold the temporary address selected for this specific session
   const [tempActiveId, setTempActiveId] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
@@ -82,8 +80,13 @@ export function AddressProvider({ children }: { children: React.ReactNode }) {
     longitude: number;
     isDefault?: boolean;
   }) => {
-    await api.post('/api/addresses', address);
-    await refresh();
+    try {
+      const res = await api.post('/api/addresses', address);
+      await refresh();
+      return { success: true, id: res.data.address.id };
+    } catch (err: any) {
+      return { success: false, error: err.response?.data?.message || err.message };
+    }
   };
 
   const updateAddress = async (id: string, updates: {
@@ -91,6 +94,8 @@ export function AddressProvider({ children }: { children: React.ReactNode }) {
     streetAddress?: string;
     landmark?: string;
     area?: string;
+    latitude?: number;
+    longitude?: number;
   }) => {
     await api.patch(`/api/addresses/${id}`, updates);
     await refresh();
@@ -133,7 +138,6 @@ export function AddressProvider({ children }: { children: React.ReactNode }) {
 
   const setDefaultAddress = async (id: string) => {
     await api.patch(`/api/addresses/${id}/default`);
-    // Clear the temporary selection if they manually change the permanent default
     setTempActiveId(null); 
     await refresh();
   };
@@ -142,13 +146,9 @@ export function AddressProvider({ children }: { children: React.ReactNode }) {
     setTempActiveId(id);
   };
 
-  // MODIFIED: Smart Active Address Calculation
-  // 1. Try the temporary session address first.
-  // 2. If none, fall back to the database default.
-  // 3. If no default, just grab the first address they have.
   const activeAddress = 
-    (tempActiveId ? addresses.find(a => a.id === tempActiveId) : null) || 
-    addresses.find(a => a.isDefault) || 
+    (tempActiveId ? addresses.find((a: Address) => a.id === tempActiveId) : null) || 
+    addresses.find((a: Address) => a.isDefault) || 
     addresses[0] || 
     null;
 
@@ -163,7 +163,7 @@ export function AddressProvider({ children }: { children: React.ReactNode }) {
       updateAddress,
       removeAddress,
       setDefaultAddress,
-      setActiveAddress, // <-- Provided globally
+      setActiveAddress, 
     }}>
       {children}
     </AddressContext.Provider>

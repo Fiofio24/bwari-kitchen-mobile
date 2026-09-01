@@ -1,11 +1,10 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { 
   View, 
   Text, 
   StyleSheet, 
   TouchableOpacity, 
   ScrollView, 
-  Platform,
   Alert,
   TextInput,
   Switch,
@@ -20,7 +19,6 @@ import { useSafeRouter } from '../hooks/useSafeRouter';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context'; 
 import { WebView } from 'react-native-webview';
-import * as WebBrowser from 'expo-web-browser';
 import { useTheme } from '../context/ThemeContext';
 import { Colors } from '../constants/Colors';
 import { StatusBar } from 'expo-status-bar';
@@ -83,9 +81,77 @@ export default function CheckoutScreen() {
 
   const [paymentModalData, setPaymentModalData] = useState<{ url: string; reference: string } | null>(null);
 
+  // New states for Branch settings
+  const [acceptsDelivery, setAcceptsDelivery] = useState(true);
+  const [acceptsPickup, setAcceptsPickup] = useState(true);
+  const [isLoadingSettings, setIsLoadingSettings] = useState(true);
+  
+  // Dynamic Branch Details
+  const [branchName, setBranchName] = useState('Bwari Kitchen');
+  const [branchAddress, setBranchAddress] = useState('Loading address...');
+
   const { width } = useWindowDimensions();
   const cardWidth = width - scale(40); 
   const scrollViewRef = useRef<ScrollView>(null);
+
+  useEffect(() => {
+    let intervalId: NodeJS.Timeout;
+
+    const fetchSettings = async () => {
+      try {
+        const res = await api.get('/api/menu/branch'); 
+        const branchInfo = res.data?.branch; 
+        
+        if (branchInfo) {
+          const canDeliver = branchInfo.acceptsDelivery !== false;
+          const canPickup = branchInfo.acceptsPickup !== false;
+          
+          // Set dynamic name and address
+          if (branchInfo.name) setBranchName(branchInfo.name);
+          if (branchInfo.address) setBranchAddress(branchInfo.address);
+          
+          setAcceptsDelivery(prev => {
+            if (prev !== canDeliver) {
+              // If Delivery was just turned OFF while user is on the Delivery tab
+              if (!canDeliver && deliveryMethod === 'delivery' && canPickup) {
+                setDeliveryMethod('pickup');
+                setTimeout(() => scrollViewRef.current?.scrollTo({ x: cardWidth, animated: true }), 100);
+                Alert.alert('Delivery Unavailable', 'The restaurant just turned off deliveries. We have switched your order to Pick Up.');
+              }
+              return canDeliver;
+            }
+            return prev;
+          });
+          
+          setAcceptsPickup(prev => {
+            if (prev !== canPickup) {
+              // If Pickup was just turned OFF while user is on the Pickup tab
+              if (!canPickup && deliveryMethod === 'pickup' && canDeliver) {
+                setDeliveryMethod('delivery');
+                setTimeout(() => scrollViewRef.current?.scrollTo({ x: 0, animated: true }), 100);
+                Alert.alert('Pickup Unavailable', 'The restaurant just turned off pick-ups. We have switched your order to Delivery.');
+              }
+              return canPickup;
+            }
+            return prev;
+          });
+        }
+      } catch (err: any) {
+        // Fail silently during background polling so we don't interrupt the user
+      } finally {
+        setIsLoadingSettings(false);
+      }
+    };
+
+    // 1. Fetch immediately when screen opens
+    fetchSettings();
+
+    // 2. Start the live background listener (checks every 10 seconds)
+    intervalId = setInterval(fetchSettings, 10000);
+
+    // 3. Clean up the listener when user leaves the checkout screen
+    return () => clearInterval(intervalId);
+  }, [cardWidth, deliveryMethod]);
 
   const handleTabPress = (method: 'delivery' | 'pickup') => {
     setDeliveryMethod(method);
@@ -98,6 +164,10 @@ export default function CheckoutScreen() {
     const index = Math.round(offsetX / cardWidth);
     const newMethod = index === 0 ? 'delivery' : 'pickup';
     if (deliveryMethod !== newMethod) {
+      // Ensure we don't accidentally swipe to a disabled method
+      if (newMethod === 'delivery' && !acceptsDelivery) return;
+      if (newMethod === 'pickup' && !acceptsPickup) return;
+      
       setDeliveryMethod(newMethod);
     }
   };
@@ -143,7 +213,7 @@ export default function CheckoutScreen() {
   
   const [estimatedDeliveryFee, setEstimatedDeliveryFee] = useState(0);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const fetchFee = async () => {
       if (deliveryMethod !== 'delivery' || !activeAddress?.id) {
         setEstimatedDeliveryFee(0);
@@ -151,8 +221,10 @@ export default function CheckoutScreen() {
       }
       try {
         const res = await api.post('/api/addresses/delivery-fee', { addressId: activeAddress.id });
+        console.log("✅ DELIVERY FEE SUCCESS DATA:", res.data);
         setEstimatedDeliveryFee(res.data.deliveryFee);
-      } catch {
+      } catch (error: any) {
+        console.log("❌ DELIVERY FEE ERROR:", error.response?.data || error.message);
         setEstimatedDeliveryFee(0);
       }
     };
@@ -220,6 +292,15 @@ export default function CheckoutScreen() {
   const handlePlaceOrder = async () => {
     if (checkoutItems.length === 0) return;
 
+    if (deliveryMethod === 'delivery' && !acceptsDelivery) {
+      Alert.alert('Delivery Unavailable', 'Delivery is currently turned off by the restaurant.');
+      return;
+    }
+    if (deliveryMethod === 'pickup' && !acceptsPickup) {
+      Alert.alert('Pickup Unavailable', 'Pickup is currently turned off by the restaurant.');
+      return;
+    }
+
     if (deliveryMethod === 'delivery' && !activeAddress) {
       Alert.alert('Address Required', 'Please select a delivery address before placing your order.');
       return;
@@ -247,18 +328,17 @@ export default function CheckoutScreen() {
       const order = orderRes.data.order || orderRes.data.data || orderRes.data;
 
       if (!order || (!order.id && !order._id)) {
-        throw new Error(`Missing Order ID from backend. Response: ${JSON.stringify(orderRes.data)}`);
+        throw new Error(`Something went wrong connecting to the payment gateway.`);
       }
 
       const actualOrderId = order.id || order._id;
-
       const paymentRes = await api.post('/api/payments/initialize', { orderId: actualOrderId });
       
       const paymentUrl = paymentRes.data.paymentUrl || paymentRes.data.data?.authorization_url || paymentRes.data.authorization_url;
       const reference = paymentRes.data.reference || paymentRes.data.data?.reference;
 
       if (!paymentUrl) {
-        throw new Error(`Missing Paystack URL. Response: ${JSON.stringify(paymentRes.data)}`);
+        throw new Error(`Failed to generate a secure payment link.`);
       }
 
       try {
@@ -270,19 +350,25 @@ export default function CheckoutScreen() {
       
     } catch (err: any) {
       console.log("CHECKOUT ERROR:", err);
-      let errorMsg = 'Something went wrong.';
+      let errorMsg = 'Something went wrong while placing your order. Please try again.';
       
+      // Clean, user-friendly error formatting
       if (err.response) {
-        const backendMsg = err.response.data?.message || err.response.data?.error || JSON.stringify(err.response.data);
-        errorMsg = `Backend Error (${err.response.status}): \n\n${backendMsg}`;
-      } else {
-        errorMsg = `App Error: \n\n${err.message}`;
+        errorMsg = err.response.data?.message || err.response.data?.error || errorMsg;
+      } else if (err.message) {
+        errorMsg = err.message;
       }
 
-      Alert.alert('Checkout Diagnostic', errorMsg);
+      Alert.alert('Checkout Error', errorMsg);
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  // Helper function to safely render the address label/title with a fallback
+  const getAddressTitle = (address: any) => {
+    if (!address) return "No address selected";
+    return address.title || address.label || "Address";
   };
 
   return (
@@ -307,31 +393,49 @@ export default function CheckoutScreen() {
         
         <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>ORDER FULFILLMENT</Text>
         
-        <View style={[styles.methodToggleContainer, { backgroundColor: isDark ? colors.surface : '#F5F5F5' }]}>
-          <TouchableOpacity 
-            style={[
-              styles.methodToggleBtn, 
-              deliveryMethod === 'delivery' ? [styles.methodToggleBtnActive, { backgroundColor: Colors.primary }] : null
-            ]}
-            onPress={() => handleTabPress('delivery')}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="bicycle" size={scale(18)} color={deliveryMethod === 'delivery' ? '#FFF' : colors.textMuted} />
-            <Text style={[styles.methodToggleText, { color: deliveryMethod === 'delivery' ? '#FFF' : colors.textMuted }]}>Delivery</Text>
-          </TouchableOpacity>
+        {isLoadingSettings ? (
+          <ActivityIndicator style={{ marginBottom: scale(15) }} color={Colors.primary} />
+        ) : (
+          <View style={[styles.methodToggleContainer, { backgroundColor: isDark ? colors.surface : '#F5F5F5' }]}>
+            <TouchableOpacity 
+              style={[
+                styles.methodToggleBtn, 
+                deliveryMethod === 'delivery' && acceptsDelivery ? [styles.methodToggleBtnActive, { backgroundColor: Colors.primary }] : null,
+                !acceptsDelivery && { opacity: 0.4 }
+              ]}
+              onPress={() => {
+                if (acceptsDelivery) handleTabPress('delivery');
+                else Alert.alert('Unavailable', 'Delivery is currently turned off by the restaurant.');
+              }}
+              activeOpacity={0.8}
+              disabled={!acceptsDelivery}
+            >
+              <Ionicons name="bicycle" size={scale(18)} color={deliveryMethod === 'delivery' && acceptsDelivery ? '#FFF' : colors.textMuted} />
+              <Text style={[styles.methodToggleText, { color: deliveryMethod === 'delivery' && acceptsDelivery ? '#FFF' : colors.textMuted }]}>
+                {acceptsDelivery ? 'Delivery' : 'Delivery (Off)'}
+              </Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity 
-            style={[
-              styles.methodToggleBtn, 
-              deliveryMethod === 'pickup' ? [styles.methodToggleBtnActive, { backgroundColor: Colors.primary }] : null
-            ]}
-            onPress={() => handleTabPress('pickup')}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="storefront" size={scale(18)} color={deliveryMethod === 'pickup' ? '#FFF' : colors.textMuted} />
-            <Text style={[styles.methodToggleText, { color: deliveryMethod === 'pickup' ? '#FFF' : colors.textMuted }]}>Pick Up</Text>
-          </TouchableOpacity>
-        </View>
+            <TouchableOpacity 
+              style={[
+                styles.methodToggleBtn, 
+                deliveryMethod === 'pickup' && acceptsPickup ? [styles.methodToggleBtnActive, { backgroundColor: Colors.primary }] : null,
+                !acceptsPickup && { opacity: 0.4 }
+              ]}
+              onPress={() => {
+                if (acceptsPickup) handleTabPress('pickup');
+                else Alert.alert('Unavailable', 'Pickup is currently turned off by the restaurant.');
+              }}
+              activeOpacity={0.8}
+              disabled={!acceptsPickup}
+            >
+              <Ionicons name="storefront" size={scale(18)} color={deliveryMethod === 'pickup' && acceptsPickup ? '#FFF' : colors.textMuted} />
+              <Text style={[styles.methodToggleText, { color: deliveryMethod === 'pickup' && acceptsPickup ? '#FFF' : colors.textMuted }]}>
+                {acceptsPickup ? 'Pick Up' : 'Pick Up (Off)'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         <View style={[styles.card, { padding: 0, overflow: 'hidden', backgroundColor: colors.surface, borderColor: colors.border }]}>
           
@@ -341,6 +445,7 @@ export default function CheckoutScreen() {
             pagingEnabled
             showsHorizontalScrollIndicator={false}
             onMomentumScrollEnd={handleHorizontalScroll}
+            scrollEnabled={acceptsDelivery && acceptsPickup} // Lock swipe if one is disabled
           >
             <View style={{ width: cardWidth, padding: scale(15) }}>
               <View style={styles.addressRow}>
@@ -349,7 +454,7 @@ export default function CheckoutScreen() {
                 </View>
                 <View style={styles.addressTextContainer}>
                   <Text style={[styles.addressTitle, { color: colors.text }]} numberOfLines={1}>
-                    {(activeAddress as any)?.title || (activeAddress as any)?.label || "No address selected"}
+                    {getAddressTitle(activeAddress)}
                   </Text>
                   <Text style={[styles.addressDetail, { color: colors.textMuted }]} numberOfLines={1}>
                     {activeAddress ? [(activeAddress as any)?.address || (activeAddress as any)?.streetAddress, (activeAddress as any)?.area].filter(Boolean).join(', ') : "Please add a delivery address"}
@@ -377,8 +482,8 @@ export default function CheckoutScreen() {
                   <Ionicons name="storefront" size={scale(24)} color="#4CAF50" />
                 </View>
                 <View style={styles.addressTextContainer}>
-                  <Text style={[styles.addressTitle, { color: colors.text }]}>Bwari Kitchen Main Branch</Text>
-                  <Text style={[styles.addressDetail, { color: colors.textMuted }]}>No 1 Kitchen Avenue, Central FCT</Text>
+                  <Text style={[styles.addressTitle, { color: colors.text }]}>{branchName}</Text>
+                  <Text style={[styles.addressDetail, { color: colors.textMuted }]}>{branchAddress}</Text>
                 </View>
               </View>
 

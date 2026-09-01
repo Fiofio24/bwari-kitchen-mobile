@@ -289,9 +289,9 @@ export default function QuickEditPackage({
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
               
-              <View style={styles.searchContainer}>
+              {/* <View style={styles.searchContainer}>
                 <SearchBar onSubmit={(text) => setSearchQuery(text)} />
-              </View>
+              </View> */}
               
               <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>CURRENT ITEMS</Text>
               
