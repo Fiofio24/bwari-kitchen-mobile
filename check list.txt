@@ -18,17 +18,17 @@ To Do List:
 17. for the package and menu images make a loading effect when their yet to fetch the actual image for that item also generally creat loading effects for any other thing like package details texts
 18. (✅Done)in the sign up page under password input section make that it will have a kind of must have features before the password will be accepted like showing message under "password must be up to 8-characters" etc
 19. (Victor)it's like cart packages are being saved to phone memory or something even when i created a new account on signig up successful the account already had items in the cart that i added when i was logged in on another account before
-20. 
-    (✅Done) in the promo page instead of the "copy code" button let it be copy icon so that there would be enough space in case of long promo code
+20. (✅Done) in the promo page instead of the "copy code" button let it be copy icon so that there would be enough space in case of long promo code
 21. (✅Done) in the sidebar the sign out button does not have allowance for the phone's navigation bar 
 22. (✅Done)the location area in the home page at the very top should show the selected address not "Select Location" and on new opening of the app the location that will show there will be the default location 
 23. (Victor☑️) in the admin dashboard in menu page when creating a new package after adding a discription then saved the package, then in the main customer app the discription on the details page was showing a hardcoded discrition aside the perticular discription i just added to that new package.
 	🗣️Response: It is a frontend issue where only the item name is taken and put into the hardcoded message. 
+🚩  🗣️(Fio)Response: Ok
 24. (✅Done)(Suggestion single items shouldn't even have a details page) but if they must have when a menu item is searched and clicked after taking them to the details page for that single item, on the buttom bar it's suppose to say "add to package" not "add to cart" so the user can create a package with that menu item. but it is ok for it to say "add to car" when it was a combo package that was clicked. also on a single item details page after clicking the "add to package" an option list should slide from the bottom and show "add to existing package" in case they've already started creating package before they searched an item, second option should be "add to new package" then below the second option there should be a warning note to tell them that if they had an existing package before it will be lost.
 25. (Victor) the profile image for users is not saving in the data base after log out and login the profile image disappears 
 26. (Victor✅) the admin page is too sluggish it will frustrate them
 27. (✅Done) ON changing location on checkout page or home page the newly changed location shouldn't automatically change to default location onless they change it right from Manage Addresses page
-28. (Victor✅) In the admin menu page under items, the list of items is not scrollable to the right on mobile view. it should be just like the categories list is scrollable to the right on mobile view
+28. ❌recheck(Victor✅) In the admin menu page under items, the list of items is not scrollable to the right on mobile view. it should be just like the categories list is scrollable to the right on mobile view
 29. (✅Done) in case of a situation where admin completely deletes an item in the menu page of the app the item disappears that's good but in the combo package in home page and packages in cart they stay as if nothing happened then when i want to edit a plate that the item no longer exist the item name becomes "unknown item" only whe i want to edit that a user can realise something is wrong with that particular item
 30. (✅Done)The image in QuickEditPackage.tsx above "Your package is empty" is not showing the right image which is "../assets/images/Icon&logo/empty-package.png"
 31. (✅Done) Don't forget to remove the user testing feadback feature when ready for real build for official lunch version
@@ -38,26 +38,29 @@ To Do List:
 35. (✅Done) (Victor) when admin change price for a particular item and a customer click reorder in the past order which have the old price, on click of "place ordre" it throws an error saying "Menu item {the item name} is not available". instead of the reorder to automatically update the price for that item. so basically because a data for that item was changed it then assumes the item doesn't exist because it was reordered from an out dated order price. maybe i can fix this from my end with a logic that tell the reorder button to refetch the current prices and other info for that order 
 36. (Victor) the switch off button in the admin customers page, what does it do. cuz i thought it was supposed to deactivate a customer but i don't think that works....(08/08/2026) Ooo it actually works but it doesn't log them out, they have to log out first then try to login again before it denies then access...let me try to fix this from my end so that when admin deacticates a customer it automatically logs them out instantly. 
 	🗣️Response: Did you fix it?
+🚩  🗣️(Fio)Response: Not yet
 37. (Victor✅) add a loading feature to the admin page so user will know what ever they clicked is processing to prevent double or more repeated action...make sure when loading user 
 38. Change your brand name to fioWeber or something more cool and unique 
 39. (Victor) In the admin dashboard the "total revenue" section it shounldn't be that only successful payment on paystack will be calculated, what if an error occurs and customer got debited but paystack sees it as pending or failed and admin then confirms the payment the forcefully change the order status to confirmed that means that order won't add up in the dashboard's total revenue calculation 
 40. (Victor) Need of push notification to alart customer on their phone
 41. (Victor✅) Can you make the admin to be able to create more than one user access so that when checcking the activity log they can know which particular admin did whatever whenever
 	🗣️Response: that's the current design. you are seeing only one activity log because we are using the same login credentials.
+    🗣️(Fio)Response: Ok, nice let me have the other credential. But how do one create another admin user
 42. (✅Done) Create the user agreement and privacy policy on sign up. Also is the checkbox for user agreement and privacy policy necessary for the login if not remove.
 43. (Victor) let's integrate the "forgot password?" section.
 44. (Victor) in the personal info page let us rethink on a perfect system for changing phone number i think they should have a number of changes then before they will have to contact support to change or till another period of time again something like that. let's just put this section into concrete thought.
 45. (Victor) Should user be able to delete their account??
 	🗣️Response: yes. do you think otherwise?
+    🗣️(Fio)Response: not really just wanted to confirm, that means you'll need to integrate it in the profile page so the delete account button works
 46. (✅Removed that button...Since for now we only have one payment option (Paystack))Payment method option in the profile page is not routing to a valid page 
 47. (✅Done) In the favorite page it is not updating it's grid card with live data...when i added a package to fav when item was unavailable, after that item was available, in the fav page that grid card still shows that an item is not available in the package.
 48. (Victor) There should be an error message that says something like "This email is not registered with Bwari Kitchen" in caseses where a user without an account tries to login, also check there should be appropriate error massage that shows for various scenarios like bad network etc. 
 49. (Victor) Let us add delivery code on active orders so rider can confirm that order belongs to the customer by inserting code on rider page customer give...
 (✅Done...i've updated the ui)we are adding a secure OTP system for order handoffs. Can you please:
-*Generate a random 4-digit deliveryCode whenever an order is created and save it to the database.
+*Generate a random 4-digit deliveryCode whenever an order is created successfully not pending oo and save it to the database.
 *Include that deliveryCode in the response when the frontend calls GET /api/orders.
 *Create a new endpoint for the Rider/Admin app where they can input this code to verify and successfully mark the order as 'Delivered' or 'Picked Up'."*
-*Once you're done remove the (|| "8492") so the real code (order.deliveryCode) can appear in the my-orders.tsx page
+*Once you're done remove the hardcoded (|| "8492") so the real code (order.deliveryCode) can appear in the my-orders.tsx page
 50. (✅Done) the wlcome, login and sign up page are repeating themself when you click back button because i've entered them motiple times from one page to the other click on "already have an account? Sign in" and "Don't have an account? sign up" so ones i've navigated on this pages from each other when i press the phone's back button it then goes back to them again and again before it finally lands on the welcome page 
 51. (Victor) Let us not forget to resolve the: 
 *(partially ✅Done)save address features,
@@ -80,6 +83,9 @@ To Do List:
 58. (Victor) does the backend save the cart data? if not please it should
 59. (✅Done)the orders in profile page is not showing the right total numbers of order history it only shows 0 when empty and 1 no matter how many. make sure it doesn't calculate orders that are pending or cancled
 60. (Victor✅) Fix the 404 error in the admin page
+    🗣️(Fio)Response:the 404 error still dey oo and you said you've fixed it
+    when ever i refresh admin page the error shows i gas edit the url from this https://bwari-kitchen-admin.vercel.app/(any-page) to this https://bwari-kitchen-admin.vercel.app/ before e go back to dashboard 
+    i'll need to delete the page name e.g "activity-log" from the url
 61. (Victor) There should be a print receipt feature on the admin to print orders receipt 
 62. (Victor✅) Work on the delivery fee, it's not refleccting on the customer app
 63. (✅Done) for the search page use should be able to search by categories also eg. "Drinks" then all items under drinks will appear
