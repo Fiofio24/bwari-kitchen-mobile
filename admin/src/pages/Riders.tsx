@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
-import { Bike, Phone, Mail, Search, ChevronRight } from 'lucide-react'
+import { motion } from 'framer-motion'
+import { Bike, Phone, Mail, Search, ChevronRight, Plus } from 'lucide-react'
 import LoadingButton from '../components/LoadingButton'
 import { showSuccess, showError, getErrorMessage } from '../lib/toast'
 import Layout from '../components/Layout'
 import Modal from '../components/Modal'
-import ConfirmDialog from '../components/ConfirmDialog'
 import Toggle from '../components/Toggle'
 import Pagination from '../components/Pagination'
 import api from '../lib/api'
@@ -29,6 +29,8 @@ interface RiderDetail extends Rider {
     createdAt: string
   }[]
 }
+
+const inputClass = "w-full border border-surface-200 rounded-xl px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400 transition-shadow"
 
 export default function Riders() {
   const [riders, setRiders] = useState<Rider[]>([])
@@ -75,7 +77,7 @@ export default function Riders() {
 
   const handleCreate = async () => {
     if (!createForm.fullName || !createForm.phoneNumber || !createForm.password) {
-      return alert('Full name, phone number and password are required')
+      return showError('Full name, phone number and password are required')
     }
     setCreating(true)
     try {
@@ -84,7 +86,6 @@ export default function Riders() {
       setCreateForm({ fullName: '', phoneNumber: '', password: '', email: '' })
       fetchRiders()
       showSuccess('Rider created successfully')
-    
     } catch (err: any) {
       showError(getErrorMessage(err))
     } finally {
@@ -129,35 +130,38 @@ export default function Riders() {
   return (
     <Layout>
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-        <h2 className="text-2xl font-bold text-gray-900">Riders</h2>
-        <button
-          onClick={() => setCreateModalOpen(true)}
-          className="px-4 py-2 bg-brand-600 text-white rounded-lg text-sm font-medium hover:bg-brand-700"
-        >
-          + Add Rider
-        </button>
+        <div>
+          <h2 className="text-2xl font-bold text-surface-900">Riders</h2>
+          <p className="text-sm text-surface-400 mt-0.5">Your delivery team</p>
+        </div>
+        <LoadingButton onClick={() => setCreateModalOpen(true)} className="px-4 py-2.5">
+          <Plus size={16} /> Add Rider
+        </LoadingButton>
       </div>
 
       <form onSubmit={handleSearch} className="flex gap-2 mb-4">
         <div className="relative w-64">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-surface-400" />
           <input
             type="text"
             placeholder="Search by name or phone..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="border border-gray-300 rounded-lg pl-9 pr-3 py-2 text-sm w-full"
+            className="border border-surface-200 rounded-xl pl-9 pr-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400 transition-shadow"
           />
         </div>
-        <button type="submit" className="px-3 py-2 text-sm bg-gray-100 rounded-lg hover:bg-gray-200">
+        <button
+          type="submit"
+          className="px-3.5 py-2 text-sm font-medium bg-surface-100 text-surface-700 rounded-xl hover:bg-surface-200 transition-colors"
+        >
           Search
         </button>
       </form>
 
-      <div className="bg-white rounded-xl border border-gray-100 overflow-x-auto">
+      <div className="bg-white rounded-2xl border border-surface-100 overflow-x-auto">
         <table className="w-full text-sm min-w-[650px]">
           <thead>
-            <tr className="bg-gray-50 text-left text-gray-500 text-xs uppercase">
+            <tr className="bg-surface-50 text-left text-surface-500 text-xs uppercase">
               <th className="px-4 py-3">Name</th>
               <th className="px-4 py-3">Phone</th>
               <th className="px-4 py-3">Deliveries</th>
@@ -168,27 +172,30 @@ export default function Riders() {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={6} className="text-center py-8 text-gray-400">Loading riders...</td></tr>
+              <tr><td colSpan={6} className="text-center py-8 text-surface-400">Loading riders...</td></tr>
             ) : riders.length === 0 ? (
-              <tr><td colSpan={6} className="text-center py-8 text-gray-400">No riders found</td></tr>
+              <tr><td colSpan={6} className="text-center py-8 text-surface-400">No riders found</td></tr>
             ) : (
-              riders.map((rider) => (
-                <tr
+              riders.map((rider, i) => (
+                <motion.tr
                   key={rider.id}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.2, delay: i * 0.02 }}
                   onClick={() => openDetail(rider.id)}
-                  className="border-t border-gray-100 hover:bg-gray-50 cursor-pointer"
+                  className="border-t border-surface-100 hover:bg-surface-50 cursor-pointer"
                 >
-                  <td className="px-4 py-3 font-medium">{rider.fullName}</td>
-                  <td className="px-4 py-3 text-gray-500">{rider.phoneNumber}</td>
-                  <td className="px-4 py-3 text-gray-500">{rider._count.assignedDeliveries}</td>
+                  <td className="px-4 py-3 font-medium text-surface-900">{rider.fullName}</td>
+                  <td className="px-4 py-3 text-surface-500">{rider.phoneNumber}</td>
+                  <td className="px-4 py-3 text-surface-500">{rider._count.assignedDeliveries}</td>
                   <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                     <Toggle checked={rider.isActive} onChange={() => handleToggleActive(rider)} />
                   </td>
-                  <td className="px-4 py-3 text-gray-500">{formatDate(rider.createdAt)}</td>
-                  <td className="px-4 py-3 text-right text-gray-300">
+                  <td className="px-4 py-3 text-surface-500">{formatDate(rider.createdAt)}</td>
+                  <td className="px-4 py-3 text-right text-surface-300">
                     <ChevronRight size={16} className="inline" />
                   </td>
-                </tr>
+                </motion.tr>
               ))
             )}
           </tbody>
@@ -201,38 +208,38 @@ export default function Riders() {
       <Modal isOpen={createModalOpen} onClose={() => setCreateModalOpen(false)} title="Add New Rider">
         <div className="space-y-3">
           <div>
-            <label className="block text-sm font-medium mb-1">Full Name</label>
+            <label className="block text-sm font-medium mb-1 text-surface-700">Full Name</label>
             <input
               value={createForm.fullName}
               onChange={(e) => setCreateForm({ ...createForm, fullName: e.target.value })}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              className={inputClass}
               placeholder="e.g. Musa Ibrahim"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Phone Number</label>
+            <label className="block text-sm font-medium mb-1 text-surface-700">Phone Number</label>
             <input
               value={createForm.phoneNumber}
               onChange={(e) => setCreateForm({ ...createForm, phoneNumber: e.target.value })}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              className={inputClass}
               placeholder="08012345678"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Email (optional)</label>
+            <label className="block text-sm font-medium mb-1 text-surface-700">Email (optional)</label>
             <input
               value={createForm.email}
               onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              className={inputClass}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Password</label>
+            <label className="block text-sm font-medium mb-1 text-surface-700">Password</label>
             <input
               type="password"
               value={createForm.password}
               onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              className={inputClass}
               placeholder="At least 6 characters"
             />
           </div>
@@ -251,39 +258,39 @@ export default function Riders() {
         {selectedRider && (
           <div className="space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-brand-50 flex items-center justify-center">
-                <Bike size={22} className="text-brand-600" />
+              <div className="w-12 h-12 rounded-2xl bg-primary-50 flex items-center justify-center">
+                <Bike size={22} className="text-primary-600" />
               </div>
               <div>
-                <p className="font-medium">{selectedRider.fullName}</p>
-                <p className="text-sm text-gray-500">
+                <p className="font-medium text-surface-900">{selectedRider.fullName}</p>
+                <p className="text-sm text-surface-500">
                   {selectedRider.isActive ? 'Active' : 'Deactivated'}
                 </p>
               </div>
             </div>
 
-            <div className="bg-gray-50 rounded-lg p-3 space-y-2 text-sm">
-              <div className="flex items-center gap-2 text-gray-600">
+            <div className="bg-surface-50 rounded-xl p-3.5 space-y-2 text-sm">
+              <div className="flex items-center gap-2 text-surface-600">
                 <Phone size={14} /> {selectedRider.phoneNumber}
               </div>
               {selectedRider.email && (
-                <div className="flex items-center gap-2 text-gray-600">
+                <div className="flex items-center gap-2 text-surface-600">
                   <Mail size={14} /> {selectedRider.email}
                 </div>
               )}
             </div>
 
             <div>
-              <p className="text-xs text-gray-500 mb-2">Recent Deliveries ({selectedRider._count.assignedDeliveries} total)</p>
+              <p className="text-xs text-surface-400 mb-2">Recent Deliveries ({selectedRider._count.assignedDeliveries} total)</p>
               {selectedRider.assignedDeliveries.length === 0 ? (
-                <p className="text-sm text-gray-400">No deliveries yet</p>
+                <p className="text-sm text-surface-400">No deliveries yet</p>
               ) : (
                 <div className="space-y-2">
                   {selectedRider.assignedDeliveries.map((d) => (
-                    <div key={d.id} className="flex justify-between items-center border border-gray-100 rounded-lg px-3 py-2 text-sm">
-                      <span className="font-medium">{d.orderNumber}</span>
-                      <span className="text-gray-500 capitalize">{d.status.replace('_', ' ')}</span>
-                      <span>{formatCurrency(d.totalAmount)}</span>
+                    <div key={d.id} className="flex justify-between items-center border border-surface-100 rounded-xl px-3 py-2 text-sm">
+                      <span className="font-medium text-surface-900">{d.orderNumber}</span>
+                      <span className="text-surface-500 capitalize">{d.status.replace('_', ' ')}</span>
+                      <span className="text-surface-700">{formatCurrency(d.totalAmount)}</span>
                     </div>
                   ))}
                 </div>
@@ -293,11 +300,11 @@ export default function Riders() {
             <LoadingButton
               loading={togglingId === selectedRider.id}
               onClick={() => handleToggleActive(selectedRider)}
-              variant="ghost"
-              className={`w-full py-2 border rounded-lg ${
+              variant="secondary"
+              className={`w-full py-2.5 ${
                 selectedRider.isActive
-                  ? 'border-red-200 text-red-600 hover:bg-red-50'
-                  : 'border-green-200 text-green-600 hover:bg-green-50'
+                  ? 'border-danger/30 text-danger hover:bg-danger/5'
+                  : 'border-success/30 text-green-600 hover:bg-success/5'
               }`}
             >
               {selectedRider.isActive ? 'Deactivate Rider' : 'Activate Rider'}

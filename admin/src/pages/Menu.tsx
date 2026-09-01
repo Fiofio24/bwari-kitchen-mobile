@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { motion } from 'framer-motion'
 import LoadingButton from '../components/LoadingButton'
 import { showSuccess, showError, getErrorMessage } from '../lib/toast'
 import Layout from '../components/Layout'
@@ -6,7 +7,7 @@ import Modal from '../components/Modal'
 import ConfirmDialog from '../components/ConfirmDialog'
 import Toggle from '../components/Toggle'
 import api from '../lib/api'
-import { Tag, UtensilsCrossed, Package as PackageIcon } from 'lucide-react'
+import { Tag, UtensilsCrossed, Package as PackageIcon, ChevronRight, Plus } from 'lucide-react'
 
 interface Category {
   id: string
@@ -44,6 +45,8 @@ interface Package {
 
 type Tab = 'categories' | 'items' | 'packages'
 
+const inputClass = "w-full border border-surface-200 rounded-xl px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400 transition-shadow"
+
 export default function Menu() {
   const [tab, setTab] = useState<Tab>('categories')
 
@@ -52,22 +55,22 @@ export default function Menu() {
     items: UtensilsCrossed,
     packages: PackageIcon,
   }
-  
+
   return (
     <Layout>
-      <h2 className="text-2xl font-bold text-gray-900 mb-4">Menu Management</h2>
+      <h2 className="text-2xl font-bold text-surface-900 mb-4">Menu Management</h2>
 
-      <div className="flex gap-1 mb-6 border-b border-gray-200 overflow-x-auto">
+      <div className="flex gap-1 mb-6 border-b border-surface-200 overflow-x-auto">
         {(['categories', 'items', 'packages'] as Tab[]).map((t) => {
           const Icon = tabIcons[t]
           return (
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium capitalize border-b-2 transition whitespace-nowrap ${
+              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium capitalize border-b-2 transition-colors whitespace-nowrap ${
                 tab === t
-                  ? 'border-brand-600 text-brand-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
+                  ? 'border-primary-500 text-primary-600'
+                  : 'border-transparent text-surface-500 hover:text-surface-800'
               }`}
             >
               <Icon size={16} />
@@ -75,7 +78,7 @@ export default function Menu() {
             </button>
           )
         })}
-    </div>
+      </div>
 
       {tab === 'categories' && <CategoriesTab />}
       {tab === 'items' && <ItemsTab />}
@@ -180,18 +183,15 @@ function CategoriesTab() {
   return (
     <div>
       <div className="flex justify-end mb-4">
-        <button
-          onClick={openCreate}
-          className="px-4 py-2 bg-brand-600 text-white rounded-lg text-sm font-medium hover:bg-brand-700"
-        >
-          + Add Category
-        </button>
+        <LoadingButton onClick={openCreate} className="px-4 py-2.5">
+          <Plus size={16} /> Add Category
+        </LoadingButton>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-100 overflow-x-auto">
+      <div className="bg-white rounded-2xl border border-surface-100 overflow-x-auto">
         <table className="w-full text-sm min-w-[600px]">
           <thead>
-            <tr className="bg-gray-50 text-left text-gray-500 text-xs uppercase">
+            <tr className="bg-surface-50 text-left text-surface-500 text-xs uppercase">
               <th className="px-4 py-3">Name</th>
               <th className="px-4 py-3">Items</th>
               <th className="px-4 py-3">Active</th>
@@ -200,27 +200,33 @@ function CategoriesTab() {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={4} className="text-center py-8 text-gray-400">Loading...</td></tr>
-            ) : categories.map((cat) => (
-              <tr
+              <tr><td colSpan={4} className="text-center py-8 text-surface-400">Loading...</td></tr>
+            ) : categories.map((cat, i) => (
+              <motion.tr
                 key={cat.id}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.2, delay: i * 0.02 }}
                 onClick={() => openEdit(cat)}
-                className="border-t border-gray-100 hover:bg-gray-50 cursor-pointer"
+                className="border-t border-surface-100 hover:bg-surface-50 cursor-pointer"
               >
-                <td className="px-4 py-3 font-medium">{cat.name}</td>
-                <td className="px-4 py-3 text-gray-500">{cat._count.menuItems}</td>
+                <td className="px-4 py-3 font-medium text-surface-900">{cat.name}</td>
+                <td className="px-4 py-3 text-surface-500">{cat._count.menuItems}</td>
                 <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                   <Toggle checked={cat.isActive} onChange={() => handleToggle(cat)} />
                 </td>
                 <td className="px-4 py-3 text-right">
-                  <button
-                    onClick={(e) => { e.stopPropagation(); setDeleteTarget(cat) }}
-                    className="text-red-500 font-medium"
-                  >
-                    Delete
-                  </button>
+                  <div className="flex items-center justify-end gap-3">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setDeleteTarget(cat) }}
+                      className="text-danger font-medium hover:text-red-700 transition-colors"
+                    >
+                      Delete
+                    </button>
+                    <ChevronRight size={16} className="text-surface-300" />
+                  </div>
                 </td>
-              </tr>
+              </motion.tr>
             ))}
           </tbody>
         </table>
@@ -229,29 +235,29 @@ function CategoriesTab() {
       <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Edit Category' : 'New Category'}>
         <div className="space-y-3">
           <div>
-            <label className="block text-sm font-medium mb-1">Name</label>
+            <label className="block text-sm font-medium mb-1 text-surface-700">Name</label>
             <input
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              className={inputClass}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Description</label>
+            <label className="block text-sm font-medium mb-1 text-surface-700">Description</label>
             <textarea
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              className={inputClass}
               rows={2}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Sort Order</label>
+            <label className="block text-sm font-medium mb-1 text-surface-700">Sort Order</label>
             <input
               type="number"
               value={form.sortOrder}
               onChange={(e) => setForm({ ...form, sortOrder: parseInt(e.target.value) || 0 })}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              className={inputClass}
             />
           </div>
           <LoadingButton loading={saving} onClick={handleSave} className="w-full py-2.5 mt-2">
@@ -350,13 +356,13 @@ function ItemsTab() {
   const addVariantRow = () => {
     setVariants([...variants, { label: '', price: '' }])
   }
-  
+
   const updateVariantRow = (index: number, field: 'label' | 'price', value: string) => {
     const updated = [...variants]
     updated[index] = { ...updated[index], [field]: value }
     setVariants(updated)
   }
-  
+
   const removeVariantRow = (index: number) => {
     setVariants(variants.filter((_, i) => i !== index))
   }
@@ -443,23 +449,20 @@ function ItemsTab() {
         <select
           value={categoryFilter}
           onChange={(e) => setCategoryFilter(e.target.value)}
-          className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+          className={inputClass + ' w-auto'}
         >
           <option value="">All Categories</option>
           {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
-        <button
-          onClick={openCreate}
-          className="px-4 py-2 bg-brand-600 text-white rounded-lg text-sm font-medium hover:bg-brand-700"
-        >
-          + Add Item
-        </button>
+        <LoadingButton onClick={openCreate} className="px-4 py-2.5">
+          <Plus size={16} /> Add Item
+        </LoadingButton>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+      <div className="bg-white rounded-2xl border border-surface-100 overflow-hidden">
         <table className="w-full text-sm">
           <thead>
-            <tr className="bg-gray-50 text-left text-gray-500 text-xs uppercase">
+            <tr className="bg-surface-50 text-left text-surface-500 text-xs uppercase">
               <th className="px-4 py-3">Item</th>
               <th className="px-4 py-3">Category</th>
               <th className="px-4 py-3">Price</th>
@@ -469,49 +472,55 @@ function ItemsTab() {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={5} className="text-center py-8 text-gray-400">Loading...</td></tr>
+              <tr><td colSpan={5} className="text-center py-8 text-surface-400">Loading...</td></tr>
             ) : items.length === 0 ? (
-              <tr><td colSpan={5} className="text-center py-8 text-gray-400">No items in this category</td></tr>
-            ) : items.map((item) => (
-              <tr
+              <tr><td colSpan={5} className="text-center py-8 text-surface-400">No items in this category</td></tr>
+            ) : items.map((item, i) => (
+              <motion.tr
                 key={item.id}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.2, delay: i * 0.02 }}
                 onClick={() => openEdit(item)}
-                className="border-t border-gray-100 hover:bg-gray-50 cursor-pointer"
+                className="border-t border-surface-100 hover:bg-surface-50 cursor-pointer"
               >
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-3">
                     {item.imageUrl ? (
-                      <img src={item.imageUrl} className="w-10 h-10 rounded-lg object-cover" />
+                      <img src={item.imageUrl} className="w-10 h-10 rounded-xl object-cover" />
                     ) : (
-                      <div className="w-10 h-10 rounded-lg bg-gray-100" />
+                      <div className="w-10 h-10 rounded-xl bg-surface-100" />
                     )}
                     <div>
-                      <div className="font-medium">{item.name}</div>
-                      {item.isFeatured && <span className="text-xs text-amber-600">★ Featured</span>}
+                      <div className="font-medium text-surface-900">{item.name}</div>
+                      {item.isFeatured && <span className="text-xs text-brand-600 font-medium">★ Featured</span>}
                     </div>
                   </div>
                 </td>
-                <td className="px-4 py-3 text-gray-500">{item.category.name}</td>
+                <td className="px-4 py-3 text-surface-500">{item.category.name}</td>
                 <td className="px-4 py-3">
                   {item.discountPrice ? (
                     <span>
-                      <span className="line-through text-gray-400 mr-1">{formatCurrency(item.basePrice)}</span>
-                      <span className="font-medium">{formatCurrency(item.discountPrice)}</span>
+                      <span className="line-through text-surface-400 mr-1">{formatCurrency(item.basePrice)}</span>
+                      <span className="font-medium text-surface-900">{formatCurrency(item.discountPrice)}</span>
                     </span>
-                  ) : formatCurrency(item.basePrice)}
+                  ) : <span className="text-surface-900">{formatCurrency(item.basePrice)}</span>}
                 </td>
                 <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                   <Toggle checked={item.isAvailable} onChange={() => handleToggle(item)} />
                 </td>
                 <td className="px-4 py-3 text-right">
-                  <button
-                    onClick={(e) => { e.stopPropagation(); setDeleteTarget(item) }}
-                    className="text-red-500 font-medium"
-                  >
-                    Delete
-                  </button>
+                  <div className="flex items-center justify-end gap-3">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setDeleteTarget(item) }}
+                      className="text-danger font-medium hover:text-red-700 transition-colors"
+                    >
+                      Delete
+                    </button>
+                    <ChevronRight size={16} className="text-surface-300" />
+                  </div>
                 </td>
-              </tr>
+              </motion.tr>
             ))}
           </tbody>
         </table>
@@ -520,82 +529,82 @@ function ItemsTab() {
       <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Edit Item' : 'New Item'}>
         <div className="space-y-3">
           <div>
-            <label className="block text-sm font-medium mb-1">Category</label>
+            <label className="block text-sm font-medium mb-1 text-surface-700">Category</label>
             <select
               value={form.categoryId}
               onChange={(e) => setForm({ ...form, categoryId: e.target.value })}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              className={inputClass}
             >
               {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Name</label>
+            <label className="block text-sm font-medium mb-1 text-surface-700">Name</label>
             <input
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              className={inputClass}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Description</label>
+            <label className="block text-sm font-medium mb-1 text-surface-700">Description</label>
             <textarea
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              className={inputClass}
               rows={2}
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium mb-1">Base Price (₦)</label>
+              <label className="block text-sm font-medium mb-1 text-surface-700">Base Price (₦)</label>
               <input
                 type="number"
                 value={form.basePrice}
                 onChange={(e) => setForm({ ...form, basePrice: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                className={inputClass}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Discount Price (₦)</label>
+              <label className="block text-sm font-medium mb-1 text-surface-700">Discount Price (₦)</label>
               <input
                 type="number"
                 value={form.discountPrice}
                 onChange={(e) => setForm({ ...form, discountPrice: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                className={inputClass}
               />
             </div>
-            <div>
+            <div className="col-span-2">
               <div className="flex justify-between items-center mb-2">
-                  <label className="block text-sm font-medium">Portion Variants (optional)</label>
-                  <button onClick={addVariantRow} className="text-sm text-brand-600 font-medium">+ Add variant</button>
-                </div>
-                {variants.length > 0 && (
-                  <div className="space-y-2">
-                    {variants.map((v, i) => (
-                      <div key={i} className="flex gap-2 items-center">
-                        <input
-                          placeholder="Label (e.g. Full Portion)"
-                          value={v.label}
-                          onChange={(e) => updateVariantRow(i, 'label', e.target.value)}
-                          className="flex-1 border border-gray-300 rounded-lg px-2 py-1.5 text-sm"
-                        />
-                        <input
-                          type="number"
-                          placeholder="Price"
-                          value={v.price}
-                          onChange={(e) => updateVariantRow(i, 'price', e.target.value)}
-                          className="w-24 border border-gray-300 rounded-lg px-2 py-1.5 text-sm"
-                        />
-                        <button onClick={() => removeVariantRow(i)} className="text-red-500 px-1">&times;</button>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <label className="block text-sm font-medium text-surface-700">Portion Variants (optional)</label>
+                <button onClick={addVariantRow} className="text-sm text-primary-600 font-medium hover:text-primary-700">+ Add variant</button>
               </div>
+              {variants.length > 0 && (
+                <div className="space-y-2">
+                  {variants.map((v, i) => (
+                    <div key={i} className="flex gap-2 items-center">
+                      <input
+                        placeholder="Label (e.g. Full Portion)"
+                        value={v.label}
+                        onChange={(e) => updateVariantRow(i, 'label', e.target.value)}
+                        className="flex-1 border border-surface-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/30"
+                      />
+                      <input
+                        type="number"
+                        placeholder="Price"
+                        value={v.price}
+                        onChange={(e) => updateVariantRow(i, 'price', e.target.value)}
+                        className="w-24 border border-surface-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/30"
+                      />
+                      <button onClick={() => removeVariantRow(i)} className="text-danger px-1 hover:text-red-700">&times;</button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
+          </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Image</label>
+            <label className="block text-sm font-medium mb-1 text-surface-700">Image</label>
             <input
               type="file"
               accept="image/*"
@@ -603,7 +612,7 @@ function ItemsTab() {
               className="w-full text-sm"
             />
           </div>
-          <label className="flex items-center gap-2 text-sm">
+          <label className="flex items-center gap-2 text-sm text-surface-700">
             <input
               type="checkbox"
               checked={form.isFeatured}
@@ -625,6 +634,7 @@ function ItemsTab() {
         onCancel={() => setDeleteTarget(null)}
         confirmLabel="Delete"
         danger
+        loading={deleting}
       />
     </div>
   )
@@ -671,7 +681,6 @@ function PackagesTab() {
     setItems(sorted)
   }
 
-  // Calculate live total from current package items
   const calculatedTotal = packageItems.reduce((sum, pi) => {
     const item = items.find((i) => i.id === pi.menuItemId)
     if (!item) return sum
@@ -679,7 +688,6 @@ function PackagesTab() {
     return sum + Number(price) * pi.quantity
   }, 0)
 
-  // Auto-fill the price field whenever items change, unless admin has manually overridden it
   useEffect(() => {
     if (!priceOverridden) {
       setForm((f) => ({ ...f, totalPrice: calculatedTotal ? String(calculatedTotal) : '' }))
@@ -699,7 +707,7 @@ function PackagesTab() {
     setEditing(pkg)
     setForm({ name: pkg.name, description: pkg.description || '', totalPrice: String(pkg.totalPrice), isFeatured: pkg.isFeatured })
     setPackageItems(pkg.items.map((i) => ({ menuItemId: i.menuItem.id, quantity: i.quantity })))
-    setPriceOverridden(true) // existing packages keep their saved price unless items change
+    setPriceOverridden(true)
     setImageFile(null)
     setModalOpen(true)
   }
@@ -803,78 +811,78 @@ function PackagesTab() {
   return (
     <div>
       <div className="flex justify-end mb-4">
-        <button
-          onClick={openCreate}
-          className="px-4 py-2 bg-brand-600 text-white rounded-lg text-sm font-medium hover:bg-brand-700"
-        >
-          + Add Package
-        </button>
+        <LoadingButton onClick={openCreate} className="px-4 py-2.5">
+          <Plus size={16} /> Add Package
+        </LoadingButton>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {loading ? (
-          <p className="text-gray-400">Loading...</p>
-        ) : packages.map((pkg) => (
-          <div
+          <p className="text-surface-400">Loading...</p>
+        ) : packages.map((pkg, i) => (
+          <motion.div
             key={pkg.id}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.25, delay: i * 0.04 }}
             onClick={() => openEdit(pkg)}
-            className="bg-white rounded-xl border border-gray-100 p-4 cursor-pointer hover:border-brand-200 transition-colors"
+            className="bg-white rounded-2xl border border-surface-100 p-4 cursor-pointer hover:border-primary-200 hover:shadow-lg hover:shadow-surface-900/5 transition-all"
           >
             <div className="flex gap-3 mb-2">
               {pkg.imageUrl ? (
-                <img src={pkg.imageUrl} className="w-14 h-14 rounded-lg object-cover flex-shrink-0" />
+                <img src={pkg.imageUrl} className="w-14 h-14 rounded-xl object-cover flex-shrink-0" />
               ) : (
-                <div className="w-14 h-14 rounded-lg bg-gray-100 flex-shrink-0" />
+                <div className="w-14 h-14 rounded-xl bg-surface-100 flex-shrink-0" />
               )}
               <div className="flex-1 flex justify-between items-start">
                 <div>
-                  <p className="font-medium">{pkg.name}</p>
-                  <p className="text-sm text-gray-500">{formatCurrency(pkg.totalPrice)}</p>
+                  <p className="font-medium text-surface-900">{pkg.name}</p>
+                  <p className="text-sm text-surface-500">{formatCurrency(pkg.totalPrice)}</p>
                 </div>
                 <div onClick={(e) => e.stopPropagation()}>
                   <Toggle checked={pkg.isAvailable} onChange={() => handleToggle(pkg)} />
                 </div>
               </div>
             </div>
-            <ul className="text-sm text-gray-500 mb-3 space-y-0.5">
-              {pkg.items.map((item, i) => (
-                <li key={i}>• {item.menuItem.name} × {item.quantity}</li>
+            <ul className="text-sm text-surface-500 mb-3 space-y-0.5">
+              {pkg.items.map((item, j) => (
+                <li key={j}>• {item.menuItem.name} × {item.quantity}</li>
               ))}
             </ul>
-            <div className="flex gap-3 text-sm">
+            <div className="flex gap-3 text-sm pt-2 border-t border-surface-50">
               <button
                 onClick={(e) => { e.stopPropagation(); setDeleteTarget(pkg) }}
-                className="text-red-500 font-medium"
+                className="text-danger font-medium hover:text-red-700 transition-colors"
               >
                 Delete
               </button>
             </div>
-          </div>
+          </motion.div>
         ))}
       </div>
 
       <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Edit Package' : 'New Package'} maxWidth="max-w-xl">
         <div className="space-y-3">
           <div>
-            <label className="block text-sm font-medium mb-1">Name</label>
+            <label className="block text-sm font-medium mb-1 text-surface-700">Name</label>
             <input
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              className={inputClass}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Description</label>
+            <label className="block text-sm font-medium mb-1 text-surface-700">Description</label>
             <textarea
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              className={inputClass}
               rows={2}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">Image</label>
+            <label className="block text-sm font-medium mb-1 text-surface-700">Image</label>
             <input
               type="file"
               accept="image/*"
@@ -885,8 +893,8 @@ function PackagesTab() {
 
           <div>
             <div className="flex justify-between items-center mb-2">
-              <label className="block text-sm font-medium">Items</label>
-              <button onClick={addItemRow} className="text-sm text-brand-600 font-medium">+ Add item</button>
+              <label className="block text-sm font-medium text-surface-700">Items</label>
+              <button onClick={addItemRow} className="text-sm text-primary-600 font-medium hover:text-primary-700">+ Add item</button>
             </div>
             <div className="space-y-2">
               {packageItems.map((pi, i) => {
@@ -897,7 +905,7 @@ function PackagesTab() {
                     <select
                       value={pi.menuItemId}
                       onChange={(e) => updateItemRow(i, 'menuItemId', e.target.value)}
-                      className="flex-1 border border-gray-300 rounded-lg px-2 py-1.5 text-sm"
+                      className="flex-1 border border-surface-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/30"
                     >
                       {items.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
                     </select>
@@ -906,44 +914,44 @@ function PackagesTab() {
                       min="1"
                       value={pi.quantity}
                       onChange={(e) => updateItemRow(i, 'quantity', parseInt(e.target.value) || 1)}
-                      className="w-16 border border-gray-300 rounded-lg px-2 py-1.5 text-sm"
+                      className="w-16 border border-surface-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/30"
                     />
-                    <span className="text-xs text-gray-400 w-20 text-right">{formatCurrency(lineTotal)}</span>
-                    <button onClick={() => removeItemRow(i)} className="text-red-500 px-1">&times;</button>
+                    <span className="text-xs text-surface-400 w-20 text-right">{formatCurrency(lineTotal)}</span>
+                    <button onClick={() => removeItemRow(i)} className="text-danger px-1 hover:text-red-700">&times;</button>
                   </div>
                 )
               })}
             </div>
           </div>
 
-          <div className="bg-gray-50 rounded-lg p-3">
+          <div className="bg-surface-50 rounded-xl p-3.5">
             <div className="flex justify-between items-center text-sm mb-2">
-              <span className="text-gray-500">Calculated from items</span>
-              <span className="font-medium">{formatCurrency(calculatedTotal)}</span>
+              <span className="text-surface-500">Calculated from items</span>
+              <span className="font-medium text-surface-900">{formatCurrency(calculatedTotal)}</span>
             </div>
-            <label className="block text-sm font-medium mb-1">Package Price (₦)</label>
+            <label className="block text-sm font-medium mb-1 text-surface-700">Package Price (₦)</label>
             <div className="flex gap-2">
               <input
                 type="number"
                 value={form.totalPrice}
                 onChange={(e) => handlePriceEdit(e.target.value)}
-                className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                className={inputClass}
               />
               {priceOverridden && (
                 <button
                   onClick={resetToCalculated}
-                  className="px-3 py-2 text-xs text-brand-600 border border-brand-200 rounded-lg hover:bg-brand-50 whitespace-nowrap"
+                  className="px-3 py-2 text-xs text-primary-600 border border-primary-200 rounded-xl hover:bg-primary-50 whitespace-nowrap transition-colors"
                 >
                   Use calculated
                 </button>
               )}
             </div>
             {priceOverridden && (
-              <p className="text-xs text-amber-600 mt-1">Price manually overridden — won't auto-update with item changes</p>
+              <p className="text-xs text-amber-600 mt-1.5">Price manually overridden — won't auto-update with item changes</p>
             )}
           </div>
 
-          <label className="flex items-center gap-2 text-sm">
+          <label className="flex items-center gap-2 text-sm text-surface-700">
             <input
               type="checkbox"
               checked={form.isFeatured}

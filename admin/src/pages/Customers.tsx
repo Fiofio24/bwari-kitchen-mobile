@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { motion } from 'framer-motion'
 import LoadingButton from '../components/LoadingButton'
 import { showSuccess, showError, getErrorMessage } from '../lib/toast'
 import Layout from '../components/Layout'
@@ -87,7 +88,6 @@ export default function Customers() {
     const previousSelected = selectedCustomer
     const newActive = !customer.isActive
 
-    // Optimistically update both the table and the open modal (if this customer is selected)
     setCustomers((prev) =>
       prev.map((c) => (c.id === customer.id ? { ...c, isActive: newActive } : c))
     )
@@ -114,28 +114,34 @@ export default function Customers() {
 
   return (
     <Layout>
-      <h2 className="text-2xl font-bold text-gray-900 mb-6">Customers</h2>
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-surface-900">Customers</h2>
+        <p className="text-sm text-surface-400 mt-0.5">Everyone who has signed up to order from Bwari Kitchen</p>
+      </div>
 
       <form onSubmit={handleSearch} className="flex gap-2 mb-4">
         <div className="relative w-64">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-surface-400" />
           <input
             type="text"
             placeholder="Search by name or phone..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="border border-gray-300 rounded-lg pl-9 pr-3 py-2 text-sm w-full"
+            className="border border-surface-200 rounded-xl pl-9 pr-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400 transition-shadow"
           />
         </div>
-        <button type="submit" className="px-3 py-2 text-sm bg-gray-100 rounded-lg hover:bg-gray-200">
+        <button
+          type="submit"
+          className="px-3.5 py-2 text-sm font-medium bg-surface-100 text-surface-700 rounded-xl hover:bg-surface-200 transition-colors"
+        >
           Search
         </button>
       </form>
 
-      <div className="bg-white rounded-xl border border-gray-100 overflow-x-auto">
+      <div className="bg-white rounded-2xl border border-surface-100 overflow-x-auto">
         <table className="w-full text-sm min-w-[700px]">
           <thead>
-            <tr className="bg-gray-50 text-left text-gray-500 text-xs uppercase">
+            <tr className="bg-surface-50 text-left text-surface-500 text-xs uppercase">
               <th className="px-4 py-3">Name</th>
               <th className="px-4 py-3">Phone</th>
               <th className="px-4 py-3">Orders</th>
@@ -147,34 +153,37 @@ export default function Customers() {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={7} className="text-center py-8 text-gray-400">Loading customers...</td></tr>
+              <tr><td colSpan={7} className="text-center py-8 text-surface-400">Loading customers...</td></tr>
             ) : customers.length === 0 ? (
-              <tr><td colSpan={7} className="text-center py-8 text-gray-400">No customers found</td></tr>
+              <tr><td colSpan={7} className="text-center py-8 text-surface-400">No customers found</td></tr>
             ) : (
-              customers.map((customer) => (
-                <tr
+              customers.map((customer, i) => (
+                <motion.tr
                   key={customer.id}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.2, delay: i * 0.02 }}
                   onClick={() => openDetail(customer.id)}
-                  className="border-t border-gray-100 hover:bg-gray-50 cursor-pointer"
+                  className="border-t border-surface-100 hover:bg-surface-50 cursor-pointer"
                 >
-                  <td className="px-4 py-3 font-medium">{customer.fullName}</td>
-                  <td className="px-4 py-3 text-gray-500">{customer.phoneNumber}</td>
-                  <td className="px-4 py-3 text-gray-500">{customer._count.orders}</td>
+                  <td className="px-4 py-3 font-medium text-surface-900">{customer.fullName}</td>
+                  <td className="px-4 py-3 text-surface-500">{customer.phoneNumber}</td>
+                  <td className="px-4 py-3 text-surface-500">{customer._count.orders}</td>
                   <td className="px-4 py-3">
                     {customer.isVerified ? (
-                      <ShieldCheck size={16} className="text-green-500" />
+                      <ShieldCheck size={16} className="text-success" />
                     ) : (
-                      <ShieldOff size={16} className="text-gray-300" />
+                      <ShieldOff size={16} className="text-surface-300" />
                     )}
                   </td>
                   <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                     <Toggle checked={customer.isActive} onChange={() => handleToggleActive(customer)} />
                   </td>
-                  <td className="px-4 py-3 text-gray-500">{formatDate(customer.createdAt)}</td>
-                  <td className="px-4 py-3 text-right text-gray-300">
+                  <td className="px-4 py-3 text-surface-500">{formatDate(customer.createdAt)}</td>
+                  <td className="px-4 py-3 text-right text-surface-300">
                     <ChevronRight size={16} className="inline" />
                   </td>
-                </tr>
+                </motion.tr>
               ))
             )}
           </tbody>
@@ -192,12 +201,12 @@ export default function Customers() {
       >
         {selectedCustomer && (
           <div className="space-y-4">
-            <div className="bg-gray-50 rounded-lg p-3 space-y-2 text-sm">
-              <div className="flex items-center gap-2 text-gray-600">
+            <div className="bg-surface-50 rounded-xl p-3.5 space-y-2 text-sm">
+              <div className="flex items-center gap-2 text-surface-600">
                 <Phone size={14} /> {selectedCustomer.phoneNumber}
               </div>
               {selectedCustomer.email && (
-                <div className="flex items-center gap-2 text-gray-600">
+                <div className="flex items-center gap-2 text-surface-600">
                   <Mail size={14} /> {selectedCustomer.email}
                 </div>
               )}
@@ -205,23 +214,23 @@ export default function Customers() {
 
             {/* Addresses */}
             <div>
-              <p className="text-xs text-gray-500 mb-2">Saved Addresses</p>
+              <p className="text-xs text-surface-400 mb-2">Saved Addresses</p>
               {selectedCustomer.addresses.length === 0 ? (
-                <p className="text-sm text-gray-400">No saved addresses</p>
+                <p className="text-sm text-surface-400">No saved addresses</p>
               ) : (
                 <div className="space-y-2">
                   {selectedCustomer.addresses.map((addr) => (
-                    <div key={addr.id} className="flex items-start gap-2 border border-gray-100 rounded-lg p-3 text-sm">
-                      <MapPin size={14} className="text-gray-400 mt-0.5 flex-shrink-0" />
+                    <div key={addr.id} className="flex items-start gap-2 border border-surface-100 rounded-xl p-3 text-sm">
+                      <MapPin size={14} className="text-surface-400 mt-0.5 flex-shrink-0" />
                       <div>
-                        <p>
+                        <p className="text-surface-800">
                           {addr.label && <span className="font-medium">{addr.label} — </span>}
                           {addr.streetAddress}
                           {addr.isDefault && (
-                            <span className="ml-2 text-xs text-brand-600">(Default)</span>
+                            <span className="ml-2 text-xs text-primary-600 font-medium">(Default)</span>
                           )}
                         </p>
-                        {addr.landmark && <p className="text-gray-400 text-xs">{addr.landmark}</p>}
+                        {addr.landmark && <p className="text-surface-400 text-xs">{addr.landmark}</p>}
                       </div>
                     </div>
                   ))}
@@ -231,16 +240,16 @@ export default function Customers() {
 
             {/* Recent Orders */}
             <div>
-              <p className="text-xs text-gray-500 mb-2">Recent Orders ({selectedCustomer._count.orders} total)</p>
+              <p className="text-xs text-surface-400 mb-2">Recent Orders ({selectedCustomer._count.orders} total)</p>
               {selectedCustomer.orders.length === 0 ? (
-                <p className="text-sm text-gray-400">No orders yet</p>
+                <p className="text-sm text-surface-400">No orders yet</p>
               ) : (
                 <div className="space-y-2">
                   {selectedCustomer.orders.map((order) => (
-                    <div key={order.id} className="flex justify-between items-center border border-gray-100 rounded-lg px-3 py-2 text-sm">
-                      <span className="font-medium">{order.orderNumber}</span>
+                    <div key={order.id} className="flex justify-between items-center border border-surface-100 rounded-xl px-3 py-2 text-sm">
+                      <span className="font-medium text-surface-900">{order.orderNumber}</span>
                       <StatusBadge status={order.status} />
-                      <span>{formatCurrency(order.totalAmount)}</span>
+                      <span className="text-surface-700">{formatCurrency(order.totalAmount)}</span>
                     </div>
                   ))}
                 </div>
@@ -250,11 +259,11 @@ export default function Customers() {
             <LoadingButton
               loading={togglingId === selectedCustomer.id}
               onClick={() => handleToggleActive(selectedCustomer)}
-              variant="ghost"
-              className={`w-full py-2 border rounded-lg ${
+              variant="secondary"
+              className={`w-full py-2.5 ${
                 selectedCustomer.isActive
-                  ? 'border-red-200 text-red-600 hover:bg-red-50'
-                  : 'border-green-200 text-green-600 hover:bg-green-50'
+                  ? 'border-danger/30 text-danger hover:bg-danger/5'
+                  : 'border-success/30 text-green-600 hover:bg-success/5'
               }`}
             >
               {selectedCustomer.isActive ? 'Deactivate Customer' : 'Activate Customer'}

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { motion } from 'framer-motion'
 import LoadingButton from '../components/LoadingButton'
 import ConfirmDialog from '../components/ConfirmDialog'
 import { showSuccess, showError, getErrorMessage } from '../lib/toast'
@@ -18,6 +19,8 @@ interface Review {
   rider: { fullName: string } | null
   order: { orderNumber: string; orderType: string }
 }
+
+const inputClass = "border border-surface-200 rounded-xl px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400 transition-shadow"
 
 export default function Reviews() {
   const [reviews, setReviews] = useState<Review[]>([])
@@ -91,7 +94,7 @@ export default function Reviews() {
   const formatDate = (date: string) =>
     new Date(date).toLocaleDateString('en-NG', { dateStyle: 'medium' })
 
-    const renderStars = (rating: number) => {
+  const renderStars = (rating: number) => {
     const numericRating = Number(rating) || 0
     return (
       <div className="flex items-center gap-0.5">
@@ -99,34 +102,42 @@ export default function Reviews() {
           <Star
             key={i}
             size={14}
-            className={i <= Math.round(numericRating) ? 'fill-amber-400 text-amber-400' : 'text-gray-200'}
+            className={i <= Math.round(numericRating) ? 'fill-amber-400 text-amber-400' : 'text-surface-200'}
           />
         ))}
-        <span className="text-xs text-gray-500 ml-1">{numericRating.toFixed(1)}</span>
+        <span className="text-xs text-surface-500 ml-1">{numericRating.toFixed(1)}</span>
       </div>
     )
   }
 
   return (
     <Layout>
-      <h2 className="text-2xl font-bold text-gray-900 mb-6">Reviews</h2>
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-surface-900">Reviews</h2>
+        <p className="text-sm text-surface-400 mt-0.5">What customers are saying about their orders</p>
+      </div>
 
       {/* Summary Cards */}
       {averages && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div className="bg-white rounded-xl border border-gray-100 p-4">
-            <p className="text-xs text-gray-500 mb-1">Average Food Rating</p>
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.25 }}
+          className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6"
+        >
+          <div className="bg-white rounded-2xl border border-surface-100 p-4">
+            <p className="text-xs text-surface-400 mb-1.5">Average Food Rating</p>
             {renderStars(averages.foodRating)}
           </div>
-          <div className="bg-white rounded-xl border border-gray-100 p-4">
-            <p className="text-xs text-gray-500 mb-1">Average Delivery Rating</p>
+          <div className="bg-white rounded-2xl border border-surface-100 p-4">
+            <p className="text-xs text-surface-400 mb-1.5">Average Delivery Rating</p>
             {renderStars(averages.deliveryRating)}
           </div>
-          <div className="bg-white rounded-xl border border-gray-100 p-4">
-            <p className="text-xs text-gray-500 mb-1">Total Reviews</p>
-            <p className="text-xl font-bold">{averages.totalReviews}</p>
+          <div className="bg-white rounded-2xl border border-surface-100 p-4">
+            <p className="text-xs text-surface-400 mb-1.5">Total Reviews</p>
+            <p className="text-xl font-bold text-surface-900">{averages.totalReviews}</p>
           </div>
-        </div>
+        </motion.div>
       )}
 
       {/* Filters */}
@@ -134,7 +145,7 @@ export default function Reviews() {
         <select
           value={ratingFilter}
           onChange={(e) => { setRatingFilter(e.target.value); setPage(1) }}
-          className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+          className={inputClass}
         >
           <option value="">All ratings</option>
           <option value="5">5 stars</option>
@@ -147,7 +158,7 @@ export default function Reviews() {
         <select
           value={visibilityFilter}
           onChange={(e) => { setVisibilityFilter(e.target.value); setPage(1) }}
-          className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+          className={inputClass}
         >
           <option value="">All reviews</option>
           <option value="true">Visible only</option>
@@ -157,27 +168,37 @@ export default function Reviews() {
 
       {/* Reviews List */}
       {loading ? (
-        <p className="text-gray-400">Loading reviews...</p>
+        <div className="space-y-3">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="bg-white rounded-2xl border border-surface-100 p-4 h-32 animate-pulse">
+              <div className="h-3.5 w-32 bg-surface-100 rounded mb-2" />
+              <div className="h-3 w-24 bg-surface-50 rounded" />
+            </div>
+          ))}
+        </div>
       ) : reviews.length === 0 ? (
-        <p className="text-gray-400">No reviews found</p>
+        <p className="text-surface-400">No reviews found</p>
       ) : (
         <div className="space-y-3">
-          {reviews.map((review) => (
-            <div
+          {reviews.map((review, i) => (
+            <motion.div
               key={review.id}
-              className={`bg-white rounded-xl border p-4 ${
-                review.isVisible ? 'border-gray-100' : 'border-red-100 bg-red-50/30'
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.2, delay: i * 0.03 }}
+              className={`bg-white rounded-2xl border p-4 ${
+                review.isVisible ? 'border-surface-100' : 'border-danger/20 bg-danger/[0.02]'
               }`}
             >
               <div className="flex items-start justify-between flex-wrap gap-2 mb-2">
                 <div>
-                  <p className="font-medium">{review.customer.fullName}</p>
-                  <p className="text-xs text-gray-400">
+                  <p className="font-medium text-surface-900">{review.customer.fullName}</p>
+                  <p className="text-xs text-surface-400">
                     {review.order.orderNumber} · {formatDate(review.createdAt)}
                   </p>
                 </div>
                 {!review.isVisible && (
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-600">
+                  <span className="text-xs px-2.5 py-1 rounded-full bg-danger/10 text-danger font-medium">
                     Hidden
                   </span>
                 )}
@@ -185,12 +206,12 @@ export default function Reviews() {
 
               <div className="flex flex-wrap gap-4 mb-2">
                 <div>
-                  <p className="text-xs text-gray-400 mb-0.5">Food</p>
+                  <p className="text-xs text-surface-400 mb-0.5">Food</p>
                   {renderStars(review.foodRating)}
                 </div>
                 {review.deliveryRating !== null && (
                   <div>
-                    <p className="text-xs text-gray-400 mb-0.5 flex items-center gap-1">
+                    <p className="text-xs text-surface-400 mb-0.5 flex items-center gap-1">
                       <Bike size={11} /> Delivery
                     </p>
                     {renderStars(review.deliveryRating)}
@@ -199,29 +220,30 @@ export default function Reviews() {
               </div>
 
               {review.comment && (
-                <p className="text-sm text-gray-700 mb-3">{review.comment}</p>
+                <p className="text-sm text-surface-700 mb-3">{review.comment}</p>
               )}
 
               {review.rider && (
-                <p className="text-xs text-gray-400 mb-3">Rider: {review.rider.fullName}</p>
+                <p className="text-xs text-surface-400 mb-3">Rider: {review.rider.fullName}</p>
               )}
 
-              <div className="flex gap-3 text-sm pt-2 border-t border-gray-100">
+              <div className="flex gap-4 text-sm pt-2 border-t border-surface-50">
                 <button
                   onClick={() => handleToggleVisibility(review)}
-                  className="flex items-center gap-1.5 text-gray-500 hover:text-gray-700 font-medium"
+                  disabled={togglingId === review.id}
+                  className="flex items-center gap-1.5 text-surface-500 hover:text-surface-800 font-medium transition-colors disabled:opacity-50"
                 >
                   {review.isVisible ? <EyeOff size={14} /> : <Eye size={14} />}
                   {review.isVisible ? 'Hide' : 'Show'}
                 </button>
                 <button
                   onClick={() => setReviewToDelete(review)}
-                  className="flex items-center gap-1.5 text-red-500 hover:text-red-700 font-medium"
+                  className="flex items-center gap-1.5 text-danger hover:text-red-700 font-medium transition-colors"
                 >
                   <Trash2 size={14} /> Delete
                 </button>
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
       )}
