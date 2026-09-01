@@ -79,13 +79,13 @@ To Do List:
 62. (Victor) Work on the delivery fee, it's not refleccting on the customer app
 63. (✅Done) for the search page use should be able to search by categories also eg. "Drinks" then all items under drinks will appear
 64. (✅Done) after user clicks a search under "others also searches" that search eg. "Jollof Rice" should auto fill the search box with same "Jollof Rice" instead of leaving it empty
-65. Fix the accuracy of get location feature it is very poor currently
+65. (✅Done)Fix the accuracy of get location feature it is very poor currently
 66. (Victor) add "Notifications" in the admin dashboard menu
 67. (✅sesarch page Done remain QuickEditPackage)when on search page and QuickEditPackage.tsx user should be able to exit that page or modal by sliding down not only by clicking the back button or close icon
 68. (✅Done)on the preofile page the orders at the top that shows the total orders instead of just showing "0" when it is still fetching the total numbers of orders it should show a loading spinner and it shouldn't be that everytime user goes to profile that it will always want to reload and fetch it should only fetch when it sense that a +1 order exist so it will add
 69. (Victor) in admin settings there should be space to add social media handles link so the social media button in the profile page of customer app at the very end on click can navigate to the kitchen's social media page
 70. (✅Atempted, not confirmed) For the app icon try and do dark and light mode for it
-71. () Work on the notification preferences page, make sure to remove any unecessary option
+71. (Victor) Work on the notification preferences page, make sure to remove any unecessary option
 72. (✅Done) Remove searchBar from the quick edit package page
 73. (Victor) in the admin settings page there should be control to disable dilivery or pickup on the checkout page so incase delivery riders have closed user won't be able to select delivery they'll have to come pickup
 74. (Victor) add a control in admin that allows them to edit the FAQ in help.tsx
@@ -96,7 +96,9 @@ To Do List:
 79. (Victor) fix the server crash everytime delivery radius exceeds it's limit, it should handle the error safely without crashing it should restrict the admin and give the admin a warning not to exceed km.
 80. (Victor) (maybe this is for me to handle but first the calculation needs to be working first) when customer's location is further than the delivery readius from rrestaurant to customer it should give an error or something. 
 81. (Victor) i've added "latitude" and "logitude" for the user address and the delivery is working now but the backend is wrongly calculating the km of user from kitchen. I dropped a map pin in Lagos, but the /api/addresses/delivery-fee endpoint calculated distanceKm: 0.76 . Because it thinks Lagos is less than 1km away, the fee keeps defaulting to the 500 base minimum. please correct the formular logic to correctly calculate distanceKm.
-82. (Victor) in the checkout page under pickup section change the hardcoded "Bwari Kitchen - Bwari Main Branch" and "No 1 Kitchen Avenue, Central FCT" to actually fetch the Restaurant Name, Branch Name and Address from the admin saved settings
+82. (✅Done) in the checkout page under pickup section change the hardcoded "Bwari Kitchen - Bwari Main Branch" and "No 1 Kitchen Avenue, Central FCT" to actually fetch the Restaurant Name, Branch Name and Address from the admin saved settings
+83. (✅Done) once delivery or pickup is turned off in the admin settings remove that option in the checkout page for placing order
+84. add a feature that tells customer the restaurant is closed when admin closes it or it reaches closing time
 
 Future updates:
 1. 
@@ -125,7 +127,8 @@ User testing feedbacks
 9. (✅Done) Nice app bro. All working well. Issue I noticed, The input boxes should go up along with the keyboard, so you can see what you are typing. Nice work !
 10. (Victor make sure the backend has quantity for packages) I selected a 6k package in the cart and increase the quantity to 3 that is 18k total, but after clicking place order in the checkout page i saw "...Pay N6,000" also in the my orders page the price there is also something different...Summary the math is not mathing.
 11. (✅Done) (from help page) From this frequent question what about adding when someone plays an other due to network he was debited but the receiver wasn't credited
-12. (from profile page) This refer and earn how will the customer get the money , if it will be there maybe there should be a wallet in the app some one an send money directly to the app. (✅Done)At that orders showing 24 I clicked it 👉🏻...Comes out empty (change the hard coded number of order in the profile page from 24 to actually show total numbers of orders customer had placed in that account)
+12. (from profile page) This refer and earn how will the customer get the money , if it will be there maybe there should be a wallet in the app some one an send money directly to the app. 
+    (✅Done)At that orders showing 24 I clicked it 👉🏻...Comes out empty (change the hard coded number of order in the profile page from 24 to actually show total numbers of orders customer had placed in that account)
 13. (✅Done)(in the home page)There are no categories for soups and bakes sir. (this is because home and menu share same categories list so even though packages have not been created under bakes and soups it will still show but say "This category is not available in the Kitchen"...instead it should be that when there is no package under those categories the category shouldn't show at all in the list even though that category exits in the menu).
 
 

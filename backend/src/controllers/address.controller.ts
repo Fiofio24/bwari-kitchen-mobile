@@ -237,8 +237,9 @@ export const getDeliveryFee = async (
       })
       return
     }
-    deliveryLat = Number(address.latitude)
-    deliveryLon = Number(address.longitude)
+    // Safely flatten Prisma Decimal objects to standard JS floats
+    deliveryLat = parseFloat(address.latitude.toString())
+    deliveryLon = parseFloat(address.longitude.toString())
   } else {
     if (!latitude || !longitude) {
       res.status(400).json({
@@ -246,8 +247,9 @@ export const getDeliveryFee = async (
       })
       return
     }
-    deliveryLat = parseFloat(latitude)
-    deliveryLon = parseFloat(longitude)
+    // Ensure raw payload coordinates are numbers
+    deliveryLat = parseFloat(latitude.toString())
+    deliveryLon = parseFloat(longitude.toString())
   }
 
   const branch = await prisma.branch.findUnique({
@@ -265,15 +267,19 @@ export const getDeliveryFee = async (
   })
   const feePerKm = feeSetting ? parseFloat(feeSetting.value) : 150
 
+  // Safely flatten Branch Decimal objects
+  const branchLat = parseFloat(branch.latitude.toString())
+  const branchLon = parseFloat(branch.longitude.toString())
+
   const distanceKm = calculateDistance(
-    Number(branch.latitude),
-    Number(branch.longitude),
+    branchLat,
+    branchLon,
     deliveryLat,
     deliveryLon
   )
 
   const deliveryRadius = branch.deliveryRadiusKm
-    ? Number(branch.deliveryRadiusKm)
+    ? parseFloat(branch.deliveryRadiusKm.toString())
     : 50
 
   if (!isWithinDeliveryRadius(distanceKm, deliveryRadius)) {
