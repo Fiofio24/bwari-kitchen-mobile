@@ -279,7 +279,19 @@ export default function ProfileScreen() {
             <Ionicons name="logo-instagram" size={scale(20)} color={colors.text} />
           </TouchableOpacity>
           <TouchableOpacity style={[styles.socialIcon, { backgroundColor: colors.border }]}>
-            <Ionicons name="logo-twitter" size={scale(20)} color={colors.text} />
+            <Ionicons name="logo-x" size={scale(20)} color={colors.text} />
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.socialIcon, { backgroundColor: colors.border }]}>
+            <Ionicons name="logo-facebook" size={scale(20)} color={colors.text} />
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.socialIcon, { backgroundColor: colors.border }]}>
+            <Ionicons name="logo-tiktok" size={scale(20)} color={colors.text} />
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.socialIcon, { backgroundColor: colors.border }]}>
+            <Ionicons name="logo-threads" size={scale(20)} color={colors.text} />
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.socialIcon, { backgroundColor: colors.border }]}>
+            <Ionicons name="logo-youtube" size={scale(20)} color={colors.text} />
           </TouchableOpacity>
         </View>
         <Text style={[styles.versionText, { color: colors.textMuted }]}>Version 2.4.0 (Build 102)</Text>

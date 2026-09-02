@@ -110,6 +110,13 @@ To Do List:
 82. (✅Done) in the checkout page under pickup section change the hardcoded "Bwari Kitchen - Bwari Main Branch" and "No 1 Kitchen Avenue, Central FCT" to actually fetch the Restaurant Name, Branch Name and Address from the admin saved settings
 83. (✅Done) once delivery or pickup is turned off in the admin settings remove that option in the checkout page for placing order
 84. add a feature that tells customer the restaurant is closed when admin closes it or it reaches closing time
+85. (Victor) Suggestion, in the admin dashboard on click on any of those overview it shout rout to their respective page e.g when i click on total orders it should go to orders page or click on cancelled orders it should also go to orders page but settled orders section etc
+86. (Victor) the fixed min delivery fee price of 500 that you set in your code is nice but can you make it flexible for the kitchen to decide that, they might want to use 1k. (Suggestion: just simply make that min delivery fee = delivery fee per km...so whatever admin set as delivery fee per km it will be the min delivery fee)
+87. (Victor) in the admin settings add whatsapp number and email address settings so i can connect it to the help page for customer service
+88. (Victor) frontend is not seeing SupportPhone in the admin setting just like PhoneNumber. i need it so i can fetch the SupportPhone in the help page and else where this are currently the data the frontend has direct access to in the admin settings from '/api/menu/branch'
+    LOG  🔍 RAW BACKEND SETTINGS: {"branch": {"acceptsDelivery": true, "acceptsPickup": true, "address": "Law School Road, Bwari 901101, Federal Capital Territory", "area": "Bwari", "closingTime": "21:00", "deliveryRadiusKm": "20", "id": "main-branch", "isOpen": true, "landmark": "Opposite FGGC", "latitude": "9.278146", "longitude": "7.372765", "name": "Bwari Main Branch", "openingTime": "08:00", "phoneNumber": "+2348061608620"}}
+89. (Victor) in the admin in orders page the order list is no longer showing as first come first serve format it's more like last come first server right now. please fix so it's first come first server 
+90. for every list in the admin page just make it a single list or if it must be in different list esspecially
 
 Future updates:
 1. 
@@ -132,7 +139,7 @@ User testing feedbacks
 4. Also, it took me a while to find the cart icon. Maybe put it where you put the my orders. Or when they open the app for the first time there is like a quick tutorial of where all the buttons are.
 5. (Feature removed ✅)the response time for the biometrics is too slow. The dark mode theme no fine but white mode make sense
 6. (✅) Ur app works well, u did very well and I love the user interface
-7. (Victor) Ok my order is taking time maybe network shall another thing is that it's showing me my current location but I myself can't confirm the current location if it's what I mean
+7. (✅Done)(Victor) Ok my order is taking time maybe network shall another thing is that it's showing me my current location but I myself can't confirm the current location if it's what I mean
 8a. (Feature removed ✅) (From Client) The unlock feature is not necessary, there's nothing to protect
 8b. (✅) So customer can't order without creating an account?
 9. (✅Done) Nice app bro. All working well. Issue I noticed, The input boxes should go up along with the keyboard, so you can see what you are typing. Nice work !

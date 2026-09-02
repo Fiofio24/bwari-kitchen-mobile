@@ -17,7 +17,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
-import MapView, { Region } from 'react-native-maps';
+import { Region } from 'react-native-maps';
 import { Colors } from '../constants/Colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
@@ -25,6 +25,7 @@ import { BlurView } from 'expo-blur';
 import { useSafeRouter } from '../hooks/useSafeRouter';
 import { useAddresses } from '../context/AddressContext';
 import { scale } from '../constants/Sizes';
+import LocationPickerMap from './LocationPickerMap'; 
 
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 
@@ -40,6 +41,7 @@ interface ConfirmedMapData {
   area: string;
   latitude: string;
   longitude: string;
+  isFallback: boolean; // NEW 
 }
 
 const getIconForLabel = (label?: string | null): any => {
@@ -58,7 +60,6 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
   const insets = useSafeAreaInsets();
   const router = useSafeRouter();
   
-  // FIX: Destructured addAddress instead of addCurrentLocationAddress
   const { addresses, activeAddress, setActiveAddress, addAddress } = useAddresses();
 
   const [inputText, setInputText] = useState('');
@@ -74,7 +75,6 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
 
   const [isMapMode, setIsMapMode] = useState(false);
   const [mapRegion, setMapRegion] = useState<Region | null>(null);
-  const [isConfirmingMap, setIsConfirmingMap] = useState(false);
   
   const [confirmedMapData, setConfirmedMapData] = useState<ConfirmedMapData | null>(null);
 
@@ -119,7 +119,6 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
       setIsCapturingLocation(false);
       setIsSavingAddress(false);
       setIsWaitingToSelect(false);
-      setIsConfirmingMap(false);
 
       Animated.parallel([
         Animated.timing(fadeAnim, { toValue: 0, duration: 250, useNativeDriver: true }),
@@ -164,79 +163,61 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
   const handleGetLocation = async () => {
     setIsCapturingLocation(true);
     try {
-      let { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission Denied', 'Please grant location access in your device settings to use the map.');
+      if (confirmedMapData && confirmedMapData.latitude && confirmedMapData.longitude) {
+        const lat = parseFloat(confirmedMapData.latitude);
+        const lng = parseFloat(confirmedMapData.longitude);
+        
+        if (!isNaN(lat) && !isNaN(lng)) {
+          setMapRegion({ latitude: lat, longitude: lng, latitudeDelta: 0.005, longitudeDelta: 0.005 });
+          setIsMapMode(true);
+          setIsCapturingLocation(false);
+          return;
+        }
+      }
+
+      // 1. Silently check permission first
+      let { status, canAskAgain } = await Location.getForegroundPermissionsAsync();
+
+      if (status === 'granted') {
+        let location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Highest });
+        setMapRegion({ latitude: location.coords.latitude, longitude: location.coords.longitude, latitudeDelta: 0.005, longitudeDelta: 0.005 });
+        setIsMapMode(true);
         setIsCapturingLocation(false);
         return;
       }
 
-      let location = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Highest,
-      });
-
-      setMapRegion({
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
-        latitudeDelta: 0.005,
-        longitudeDelta: 0.005,
-      });
-      setIsMapMode(true);
-    } catch (err) {
-      console.warn("Location fetch error:", err);
-      Alert.alert('Location Error', 'Could not fetch your precise location.');
-    } finally {
-      setIsCapturingLocation(false);
-    }
-  };
-
-  const handleConfirmMapLocation = async () => {
-    if (!mapRegion) return;
-    setIsConfirmingMap(true);
-
-    try {
-      const lat = mapRegion.latitude.toFixed(6);
-      const lng = mapRegion.longitude.toFixed(6);
-
-      let geocode = await Location.reverseGeocodeAsync({
-        latitude: mapRegion.latitude,
-        longitude: mapRegion.longitude
-      });
-
-      let localStreet = 'Unknown Location';
-      let localLandmark = '';
-      let localArea = '';
-
-      if (geocode && geocode.length > 0) {
-        const place = geocode[0];
-        
-        if (place.name && place.street && place.name !== place.street) {
-          localLandmark = place.name;
-          localStreet = place.street;
-        } else {
-          localStreet = place.name || place.street || 'Unknown Location';
-        }
-
-        const cityOrDistrict = place.city || place.district;
-        localArea = [cityOrDistrict, place.region].filter(Boolean).join(', ');
+      // 2. Show Custom Pre-Prompt Alert
+      if (canAskAgain) {
+        Alert.alert(
+          "Location Access Required",
+          "Bwari Kitchen needs access to your location to calculate accurate delivery fees and direct riders to your exact doorstep.\n\nPlease tap 'Continue' and 'Allow' on the next screen.",
+          [
+            { text: "Cancel", style: "cancel", onPress: () => setIsCapturingLocation(false) },
+            { 
+              text: "Continue", 
+              onPress: async () => {
+                // 3. Trigger Native OS Prompt
+                let { status: newStatus } = await Location.requestForegroundPermissionsAsync();
+                if (newStatus === 'granted') {
+                  let location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Highest });
+                  setMapRegion({ latitude: location.coords.latitude, longitude: location.coords.longitude, latitudeDelta: 0.005, longitudeDelta: 0.005 });
+                  setIsMapMode(true);
+                } else {
+                  Alert.alert('Permission Denied', 'Please grant location access in your device settings to use the map.');
+                }
+                setIsCapturingLocation(false);
+              }
+            }
+          ]
+        );
+      } else {
+         Alert.alert('Permission Denied', 'You previously denied location access. Please go to your phone settings to enable it for Bwari Kitchen.');
+         setIsCapturingLocation(false);
       }
-
-      setConfirmedMapData({
-        label: 'Current Location',
-        streetAddress: localStreet,
-        landmark: localLandmark,
-        area: localArea,
-        latitude: lat,
-        longitude: lng
-      });
-      
-      setIsMapMode(false); 
     } catch (error) {
-      console.warn("Geocode error:", error);
-      Alert.alert('Location Error', 'Could not translate this pin into an address.');
-      setIsMapMode(false);
-    } finally {
-      setIsConfirmingMap(false);
+      console.warn("Location error:", error); // Fixes the unused variable warning
+      Alert.alert('Location Error', 'Could not fetch your precise location. Please ensure GPS is turned on.');
+      setIsCapturingLocation(false);
     }
   };
 
@@ -254,7 +235,6 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
         longitude: parseFloat(confirmedMapData.longitude) 
       };
 
-      // FIX: Using addAddress so the true map coordinates are respected
       const result: any = await addAddress(payload);
       
       if (result.success) {
@@ -332,36 +312,22 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
           </View>
           
           {isMapMode && mapRegion ? (
-            <View style={styles.mapContainer}>
-              <MapView 
-                style={styles.mapView}
-                initialRegion={mapRegion}
-                onRegionChangeComplete={(region) => setMapRegion(region)}
-                showsUserLocation={true}
-                userInterfaceStyle={isDark ? "dark" : "light"}
-              />
-              
-              <View style={styles.mapCenterPin} pointerEvents="none">
-                <Ionicons name="location" size={scale(40)} color={Colors.primary} />
-                <View style={styles.pinShadow} />
-              </View>
-
-              <View style={styles.mapInstructions}>
-                <Text style={[styles.mapInstructionText, { color: colors.text }]}>Drag map to adjust pin</Text>
-              </View>
-
-              <TouchableOpacity 
-                style={[styles.confirmMapBtn, { backgroundColor: Colors.primary }]}
-                onPress={handleConfirmMapLocation}
-                disabled={isConfirmingMap}
-              >
-                {isConfirmingMap ? (
-                  <ActivityIndicator size="small" color="#FFF" />
-                ) : (
-                  <Text style={styles.confirmMapBtnText}>Confirm this location</Text>
-                )}
-              </TouchableOpacity>
-            </View>
+            <LocationPickerMap 
+              initialRegion={mapRegion}
+              onCancel={() => setIsMapMode(false)}
+              onConfirm={(data) => {
+                setConfirmedMapData({
+                  label: 'Current Location',
+                  streetAddress: data.streetAddress,
+                  landmark: data.landmark,
+                  area: data.area,
+                  latitude: data.latitude,
+                  longitude: data.longitude,
+                  isFallback: data.isFallback // Passed from the Map component!
+                });
+                setIsMapMode(false);
+              }}
+            />
           ) : confirmedMapData ? (
             
             <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" style={{ maxHeight: scale(450) }}>
@@ -381,12 +347,26 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
                 />
               </View>
 
+              {/* UNLOCKED STREET ADDRESS IF FALLBACK OCCURRED */}
               <View style={styles.formGroup}>
-                <Text style={[styles.inputLabel, { color: colors.text }]}>Street Address (Locked)</Text>
+                <Text style={[styles.inputLabel, { color: colors.text }]}>
+                  {confirmedMapData.isFallback ? 'Street Address *' : 'Street Address (Locked)'}
+                </Text>
                 <TextInput 
-                  style={[styles.formInput, styles.lockedInput, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F5F5F5', borderColor: colors.border, color: colors.textMuted }]} 
+                  style={[
+                    styles.formInput, 
+                    !confirmedMapData.isFallback && styles.lockedInput, 
+                    { 
+                      backgroundColor: confirmedMapData.isFallback ? colors.surface : (isDark ? 'rgba(255,255,255,0.05)' : '#F5F5F5'), 
+                      borderColor: colors.border, 
+                      color: confirmedMapData.isFallback ? colors.text : colors.textMuted 
+                    }
+                  ]} 
                   value={confirmedMapData.streetAddress} 
-                  editable={false}
+                  onChangeText={(text) => setConfirmedMapData({...confirmedMapData, streetAddress: text})} // Added onChangeText!
+                  editable={confirmedMapData.isFallback}
+                  placeholder="Enter exact street name"
+                  placeholderTextColor={colors.textMuted}
                 />
               </View>
 
@@ -536,7 +516,7 @@ export default function AddressSelectorModal({ visible, onClose }: AddressSelect
                 
                 {inputText.length > 0 && filteredAddresses.length === 0 && (
                   <Text style={[styles.noResultsText, { color: colors.textMuted }]}>
-                    No saved addresses match "{inputText}". Click "Pin New Address on Map" to add it!
+                    No saved addresses match &quot;{inputText}&quot;. Click &quot;Pin New Address on Map&quot; to add it!
                   </Text>
                 )}
               </ScrollView>
@@ -560,33 +540,20 @@ const styles = StyleSheet.create({
   modalTitle: { fontSize: scale(20), fontWeight: 'bold' },
   inputContainer: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: scale(15), paddingHorizontal: scale(15), height: scale(50), marginBottom: scale(15) },
   input: { flex: 1, marginLeft: scale(10), fontSize: scale(16) },
-  
   gatewayBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderWidth: 1, height: scale(50), borderRadius: scale(15), marginBottom: scale(15) },
   gatewayBtnText: { fontSize: scale(15), fontWeight: 'bold' },
-
   actionButtonsRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: scale(10), gap: scale(10) },
   actionBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', height: scale(45), borderRadius: scale(12) },
   cancelBtn: { backgroundColor: 'transparent', borderWidth: 1 },
   saveBtn: { backgroundColor: Colors.primary },
   actionBtnText: { fontSize: scale(14), fontWeight: 'bold' },
   saveBtnText: { color: '#FFF', fontSize: scale(14), fontWeight: 'bold' },
-  
   quickSaveHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: scale(15), gap: scale(8) },
   quickSaveTitle: { fontSize: scale(16), fontWeight: 'bold' },
   formGroup: { marginBottom: scale(12) },
   inputLabel: { fontSize: scale(12), fontWeight: '600', marginBottom: scale(4) },
   formInput: { borderWidth: 1, borderRadius: scale(12), padding: scale(12), fontSize: scale(14) },
   lockedInput: { opacity: 0.8 },
-
-  mapContainer: { height: scale(350), borderRadius: scale(15), overflow: 'hidden', marginBottom: scale(20), backgroundColor: '#EFEFEF' },
-  mapView: { flex: 1 },
-  mapCenterPin: { position: 'absolute', top: '50%', left: '50%', marginTop: -scale(35), marginLeft: -scale(20), alignItems: 'center' },
-  pinShadow: { width: scale(10), height: scale(4), backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: scale(5), marginTop: -scale(6) },
-  mapInstructions: { position: 'absolute', top: scale(15), alignSelf: 'center', backgroundColor: 'rgba(255,255,255,0.9)', paddingHorizontal: scale(15), paddingVertical: scale(8), borderRadius: scale(20), elevation: 3 },
-  mapInstructionText: { fontSize: scale(12), fontWeight: 'bold' },
-  confirmMapBtn: { position: 'absolute', bottom: scale(15), left: scale(15), right: scale(15), height: scale(50), borderRadius: scale(25), justifyContent: 'center', alignItems: 'center', elevation: 4 },
-  confirmMapBtnText: { color: '#FFF', fontSize: scale(16), fontWeight: 'bold' },
-  
   savedTitle: { fontSize: scale(14), fontWeight: 'bold', marginBottom: scale(5), letterSpacing: 0.5 },
   quickAddressRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: scale(12), borderBottomWidth: 1 },
   iconBox: { width: scale(36), height: scale(36), borderRadius: scale(18), justifyContent: 'center', alignItems: 'center' },

@@ -81,14 +81,15 @@ export default function CheckoutScreen() {
 
   const [paymentModalData, setPaymentModalData] = useState<{ url: string; reference: string } | null>(null);
 
-  // New states for Branch settings
   const [acceptsDelivery, setAcceptsDelivery] = useState(true);
   const [acceptsPickup, setAcceptsPickup] = useState(true);
   const [isLoadingSettings, setIsLoadingSettings] = useState(true);
   
-  // Dynamic Branch Details
   const [branchName, setBranchName] = useState('Bwari Kitchen');
   const [branchAddress, setBranchAddress] = useState('Loading address...');
+  
+  // NEW: State to hold the dynamic support phone number
+  const [supportPhone, setSupportPhone] = useState('+2348123456789'); // Default fallback
 
   const { width } = useWindowDimensions();
   const cardWidth = width - scale(40); 
@@ -101,18 +102,26 @@ export default function CheckoutScreen() {
       try {
         const res = await api.get('/api/menu/branch'); 
         const branchInfo = res.data?.branch; 
+        const restaurantInfo = res.data?.restaurant; 
         
         if (branchInfo) {
           const canDeliver = branchInfo.acceptsDelivery !== false;
           const canPickup = branchInfo.acceptsPickup !== false;
           
-          // Set dynamic name and address
           if (branchInfo.name) setBranchName(branchInfo.name);
           if (branchInfo.address) setBranchAddress(branchInfo.address);
           
+          // Ready and waiting for Victor's update!
+          if (branchInfo.supportPhone) {
+            setSupportPhone(branchInfo.supportPhone);
+          } else if (restaurantInfo && restaurantInfo.supportPhone) {
+            setSupportPhone(restaurantInfo.supportPhone);
+          } else if (branchInfo.phoneNumber) {
+            setSupportPhone(branchInfo.phoneNumber); // Fallback to regular phone for now
+          }
+          
           setAcceptsDelivery(prev => {
             if (prev !== canDeliver) {
-              // If Delivery was just turned OFF while user is on the Delivery tab
               if (!canDeliver && deliveryMethod === 'delivery' && canPickup) {
                 setDeliveryMethod('pickup');
                 setTimeout(() => scrollViewRef.current?.scrollTo({ x: cardWidth, animated: true }), 100);
@@ -125,7 +134,6 @@ export default function CheckoutScreen() {
           
           setAcceptsPickup(prev => {
             if (prev !== canPickup) {
-              // If Pickup was just turned OFF while user is on the Pickup tab
               if (!canPickup && deliveryMethod === 'pickup' && canDeliver) {
                 setDeliveryMethod('delivery');
                 setTimeout(() => scrollViewRef.current?.scrollTo({ x: 0, animated: true }), 100);
@@ -137,19 +145,14 @@ export default function CheckoutScreen() {
           });
         }
       } catch (err: any) {
-        // Fail silently during background polling so we don't interrupt the user
+        // Fail silently during background polling
       } finally {
         setIsLoadingSettings(false);
       }
     };
 
-    // 1. Fetch immediately when screen opens
     fetchSettings();
-
-    // 2. Start the live background listener (checks every 10 seconds)
     intervalId = setInterval(fetchSettings, 10000);
-
-    // 3. Clean up the listener when user leaves the checkout screen
     return () => clearInterval(intervalId);
   }, [cardWidth, deliveryMethod]);
 
@@ -164,10 +167,8 @@ export default function CheckoutScreen() {
     const index = Math.round(offsetX / cardWidth);
     const newMethod = index === 0 ? 'delivery' : 'pickup';
     if (deliveryMethod !== newMethod) {
-      // Ensure we don't accidentally swipe to a disabled method
       if (newMethod === 'delivery' && !acceptsDelivery) return;
       if (newMethod === 'pickup' && !acceptsPickup) return;
-      
       setDeliveryMethod(newMethod);
     }
   };
@@ -194,16 +195,13 @@ export default function CheckoutScreen() {
         const decoded = decodeURIComponent(params.instantReorder as string);
         return JSON.parse(decoded);
       } catch (e) {
-        console.warn("Failed to parse instant reorder items", e);
       }
     }
-
     if (params.selectedItems) {
       try {
         const selectedIds = JSON.parse(params.selectedItems as string);
         return cartItems.filter(item => selectedIds.includes(item.id));
       } catch (e) {
-        console.warn("Failed to parse selected items", e);
       }
     }
     return cartItems;
@@ -212,20 +210,24 @@ export default function CheckoutScreen() {
   const subtotal = checkoutItems.reduce((sum: number, item: any) => sum + (item.price * (item.quantity || 1)), 0);
   
   const [estimatedDeliveryFee, setEstimatedDeliveryFee] = useState(0);
+  const [deliveryDistanceKm, setDeliveryDistanceKm] = useState(0);
 
   useEffect(() => {
     const fetchFee = async () => {
       if (deliveryMethod !== 'delivery' || !activeAddress?.id) {
         setEstimatedDeliveryFee(0);
+        setDeliveryDistanceKm(0);
         return;
       }
       try {
         const res = await api.post('/api/addresses/delivery-fee', { addressId: activeAddress.id });
-        console.log("✅ DELIVERY FEE SUCCESS DATA:", res.data);
         setEstimatedDeliveryFee(res.data.deliveryFee);
+        if (res.data.distanceKm !== undefined) {
+          setDeliveryDistanceKm(Number(res.data.distanceKm));
+        }
       } catch (error: any) {
-        console.log("❌ DELIVERY FEE ERROR:", error.response?.data || error.message);
         setEstimatedDeliveryFee(0);
+        setDeliveryDistanceKm(0);
       }
     };
     fetchFee();
@@ -264,8 +266,7 @@ export default function CheckoutScreen() {
           verified = true;
           break;
         }
-      } catch {
-      }
+      } catch {}
       if (attempt < 3) await wait(2500); 
     }
 
@@ -289,25 +290,8 @@ export default function CheckoutScreen() {
     }
   };
 
-  const handlePlaceOrder = async () => {
-    if (checkoutItems.length === 0) return;
-
-    if (deliveryMethod === 'delivery' && !acceptsDelivery) {
-      Alert.alert('Delivery Unavailable', 'Delivery is currently turned off by the restaurant.');
-      return;
-    }
-    if (deliveryMethod === 'pickup' && !acceptsPickup) {
-      Alert.alert('Pickup Unavailable', 'Pickup is currently turned off by the restaurant.');
-      return;
-    }
-
-    if (deliveryMethod === 'delivery' && !activeAddress) {
-      Alert.alert('Address Required', 'Please select a delivery address before placing your order.');
-      return;
-    }
-
+  const executeOrderPlacement = async () => {
     setIsProcessing(true);
-
     try {
       const orderPayload: any = {
         orderType: deliveryMethod,
@@ -344,28 +328,85 @@ export default function CheckoutScreen() {
       try {
         setPaymentModalData({ url: paymentUrl, reference: reference });
       } catch (browserError) {
-        console.warn("WebBrowser rejected, falling back to Native Linking:", browserError);
         await Linking.openURL(paymentUrl);
       }
       
     } catch (err: any) {
-      console.log("CHECKOUT ERROR:", err);
       let errorMsg = 'Something went wrong while placing your order. Please try again.';
-      
-      // Clean, user-friendly error formatting
       if (err.response) {
         errorMsg = err.response.data?.message || err.response.data?.error || errorMsg;
       } else if (err.message) {
         errorMsg = err.message;
       }
-
-      Alert.alert('Checkout Error', errorMsg);
+      
+      // --- NEW: Dynamic phone number for the error intercept! ---
+      if (errorMsg.toLowerCase().includes('radius') || errorMsg.toLowerCase().includes('deliver to this location')) {
+        Alert.alert(
+          'Out of Delivery Zone 🛵',
+          `${errorMsg}\n\nPlanning a bulk, event, or special order? Contact our kitchen directly to make special delivery arrangements!`,
+          [
+            { 
+              text: 'Never mind', 
+              style: 'cancel' 
+            },
+            { 
+              text: 'Call Kitchen', 
+              // Passing the dynamic state directly to the dialer
+              onPress: () => Linking.openURL(`tel:${supportPhone}`) 
+            }
+          ]
+        );
+      } else {
+        Alert.alert('Checkout Error', errorMsg);
+      }
     } finally {
       setIsProcessing(false);
     }
   };
 
-  // Helper function to safely render the address label/title with a fallback
+  const handlePlaceOrder = async () => {
+    if (checkoutItems.length === 0) return;
+
+    if (deliveryMethod === 'delivery' && !acceptsDelivery) {
+      Alert.alert('Delivery Unavailable', 'Delivery is currently turned off by the restaurant.');
+      return;
+    }
+    if (deliveryMethod === 'pickup' && !acceptsPickup) {
+      Alert.alert('Pickup Unavailable', 'Pickup is currently turned off by the restaurant.');
+      return;
+    }
+
+    if (deliveryMethod === 'delivery') {
+      if (!activeAddress) {
+        Alert.alert('Address Required', 'Please select a delivery address before placing your order.');
+        return;
+      }
+
+      if (deliveryDistanceKm > 0 && deliveryDistanceKm <= 0.3) {
+        Alert.alert(
+          "You're very close! 🚶",
+          `Your delivery address is only ~${Math.round(deliveryDistanceKm * 1000)} meters away from the restaurant.\n\nWould you like to switch to Pick Up and save the ₦${estimatedDeliveryFee.toLocaleString()} delivery fee?`,
+          [
+            {
+              text: "Deliver Anyway",
+              style: "cancel",
+              onPress: () => executeOrderPlacement()
+            },
+            {
+              text: "Switch to Pick Up",
+              onPress: () => {
+                handleTabPress('pickup'); 
+              }
+            }
+          ]
+        );
+        return; 
+      }
+    }
+
+    executeOrderPlacement();
+  };
+
   const getAddressTitle = (address: any) => {
     if (!address) return "No address selected";
     return address.title || address.label || "Address";
@@ -445,7 +486,7 @@ export default function CheckoutScreen() {
             pagingEnabled
             showsHorizontalScrollIndicator={false}
             onMomentumScrollEnd={handleHorizontalScroll}
-            scrollEnabled={acceptsDelivery && acceptsPickup} // Lock swipe if one is disabled
+            scrollEnabled={acceptsDelivery && acceptsPickup} 
           >
             <View style={{ width: cardWidth, padding: scale(15) }}>
               <View style={styles.addressRow}>
@@ -569,13 +610,10 @@ export default function CheckoutScreen() {
                 </Text>
               </View>
 
-              {/* DYNAMIC MULTIPLIED SUB-ITEMS */}
               {item.subItems && item.subItems.length > 0 && (
                 <View style={styles.subItemsList}>
                   {item.subItems.map((sub: any, subIdx: number) => {
                     const dbItem = sub.id ? findItem(sub.id) : null;
-                    
-                    // Multiply base qty by package qty
                     const baseSubQty = sub.qty ?? sub.quantity ?? 1;
                     const mainPkgQty = item.quantity || 1;
                     const displayQty = baseSubQty * mainPkgQty;
@@ -586,7 +624,6 @@ export default function CheckoutScreen() {
                         ? sub.unitPrice
                         : (dbItem?.basePrice ?? 0));
                         
-                    // Multiply base unit price by the scaled up quantity
                     const displayPrice = unitPrice * displayQty;
                     const name = sub.name || sub.itemName || dbItem?.name || 'Item';
 

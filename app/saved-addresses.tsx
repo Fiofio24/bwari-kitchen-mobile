@@ -19,7 +19,7 @@ import {
 import { useSafeRouter } from '../hooks/useSafeRouter';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location'; 
-import MapView, { Region } from 'react-native-maps'; 
+import { Region } from 'react-native-maps'; 
 import { useSafeAreaInsets } from 'react-native-safe-area-context'; 
 import { useTheme } from '../context/ThemeContext';
 import { Colors } from '../constants/Colors';
@@ -29,6 +29,7 @@ import TopNav from '../components/TopNav';
 import { scale } from '../constants/Sizes'; 
 import HomeIcon from '../components/HomeIcon';
 import { BlurView } from 'expo-blur';
+import LocationPickerMap from '../components/LocationPickerMap'; 
 
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 
@@ -69,7 +70,9 @@ export default function SavedAddressesScreen() {
 
   const [isMapMode, setIsMapMode] = useState(false);
   const [mapRegion, setMapRegion] = useState<Region | null>(null);
-  const [isConfirmingMap, setIsConfirmingMap] = useState(false);
+
+  // NEW: Track if the street address field should be editable
+  const [isStreetEditable, setIsStreetEditable] = useState(false);
 
   const fadeAnim = useRef(new Animated.Value(0)).current; 
   const slideAnim = useRef(new Animated.Value(scale(500))).current; 
@@ -139,6 +142,7 @@ export default function SavedAddressesScreen() {
     setArea('');
     setLatitude(''); 
     setLongitude(''); 
+    setIsStreetEditable(false); // Lock it by default for new pins
     setModalVisible(true);
   };
 
@@ -150,6 +154,7 @@ export default function SavedAddressesScreen() {
     setArea(item.area || '');
     setLatitude((item as any).latitude?.toString() || ''); 
     setLongitude((item as any).longitude?.toString() || ''); 
+    setIsStreetEditable(true); // Always let them fix an existing address!
     setModalVisible(true);
   };
 
@@ -166,80 +171,56 @@ export default function SavedAddressesScreen() {
         const lng = parseFloat(longitude.trim());
         
         if (!isNaN(lat) && !isNaN(lng)) {
-          setMapRegion({
-            latitude: lat,
-            longitude: lng,
-            latitudeDelta: 0.005,
-            longitudeDelta: 0.005,
-          });
+          setMapRegion({ latitude: lat, longitude: lng, latitudeDelta: 0.005, longitudeDelta: 0.005 });
           setIsMapMode(true);
           setIsCapturingLocation(false);
           return;
         }
       }
 
-      let { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission Denied', 'Please grant location access in your device settings to use the map.');
+      // 1. Silently check permission first
+      let { status, canAskAgain } = await Location.getForegroundPermissionsAsync();
+
+      if (status === 'granted') {
+        let location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Highest });
+        setMapRegion({ latitude: location.coords.latitude, longitude: location.coords.longitude, latitudeDelta: 0.005, longitudeDelta: 0.005 });
+        setIsMapMode(true);
         setIsCapturingLocation(false);
         return;
       }
 
-      let location = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Highest,
-      });
-
-      setMapRegion({
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
-        latitudeDelta: 0.005,
-        longitudeDelta: 0.005,
-      });
-      setIsMapMode(true);
-    } catch (error) {
-      Alert.alert('Location Error', 'Could not fetch your precise location. Please ensure GPS is turned on.');
-    } finally {
-      setIsCapturingLocation(false);
-    }
-  };
-
-  const handleConfirmMapLocation = async () => {
-    if (!mapRegion) return;
-    setIsConfirmingMap(true);
-
-    try {
-      setLatitude(mapRegion.latitude.toFixed(6));
-      setLongitude(mapRegion.longitude.toFixed(6));
-
-      let geocode = await Location.reverseGeocodeAsync({
-        latitude: mapRegion.latitude,
-        longitude: mapRegion.longitude
-      });
-
-      if (geocode && geocode.length > 0) {
-        const place = geocode[0];
-        
-        if (place.name && place.street && place.name !== place.street) {
-          setLandmark(place.name); 
-          setStreetAddress(place.street); 
-        } else {
-          setStreetAddress(place.name || place.street || '');
-        }
-
-        const cityOrDistrict = place.city || place.district;
-        const foundArea = [cityOrDistrict, place.region].filter(Boolean).join(', ');
-        
-        if (foundArea) setArea(foundArea);
+      // 2. Show Custom Pre-Prompt Alert
+      if (canAskAgain) {
+        Alert.alert(
+          "Location Access Required",
+          "Bwari Kitchen needs access to your location to calculate accurate delivery fees and direct riders to your exact doorstep.\n\nPlease tap 'Continue' and 'Allow' on the next screen.",
+          [
+            { text: "Cancel", style: "cancel", onPress: () => setIsCapturingLocation(false) },
+            { 
+              text: "Continue", 
+              onPress: async () => {
+                // 3. Trigger Native OS Prompt
+                let { status: newStatus } = await Location.requestForegroundPermissionsAsync();
+                if (newStatus === 'granted') {
+                  let location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Highest });
+                  setMapRegion({ latitude: location.coords.latitude, longitude: location.coords.longitude, latitudeDelta: 0.005, longitudeDelta: 0.005 });
+                  setIsMapMode(true);
+                } else {
+                  Alert.alert('Permission Denied', 'Please grant location access in your device settings to use the map.');
+                }
+                setIsCapturingLocation(false);
+              }
+            }
+          ]
+        );
       } else {
-        setStreetAddress('Unknown Location');
+         Alert.alert('Permission Denied', 'You previously denied location access. Please go to your phone settings to enable it for Bwari Kitchen.');
+         setIsCapturingLocation(false);
       }
-      setIsMapMode(false);
     } catch (error) {
-      console.warn("Geocode error:", error);
-      Alert.alert('Location Error', 'Could not translate this pin into an address, but your coordinates were saved.');
-      setIsMapMode(false);
-    } finally {
-      setIsConfirmingMap(false);
+      console.warn("Location error:", error); // Fixes the unused variable warning
+      Alert.alert('Location Error', 'Could not fetch your precise location. Please ensure GPS is turned on.');
+      setIsCapturingLocation(false);
     }
   };
 
@@ -451,33 +432,19 @@ export default function SavedAddressesScreen() {
                 <View style={{ gap: scale(12) }}>
                   
                   {isMapMode && mapRegion ? (
-                    <View style={styles.mapContainer}>
-                      <MapView 
-                        style={styles.mapView}
-                        initialRegion={mapRegion}
-                        onRegionChangeComplete={(region) => setMapRegion(region)}
-                        showsUserLocation={true}
-                        userInterfaceStyle={isDark ? "dark" : "light"}
-                      />
-                      <View style={styles.mapCenterPin} pointerEvents="none">
-                        <Ionicons name="location" size={scale(40)} color={Colors.primary} />
-                        <View style={styles.pinShadow} />
-                      </View>
-                      <View style={styles.mapInstructions}>
-                        <Text style={[styles.mapInstructionText, { color: colors.text }]}>Drag map to adjust pin</Text>
-                      </View>
-                      <TouchableOpacity 
-                        style={[styles.confirmMapBtn, { backgroundColor: Colors.primary }]}
-                        onPress={handleConfirmMapLocation}
-                        disabled={isConfirmingMap}
-                      >
-                        {isConfirmingMap ? (
-                          <ActivityIndicator size="small" color="#FFF" />
-                        ) : (
-                          <Text style={styles.confirmMapBtnText}>Confirm this location</Text>
-                        )}
-                      </TouchableOpacity>
-                    </View>
+                    <LocationPickerMap 
+                      initialRegion={mapRegion}
+                      onCancel={() => setIsMapMode(false)}
+                      onConfirm={(data) => {
+                        setLatitude(data.latitude);
+                        setLongitude(data.longitude);
+                        setStreetAddress(data.streetAddress);
+                        setLandmark(data.landmark);
+                        setArea(data.area);
+                        setIsStreetEditable(data.isFallback); // Check if we should unlock!
+                        setIsMapMode(false);
+                      }}
+                    />
                   ) : !latitude && !editingId ? (
                     
                     /* --- THE GATEWAY --- */
@@ -545,21 +512,25 @@ export default function SavedAddressesScreen() {
                         />
                       </View>
 
+                      {/* UNLOCKED STREET ADDRESS IF FALLBACK OCCURRED */}
                       <View>
-                        <Text style={{ fontSize: scale(13), fontWeight: '600', marginBottom: scale(6), color: colors.text }}>Street Address (Locked) *</Text>
+                        <Text style={{ fontSize: scale(13), fontWeight: '600', marginBottom: scale(6), color: colors.text }}>
+                          {isStreetEditable ? 'Street Address *' : 'Street Address (Locked) *'}
+                        </Text>
                         <TextInput
                           value={streetAddress}
-                          editable={false}
+                          onChangeText={setStreetAddress} // Added onChangeText!
+                          editable={isStreetEditable}
                           selectTextOnFocus={true} 
-                          placeholder="Auto-filled via map pin..."
+                          placeholder={isStreetEditable ? "Enter exact street name" : "Auto-filled via map pin..."}
                           placeholderTextColor={colors.textMuted}
                           style={{ 
-                            backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F5F5F5', 
+                            backgroundColor: isStreetEditable ? colors.surface : (isDark ? 'rgba(255,255,255,0.05)' : '#F5F5F5'), 
                             borderWidth: 1, 
                             borderColor: colors.border, 
                             borderRadius: scale(12), 
                             padding: scale(12), 
-                            color: colors.textMuted 
+                            color: isStreetEditable ? colors.text : colors.textMuted 
                           }}
                         />
                       </View>
@@ -686,14 +657,6 @@ const styles = StyleSheet.create({
   bottomBar: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: scale(20), paddingTop: scale(15), borderTopLeftRadius: scale(30), borderTopRightRadius: scale(30), borderTopWidth: 1, elevation: 15, shadowColor: '#000', shadowOffset: { width: 0, height: scale(-5) }, shadowOpacity: 0.1, shadowRadius: scale(10) },
   addBtn: { flexDirection: 'row', paddingVertical: scale(16), borderRadius: scale(20), justifyContent: 'center', alignItems: 'center', elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: scale(4) }, shadowOpacity: 0.3, shadowRadius: scale(5) },
   addBtnText: { color: '#FFF', fontSize: scale(16), fontWeight: 'bold' },
-  mapContainer: { height: scale(350), borderRadius: scale(15), overflow: 'hidden', marginBottom: scale(20), backgroundColor: '#EFEFEF' },
-  mapView: { flex: 1 },
-  mapCenterPin: { position: 'absolute', top: '50%', left: '50%', marginTop: -scale(35), marginLeft: -scale(20), alignItems: 'center' },
-  pinShadow: { width: scale(10), height: scale(4), backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: scale(5), marginTop: -scale(6) },
-  mapInstructions: { position: 'absolute', top: scale(15), alignSelf: 'center', backgroundColor: 'rgba(255,255,255,0.9)', paddingHorizontal: scale(15), paddingVertical: scale(8), borderRadius: scale(20), elevation: 3 },
-  mapInstructionText: { fontSize: scale(12), fontWeight: 'bold' },
-  confirmMapBtn: { position: 'absolute', bottom: scale(15), left: scale(15), right: scale(15), height: scale(50), borderRadius: scale(25), justifyContent: 'center', alignItems: 'center', elevation: 4 },
-  confirmMapBtnText: { color: '#FFF', fontSize: scale(16), fontWeight: 'bold' },
   gatewayContainer: { alignItems: 'center', paddingVertical: scale(30), paddingHorizontal: scale(10) },
   gatewayIconBox: { width: scale(80), height: scale(80), borderRadius: scale(40), justifyContent: 'center', alignItems: 'center', marginBottom: scale(20) },
   gatewayTitle: { fontSize: scale(20), fontWeight: 'bold', marginBottom: scale(10) },
