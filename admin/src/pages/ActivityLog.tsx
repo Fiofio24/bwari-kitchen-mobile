@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import Layout from '../components/Layout'
 import Pagination from '../components/Pagination'
 import api from '../lib/api'
+import useLivePolling from '../hooks/useLivePolling'
 import {
   PlusCircle, Pencil, Trash2, ToggleLeft, LogIn,
   UserCog, Bike, History,
@@ -53,17 +54,14 @@ export default function ActivityLog() {
     fetchAdmins()
   }, [])
 
-  useEffect(() => {
-    fetchLogs()
-  }, [page, adminFilter, targetTypeFilter, actionFilter])
-
   const fetchAdmins = async () => {
     const res = await api.get('/api/admin/activity-logs/admins')
     setAdmins(res.data.admins)
   }
 
-  const fetchLogs = async () => {
-    setLoading(true)
+  // Wrapped in useCallback to stabilize it for the polling hook
+  const fetchLogs = useCallback(async (isSilent = false) => {
+    if (!isSilent) setLoading(true)
     try {
       const params = new URLSearchParams()
       params.append('page', String(page))
@@ -76,9 +74,17 @@ export default function ActivityLog() {
       setLogs(res.data.logs)
       setTotalPages(res.data.meta.totalPages)
     } finally {
-      setLoading(false)
+      if (!isSilent) setLoading(false)
     }
-  }
+  }, [page, adminFilter, targetTypeFilter, actionFilter])
+
+  // Initial load
+  useEffect(() => {
+    fetchLogs(false)
+  }, [fetchLogs])
+
+  // Silent background poll every 15 seconds
+  useLivePolling(fetchLogs, 15000)
 
   const formatDateTime = (date: string) =>
     new Date(date).toLocaleString('en-NG', { dateStyle: 'medium', timeStyle: 'short' })

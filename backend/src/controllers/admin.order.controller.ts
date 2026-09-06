@@ -6,29 +6,36 @@ export const adminGetOrders = async (
   req: Request,
   res: Response
 ): Promise<void> => {
-  const { status, orderType, search, page = '1', limit = '20' } = req.query
+  const { status, orderType, search, sort = 'asc', sortBy = 'createdAt', page = '1', limit = '50' } = req.query
   const pageNum = parseInt(page as string)
   const limitNum = parseInt(limit as string)
   const skip = (pageNum - 1) * limitNum
 
   const where = {
-    ...(status && { status: status as any }),
+    // THE FIX: Splits the comma-separated statuses into an array for Prisma's 'in' operator
+    ...(status && {
+      status: { in: (status as string).split(',') as any }
+    }),
     ...(orderType && { orderType: orderType as any }),
     ...(search && {
       orderNumber: { contains: search as string, mode: 'insensitive' as const }
     }),
   }
 
+  const sortDirection = sort === 'desc' ? 'desc' : 'asc'
+  const sortField = sortBy === 'updatedAt' ? 'updatedAt' : 'createdAt'
+
   const [orders, total] = await Promise.all([
     prisma.order.findMany({
       where,
-      orderBy: { createdAt: 'desc' },
+      orderBy: { [sortField]: sortDirection },
       skip,
       take: limitNum,
       select: {
         id: true, orderNumber: true, orderType: true, status: true,
         subtotal: true, deliveryFee: true, totalAmount: true,
-        specialInstructions: true, estimatedDeliveryTime: true, createdAt: true,
+        specialInstructions: true, estimatedDeliveryTime: true, 
+        createdAt: true, updatedAt: true, 
         customer: { select: { id: true, fullName: true, phoneNumber: true } },
         rider: { select: { id: true, fullName: true, phoneNumber: true } },
         deliveryAddress: { select: { streetAddress: true, landmark: true, area: true } },

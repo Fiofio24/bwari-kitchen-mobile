@@ -12,5 +12,5 @@ export const generatePromoCode = (type: string): string => {
     .substring(2, 8)
     .toUpperCase()
 
-  return `BWK${tag}${randomSuffix}`
+  return `BK${tag}${randomSuffix}`
 }

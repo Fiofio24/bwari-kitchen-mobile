@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import Layout from '../components/Layout'
 import api from '../lib/api'
+import useLivePolling from '../hooks/useLivePolling'
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend,
@@ -79,12 +80,9 @@ export default function Analytics() {
   const [riderPerf, setRiderPerf] = useState<RiderPerf[]>([])
   const [paymentBreakdown, setPaymentBreakdown] = useState<PaymentBreakdown[]>([])
 
-  useEffect(() => {
-    fetchAll()
-  }, [period])
-
-  const fetchAll = async () => {
-    setLoading(true)
+  // Wrapped in useCallback for the polling hook
+  const fetchAll = useCallback(async (isSilent = false) => {
+    if (!isSilent) setLoading(true)
     try {
       const [
         revenueRes, ordersRes, topItemsRes, peakHoursRes,
@@ -109,9 +107,17 @@ export default function Analytics() {
       setRiderPerf(riderRes.data.riders)
       setPaymentBreakdown(paymentRes.data.data)
     } finally {
-      setLoading(false)
+      if (!isSilent) setLoading(false)
     }
-  }
+  }, [period])
+
+  // Initial load
+  useEffect(() => {
+    fetchAll(false)
+  }, [fetchAll])
+
+  // Silent background poll every 15 seconds
+  useLivePolling(fetchAll, 15000)
 
   const handleExport = async (type: 'orders' | 'revenue' | 'top-items') => {
     const res = await api.get(`/api/admin/analytics/export/${type}?period=${period}`, {

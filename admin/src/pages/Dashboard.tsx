@@ -1,9 +1,12 @@
+// admin/src/pages/Dashboard.tsx
 import { Receipt, Wallet, Users, Bike, Clock, CheckCircle, XCircle } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { motion } from 'framer-motion'
+import { useNavigate } from 'react-router-dom'
 import Layout from '../components/Layout'
 import StatCard from '../components/StatCard'
 import api from '../lib/api'
+import useLivePolling from '../hooks/useLivePolling'
 
 interface Overview {
   orders: {
@@ -38,22 +41,29 @@ export default function Dashboard() {
   const [overview, setOverview] = useState<Overview | null>(null)
   const [period, setPeriod] = useState('month')
   const [loading, setLoading] = useState(true)
+  
+  const navigate = useNavigate()
 
-  useEffect(() => {
-    fetchOverview()
-  }, [period])
-
-  const fetchOverview = async () => {
-    setLoading(true)
+  const fetchOverview = useCallback(async (isSilent = false) => {
+    if (!isSilent) setLoading(true)
     try {
       const res = await api.get(`/api/admin/analytics/overview?period=${period}`)
       setOverview(res.data.overview)
     } finally {
-      setLoading(false)
+      if (!isSilent) setLoading(false)
     }
-  }
+  }, [period])
+
+  useEffect(() => {
+    fetchOverview(false)
+  }, [fetchOverview])
+
+  useLivePolling(fetchOverview, 15000)
 
   const formatCurrency = (amount: number) => `₦${amount.toLocaleString()}`
+
+  // Clean clickable style
+  const clickableStyle = "cursor-pointer rounded-2xl"
 
   return (
     <Layout>
@@ -92,33 +102,45 @@ export default function Dashboard() {
             animate="show"
             className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8"
           >
-            <StatCard
-              label="Total Orders"
-              value={overview.orders.total}
-              subtext={`${overview.orders.completionRate}% completion rate`}
-              icon={<Receipt size={18} />}
-              accent="primary"
-            />
-            <StatCard
-              label="Total Revenue"
-              value={formatCurrency(overview.revenue.total)}
-              subtext={`Avg ${formatCurrency(overview.revenue.average)} per order`}
-              icon={<Wallet size={18} />}
-              accent="success"
-            />
-            <StatCard
-              label="Customers"
-              value={overview.customers.total}
-              subtext={`${overview.customers.new} new this period`}
-              icon={<Users size={18} />}
-              accent="primary"
-            />
-            <StatCard
-              label="Active Riders"
-              value={overview.riders.active}
-              icon={<Bike size={18} />}
-              accent="warning"
-            />
+            <div onClick={() => navigate('/orders', { state: { tab: 'active' } })} className={clickableStyle}>
+              <StatCard
+                label="Total Orders"
+                value={overview.orders.total}
+                subtext={`${overview.orders.completionRate}% completion rate`}
+                icon={<Receipt size={18} />}
+                accent="primary"
+              />
+            </div>
+            
+            {/* THE FIX: Added click routing to the Analytics page */}
+            <div onClick={() => navigate('/analytics')} className={clickableStyle}>
+              <StatCard
+                label="Total Revenue"
+                value={formatCurrency(overview.revenue.total)}
+                subtext={`Avg ${formatCurrency(overview.revenue.average)} per order`}
+                icon={<Wallet size={18} />}
+                accent="success"
+              />
+            </div>
+
+            <div onClick={() => navigate('/customers')} className={clickableStyle}>
+              <StatCard
+                label="Customers"
+                value={overview.customers.total}
+                subtext={`${overview.customers.new} new this period`}
+                icon={<Users size={18} />}
+                accent="primary"
+              />
+            </div>
+
+            <div onClick={() => navigate('/riders')} className={clickableStyle}>
+              <StatCard
+                label="Active Riders"
+                value={overview.riders.active}
+                icon={<Bike size={18} />}
+                accent="warning"
+              />
+            </div>
           </motion.div>
 
           <motion.div
@@ -127,9 +149,17 @@ export default function Dashboard() {
             animate="show"
             className="grid grid-cols-1 md:grid-cols-3 gap-4"
           >
-            <StatCard label="Pending Orders" value={overview.orders.pending} icon={<Clock size={18} />} accent="warning" />
-            <StatCard label="Completed Orders" value={overview.orders.completed} icon={<CheckCircle size={18} />} accent="success" />
-            <StatCard label="Cancelled Orders" value={overview.orders.cancelled} icon={<XCircle size={18} />} accent="danger" />
+            <div onClick={() => navigate('/orders', { state: { tab: 'active', filter: 'pending' } })} className={clickableStyle}>
+              <StatCard label="Pending Orders" value={overview.orders.pending} icon={<Clock size={18} />} accent="warning" />
+            </div>
+
+            <div onClick={() => navigate('/orders', { state: { tab: 'settled', filter: 'delivered' } })} className={clickableStyle}>
+              <StatCard label="Completed Orders" value={overview.orders.completed} icon={<CheckCircle size={18} />} accent="success" />
+            </div>
+
+            <div onClick={() => navigate('/orders', { state: { tab: 'settled', filter: 'cancelled' } })} className={clickableStyle}>
+              <StatCard label="Cancelled Orders" value={overview.orders.cancelled} icon={<XCircle size={18} />} accent="danger" />
+            </div>
           </motion.div>
         </>
       ) : (

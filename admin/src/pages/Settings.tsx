@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import LoadingButton from '../components/LoadingButton'
 import { showSuccess, showError, getErrorMessage } from '../lib/toast'
 import Layout from '../components/Layout'
 import api from '../lib/api'
-import { Store, Clock, Banknote, MapPin, Power, Save } from 'lucide-react'
+import useLivePolling from '../hooks/useLivePolling'
+import { Store, Banknote, Power, Save } from 'lucide-react'
 
 interface AppSetting {
   id: string
@@ -37,12 +38,8 @@ export default function Settings() {
   const [savingBranch, setSavingBranch] = useState(false)
   const [togglingOpen, setTogglingOpen] = useState(false)
 
-  useEffect(() => {
-    fetchAll()
-  }, [])
-
-  const fetchAll = async () => {
-    setLoading(true)
+  const fetchAll = useCallback(async (isSilent = false) => {
+    if (!isSilent) setLoading(true)
     try {
       const [settingsRes, branchRes] = await Promise.all([
         api.get('/api/admin/settings'),
@@ -56,9 +53,16 @@ export default function Settings() {
       setSettings(settingsMap)
       setBranch(branchRes.data.branch)
     } finally {
-      setLoading(false)
+      if (!isSilent) setLoading(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    fetchAll(false)
+  }, [fetchAll])
+
+  // Live poll settings and branch info every 15 seconds
+  useLivePolling(fetchAll, 15000)
 
   const handleSettingChange = (key: string, value: string) => {
     setSettings({ ...settings, [key]: value })
@@ -70,6 +74,7 @@ export default function Settings() {
       const settingsArray = Object.entries(settings).map(([key, value]) => ({ key, value }))
       await api.patch('/api/admin/settings', { settings: settingsArray })
       showSuccess('Settings saved')
+      fetchAll(true)
     } catch (err: any) {
       showError(getErrorMessage(err))
     } finally {
@@ -101,6 +106,7 @@ export default function Settings() {
         deliveryRadiusKm: branch.deliveryRadiusKm,
       })
       showSuccess('Branch info saved')
+      fetchAll(true)
     } catch (err: any) {
       showError(getErrorMessage(err))
     } finally {

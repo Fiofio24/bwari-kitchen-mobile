@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import LoadingButton from '../components/LoadingButton'
 import { showSuccess, showError, getErrorMessage } from '../lib/toast'
@@ -7,6 +7,7 @@ import Modal from '../components/Modal'
 import ConfirmDialog from '../components/ConfirmDialog'
 import Toggle from '../components/Toggle'
 import api from '../lib/api'
+import useLivePolling from '../hooks/useLivePolling'
 import { Tag, UtensilsCrossed, Package as PackageIcon, ChevronRight, Plus } from 'lucide-react'
 
 interface Category {
@@ -80,9 +81,15 @@ export default function Menu() {
         })}
       </div>
 
-      {tab === 'categories' && <CategoriesTab />}
-      {tab === 'items' && <ItemsTab />}
-      {tab === 'packages' && <PackagesTab />}
+      <div className={tab === 'categories' ? 'block' : 'hidden'}>
+        <CategoriesTab />
+      </div>
+      <div className={tab === 'items' ? 'block' : 'hidden'}>
+        <ItemsTab />
+      </div>
+      <div className={tab === 'packages' ? 'block' : 'hidden'}>
+        <PackagesTab />
+      </div>
     </Layout>
   )
 }
@@ -98,20 +105,27 @@ function CategoriesTab() {
   const [form, setForm] = useState({ name: '', description: '', sortOrder: 0 })
   const [deleteTarget, setDeleteTarget] = useState<Category | null>(null)
   const [saving, setSaving] = useState(false)
-  const [togglingId, setTogglingId] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
 
-  useEffect(() => { fetchCategories() }, [])
+  const fetchCategories = useCallback(async (isSilent = false) => {
+    if (!isSilent) setLoading(true)
+    try {
+      const res = await api.get('/api/admin/menu/categories')
+      const sorted = [...res.data.categories].sort((a: Category, b: Category) =>
+        a.name.localeCompare(b.name)
+      )
+      setCategories(sorted)
+    } finally {
+      if (!isSilent) setLoading(false)
+    }
+  }, [])
 
-  const fetchCategories = async () => {
-    setLoading(true)
-    const res = await api.get('/api/admin/menu/categories')
-    const sorted = [...res.data.categories].sort((a: Category, b: Category) =>
-      a.name.localeCompare(b.name)
-    )
-    setCategories(sorted)
-    setLoading(false)
-  }
+  useEffect(() => {
+    const timer = setTimeout(() => fetchCategories(false), 0)
+    return () => clearTimeout(timer)
+  }, [fetchCategories])
+  
+  useLivePolling(fetchCategories, 15000)
 
   const openCreate = () => {
     setEditing(null)
@@ -137,8 +151,8 @@ function CategoriesTab() {
         showSuccess('Category created')
       }
       setModalOpen(false)
-      fetchCategories()
-    } catch (err: any) {
+      fetchCategories(true)
+    } catch (err) {
       showError(getErrorMessage(err))
     } finally {
       setSaving(false)
@@ -153,15 +167,12 @@ function CategoriesTab() {
       prev.map((c) => (c.id === cat.id ? { ...c, isActive: newActive } : c))
     )
 
-    setTogglingId(cat.id)
     try {
       const res = await api.patch(`/api/admin/menu/categories/${cat.id}/availability`)
       showSuccess(res.data.message)
-    } catch (err: any) {
+    } catch (err) {
       setCategories(previousCategories)
       showError(getErrorMessage(err))
-    } finally {
-      setTogglingId(null)
     }
   }
 
@@ -172,8 +183,8 @@ function CategoriesTab() {
       await api.delete(`/api/admin/menu/categories/${deleteTarget.id}`)
       showSuccess('Category deleted')
       setDeleteTarget(null)
-      fetchCategories()
-    } catch (err: any) {
+      fetchCategories(true)
+    } catch (err) {
       showError(getErrorMessage(err))
     } finally {
       setDeleting(false)
@@ -291,7 +302,6 @@ function ItemsTab() {
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<MenuItem | null>(null)
   const [saving, setSaving] = useState(false)
-  const [togglingId, setTogglingId] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [form, setForm] = useState({
     categoryId: '', name: '', description: '', basePrice: '',
@@ -301,34 +311,39 @@ function ItemsTab() {
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<MenuItem | null>(null)
 
-  useEffect(() => {
-    fetchCategories()
-  }, [])
-
-  useEffect(() => {
-    fetchItems()
-  }, [categoryFilter])
-
-  const fetchCategories = async () => {
-    setLoading(true)
+  const fetchCategories = useCallback(async () => {
     const res = await api.get('/api/admin/menu/categories')
     const sorted = [...res.data.categories].sort((a: Category, b: Category) =>
       a.name.localeCompare(b.name)
     )
     setCategories(sorted)
-    setLoading(false)
-  }
+  }, [])
 
-  const fetchItems = async () => {
-    setLoading(true)
-    const params = categoryFilter ? `?categoryId=${categoryFilter}` : ''
-    const res = await api.get(`/api/admin/menu/items${params}`)
-    const sorted = [...res.data.items].sort((a: MenuItem, b: MenuItem) =>
-      a.name.localeCompare(b.name)
-    )
-    setItems(sorted)
-    setLoading(false)
-  }
+  const fetchItems = useCallback(async (isSilent = false) => {
+    if (!isSilent) setLoading(true)
+    try {
+      const params = categoryFilter ? `?categoryId=${categoryFilter}` : ''
+      const res = await api.get(`/api/admin/menu/items${params}`)
+      const sorted = [...res.data.items].sort((a: MenuItem, b: MenuItem) =>
+        a.name.localeCompare(b.name)
+      )
+      setItems(sorted)
+    } finally {
+      if (!isSilent) setLoading(false)
+    }
+  }, [categoryFilter])
+
+  useEffect(() => { 
+    const timer = setTimeout(() => fetchCategories(), 0)
+    return () => clearTimeout(timer)
+  }, [fetchCategories])
+
+  useEffect(() => { 
+    const timer = setTimeout(() => fetchItems(false), 0)
+    return () => clearTimeout(timer)
+  }, [fetchItems])
+  
+  useLivePolling(fetchItems, 15000)
 
   const openCreate = () => {
     setEditing(null)
@@ -397,9 +412,9 @@ function ItemsTab() {
       }
 
       setModalOpen(false)
-      fetchItems()
+      fetchItems(true)
       showSuccess(editing ? 'Item updated' : 'Item created')
-    } catch (err: any) {
+    } catch (err) {
       showError(getErrorMessage(err))
     } finally {
       setSaving(false)
@@ -414,15 +429,12 @@ function ItemsTab() {
       prev.map((i) => (i.id === item.id ? { ...i, isAvailable: newAvailable } : i))
     )
 
-    setTogglingId(item.id)
     try {
       const res = await api.patch(`/api/admin/menu/items/${item.id}/availability`)
       showSuccess(res.data.message)
-    } catch (err: any) {
+    } catch (err) {
       setItems(previousItems)
       showError(getErrorMessage(err))
-    } finally {
-      setTogglingId(null)
     }
   }
 
@@ -433,8 +445,8 @@ function ItemsTab() {
       await api.delete(`/api/admin/menu/items/${deleteTarget.id}`)
       showSuccess('Item deleted')
       setDeleteTarget(null)
-      fetchItems()
-    } catch (err: any) {
+      fetchItems(true)
+    } catch (err) {
       showError(getErrorMessage(err))
     } finally {
       setDeleting(false)
@@ -459,8 +471,8 @@ function ItemsTab() {
         </LoadingButton>
       </div>
 
-      <div className="bg-white rounded-2xl border border-surface-100 overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="bg-white rounded-2xl border border-surface-100 overflow-x-auto">
+        <table className="w-full text-sm min-w-[700px]">
           <thead>
             <tr className="bg-surface-50 text-left text-surface-500 text-xs uppercase">
               <th className="px-4 py-3">Item</th>
@@ -655,31 +667,38 @@ function PackagesTab() {
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Package | null>(null)
   const [saving, setSaving] = useState(false)
-  const [togglingId, setTogglingId] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
 
-  useEffect(() => {
-    fetchPackages()
-    fetchItems()
-  }, [])
-
-  const fetchPackages = async () => {
-    setLoading(true)
-    const res = await api.get('/api/admin/menu/packages')
-    const sorted = [...res.data.packages].sort((a: Package, b: Package) =>
-      a.name.localeCompare(b.name)
-    )
-    setPackages(sorted)
-    setLoading(false)
-  }
-
-  const fetchItems = async () => {
+  const fetchItems = useCallback(async () => {
     const res = await api.get('/api/admin/menu/items?limit=100')
     const sorted = [...res.data.items].sort((a: MenuItem, b: MenuItem) =>
       a.name.localeCompare(b.name)
     )
     setItems(sorted)
-  }
+  }, [])
+
+  const fetchPackages = useCallback(async (isSilent = false) => {
+    if (!isSilent) setLoading(true)
+    try {
+      const res = await api.get('/api/admin/menu/packages')
+      const sorted = [...res.data.packages].sort((a: Package, b: Package) =>
+        a.name.localeCompare(b.name)
+      )
+      setPackages(sorted)
+    } finally {
+      if (!isSilent) setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchPackages(false)
+      fetchItems()
+    }, 0)
+    return () => clearTimeout(timer)
+  }, [fetchPackages, fetchItems])
+  
+  useLivePolling(fetchPackages, 15000)
 
   const calculatedTotal = packageItems.reduce((sum, pi) => {
     const item = items.find((i) => i.id === pi.menuItemId)
@@ -690,9 +709,10 @@ function PackagesTab() {
 
   useEffect(() => {
     if (!priceOverridden) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setForm((f) => ({ ...f, totalPrice: calculatedTotal ? String(calculatedTotal) : '' }))
     }
-  }, [packageItems, items])
+  }, [packageItems, items, priceOverridden, calculatedTotal])
 
   const openCreate = () => {
     setEditing(null)
@@ -762,9 +782,9 @@ function PackagesTab() {
       }
 
       setModalOpen(false)
-      fetchPackages()
+      fetchPackages(true)
       showSuccess(editing ? 'Package updated' : 'Package created')
-    } catch (err: any) {
+    } catch (err) {
       showError(getErrorMessage(err))
     } finally {
       setSaving(false)
@@ -779,15 +799,12 @@ function PackagesTab() {
       prev.map((p) => (p.id === pkg.id ? { ...p, isAvailable: newAvailable } : p))
     )
 
-    setTogglingId(pkg.id)
     try {
       const res = await api.patch(`/api/admin/menu/packages/${pkg.id}/availability`)
       showSuccess(res.data.message)
-    } catch (err: any) {
+    } catch (err) {
       setPackages(previousPackages)
       showError(getErrorMessage(err))
-    } finally {
-      setTogglingId(null)
     }
   }
 
@@ -798,8 +815,8 @@ function PackagesTab() {
       await api.delete(`/api/admin/menu/packages/${deleteTarget.id}`)
       showSuccess('Package deleted')
       setDeleteTarget(null)
-      fetchPackages()
-    } catch (err: any) {
+      fetchPackages(true)
+    } catch (err) {
       showError(getErrorMessage(err))
     } finally {
       setDeleting(false)

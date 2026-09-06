@@ -1,14 +1,14 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback, UIEvent } from 'react'
 import { motion } from 'framer-motion'
 import LoadingButton from '../components/LoadingButton'
 import { showSuccess, showError, getErrorMessage } from '../lib/toast'
 import Layout from '../components/Layout'
 import Modal from '../components/Modal'
 import Toggle from '../components/Toggle'
-import Pagination from '../components/Pagination'
 import StatusBadge from '../components/StatusBadge'
 import api from '../lib/api'
-import { Phone, Mail, MapPin, Search, ShieldCheck, ShieldOff, ChevronRight } from 'lucide-react'
+import useLivePolling from '../hooks/useLivePolling'
+import { Phone, Mail, MapPin, Search, ShieldCheck, ShieldOff, ChevronRight, Loader2 } from 'lucide-react'
 
 interface Customer {
   id: string
@@ -42,40 +42,67 @@ interface CustomerDetail extends Customer {
 export default function Customers() {
   const [customers, setCustomers] = useState<Customer[]>([])
   const [loading, setLoading] = useState(true)
-  const [page, setPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(1)
-  const [search, setSearch] = useState('')
+  const [isFetchingMore, setIsFetchingMore] = useState(false)
+  
+  // Infinite Scroll States
+  const [fetchLimit, setFetchLimit] = useState(50)
+  const [hasMore, setHasMore] = useState(true)
+  
+  const [searchInput, setSearchInput] = useState('')
+  const [appliedSearch, setAppliedSearch] = useState('')
   const [togglingId, setTogglingId] = useState<string | null>(null)
 
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerDetail | null>(null)
 
-  useEffect(() => {
-    fetchCustomers()
-  }, [page])
-
-  const fetchCustomers = async () => {
-    setLoading(true)
+  const fetchCustomers = useCallback(async (isSilent = false) => {
+    if (!isSilent) {
+      if (fetchLimit === 50) setLoading(true)
+      else setIsFetchingMore(true)
+    }
+    
     try {
       const params = new URLSearchParams()
-      params.append('page', String(page))
-      params.append('limit', '15')
-      if (search) params.append('search', search)
+      params.append('limit', fetchLimit.toString())
+      if (appliedSearch) params.append('search', appliedSearch)
 
       const res = await api.get(`/api/admin/users/customers?${params.toString()}`)
       const sorted = [...res.data.customers].sort((a: Customer, b: Customer) =>
         a.fullName.localeCompare(b.fullName)
       )
       setCustomers(sorted)
-      setTotalPages(res.data.meta.totalPages)
+      
+      if (res.data.customers.length < fetchLimit) {
+        setHasMore(false)
+      } else {
+        setHasMore(true)
+      }
     } finally {
-      setLoading(false)
+      if (!isSilent) {
+        setLoading(false)
+        setIsFetchingMore(false)
+      }
+    }
+  }, [fetchLimit, appliedSearch])
+
+  useEffect(() => {
+    fetchCustomers(false)
+  }, [fetchCustomers])
+  
+  useLivePolling(fetchCustomers, 15000)
+
+  const handleScroll = (e: UIEvent<HTMLDivElement>) => {
+    const { scrollTop, clientHeight, scrollHeight } = e.currentTarget
+    if (scrollHeight - scrollTop <= clientHeight + 50) {
+      if (hasMore && !loading && !isFetchingMore) {
+        setFetchLimit(prev => prev + 50)
+      }
     }
   }
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
-    setPage(1)
-    fetchCustomers()
+    setAppliedSearch(searchInput)
+    setFetchLimit(50)
   }
 
   const openDetail = async (customerId: string) => {
@@ -125,8 +152,8 @@ export default function Customers() {
           <input
             type="text"
             placeholder="Search by name or phone..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
             className="border border-surface-200 rounded-xl pl-9 pr-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400 transition-shadow"
           />
         </div>
@@ -138,10 +165,13 @@ export default function Customers() {
         </button>
       </form>
 
-      <div className="bg-white rounded-2xl border border-surface-100 overflow-x-auto">
+      <div 
+        className="bg-white rounded-2xl border border-surface-100 overflow-x-auto max-h-[70vh] overflow-y-auto relative"
+        onScroll={handleScroll}
+      >
         <table className="w-full text-sm min-w-[700px]">
-          <thead>
-            <tr className="bg-surface-50 text-left text-surface-500 text-xs uppercase">
+          <thead className="sticky top-0 bg-surface-50 z-10 shadow-sm">
+            <tr className="text-left text-surface-500 text-xs uppercase">
               <th className="px-4 py-3">Name</th>
               <th className="px-4 py-3">Phone</th>
               <th className="px-4 py-3">Orders</th>
@@ -162,7 +192,7 @@ export default function Customers() {
                   key={customer.id}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  transition={{ duration: 0.2, delay: i * 0.02 }}
+                  transition={{ duration: 0.2, delay: (i % 10) * 0.02 }}
                   onClick={() => openDetail(customer.id)}
                   className="border-t border-surface-100 hover:bg-surface-50 cursor-pointer"
                 >
@@ -188,9 +218,14 @@ export default function Customers() {
             )}
           </tbody>
         </table>
-      </div>
 
-      <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+        {isFetchingMore && (
+          <div className="flex justify-center items-center p-4 border-t border-surface-100 text-surface-500 gap-2">
+            <Loader2 size={18} className="animate-spin" />
+            <span className="text-sm font-medium">Loading more customers...</span>
+          </div>
+        )}
+      </div>
 
       {/* Customer Detail Modal */}
       <Modal

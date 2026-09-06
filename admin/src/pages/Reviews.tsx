@@ -1,12 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback, UIEvent } from 'react'
 import { motion } from 'framer-motion'
 import LoadingButton from '../components/LoadingButton'
 import ConfirmDialog from '../components/ConfirmDialog'
 import { showSuccess, showError, getErrorMessage } from '../lib/toast'
 import Layout from '../components/Layout'
-import Pagination from '../components/Pagination'
 import api from '../lib/api'
-import { Star, Eye, EyeOff, Trash2, Bike } from 'lucide-react'
+import useLivePolling from '../hooks/useLivePolling'
+import { Star, Eye, EyeOff, Trash2, Bike, Loader2 } from 'lucide-react'
 
 interface Review {
   id: string
@@ -26,33 +26,58 @@ export default function Reviews() {
   const [reviews, setReviews] = useState<Review[]>([])
   const [averages, setAverages] = useState<{ foodRating: number; deliveryRating: number; totalReviews: number } | null>(null)
   const [loading, setLoading] = useState(true)
-  const [page, setPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(1)
+  const [isFetchingMore, setIsFetchingMore] = useState(false)
+  
+  // Infinite Scroll States
+  const [fetchLimit, setFetchLimit] = useState(50)
+  const [hasMore, setHasMore] = useState(true)
+
   const [ratingFilter, setRatingFilter] = useState('')
   const [visibilityFilter, setVisibilityFilter] = useState('')
   const [togglingId, setTogglingId] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [reviewToDelete, setReviewToDelete] = useState<Review | null>(null)
 
-  useEffect(() => {
-    fetchReviews()
-  }, [page, ratingFilter, visibilityFilter])
-
-  const fetchReviews = async () => {
-    setLoading(true)
+  const fetchReviews = useCallback(async (isSilent = false) => {
+    if (!isSilent) {
+      if (fetchLimit === 50) setLoading(true)
+      else setIsFetchingMore(true)
+    }
     try {
       const params = new URLSearchParams()
-      params.append('page', String(page))
-      params.append('limit', '15')
+      params.append('limit', fetchLimit.toString())
       if (ratingFilter) params.append('rating', ratingFilter)
       if (visibilityFilter) params.append('visible', visibilityFilter)
 
       const res = await api.get(`/api/admin/reviews?${params.toString()}`)
       setReviews(res.data.reviews)
       setAverages(res.data.averages)
-      setTotalPages(res.data.meta.totalPages)
+      
+      if (res.data.reviews.length < fetchLimit) {
+        setHasMore(false)
+      } else {
+        setHasMore(true)
+      }
     } finally {
-      setLoading(false)
+      if (!isSilent) {
+        setLoading(false)
+        setIsFetchingMore(false)
+      }
+    }
+  }, [fetchLimit, ratingFilter, visibilityFilter])
+
+  useEffect(() => {
+    fetchReviews(false)
+  }, [fetchReviews])
+
+  useLivePolling(fetchReviews, 15000)
+
+  const handleScroll = (e: UIEvent<HTMLDivElement>) => {
+    const { scrollTop, clientHeight, scrollHeight } = e.currentTarget
+    if (scrollHeight - scrollTop <= clientHeight + 50) {
+      if (hasMore && !loading && !isFetchingMore) {
+        setFetchLimit(prev => prev + 50)
+      }
     }
   }
 
@@ -83,7 +108,7 @@ export default function Reviews() {
       await api.delete(`/api/admin/reviews/${reviewToDelete.id}`)
       showSuccess('Review deleted')
       setReviewToDelete(null)
-      fetchReviews()
+      fetchReviews(true)
     } catch (err: any) {
       showError(getErrorMessage(err))
     } finally {
@@ -144,7 +169,7 @@ export default function Reviews() {
       <div className="flex gap-3 mb-4 flex-wrap">
         <select
           value={ratingFilter}
-          onChange={(e) => { setRatingFilter(e.target.value); setPage(1) }}
+          onChange={(e) => { setRatingFilter(e.target.value); setFetchLimit(50) }}
           className={inputClass}
         >
           <option value="">All ratings</option>
@@ -157,7 +182,7 @@ export default function Reviews() {
 
         <select
           value={visibilityFilter}
-          onChange={(e) => { setVisibilityFilter(e.target.value); setPage(1) }}
+          onChange={(e) => { setVisibilityFilter(e.target.value); setFetchLimit(50) }}
           className={inputClass}
         >
           <option value="">All reviews</option>
@@ -167,25 +192,28 @@ export default function Reviews() {
       </div>
 
       {/* Reviews List */}
-      {loading ? (
-        <div className="space-y-3">
-          {[...Array(3)].map((_, i) => (
-            <div key={i} className="bg-white rounded-2xl border border-surface-100 p-4 h-32 animate-pulse">
-              <div className="h-3.5 w-32 bg-surface-100 rounded mb-2" />
-              <div className="h-3 w-24 bg-surface-50 rounded" />
-            </div>
-          ))}
-        </div>
-      ) : reviews.length === 0 ? (
-        <p className="text-surface-400">No reviews found</p>
-      ) : (
-        <div className="space-y-3">
-          {reviews.map((review, i) => (
+      <div 
+        className="max-h-[70vh] overflow-y-auto pr-2 relative space-y-3"
+        onScroll={handleScroll}
+      >
+        {loading ? (
+          <div className="space-y-3">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="bg-white rounded-2xl border border-surface-100 p-4 h-32 animate-pulse">
+                <div className="h-3.5 w-32 bg-surface-100 rounded mb-2" />
+                <div className="h-3 w-24 bg-surface-50 rounded" />
+              </div>
+            ))}
+          </div>
+        ) : reviews.length === 0 ? (
+          <p className="text-surface-400">No reviews found</p>
+        ) : (
+          reviews.map((review, i) => (
             <motion.div
               key={review.id}
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.2, delay: i * 0.03 }}
+              transition={{ duration: 0.2, delay: (i % 10) * 0.02 }}
               className={`bg-white rounded-2xl border p-4 ${
                 review.isVisible ? 'border-surface-100' : 'border-danger/20 bg-danger/[0.02]'
               }`}
@@ -244,11 +272,17 @@ export default function Reviews() {
                 </button>
               </div>
             </motion.div>
-          ))}
-        </div>
-      )}
+          ))
+        )}
 
-      <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+        {isFetchingMore && (
+          <div className="flex justify-center items-center p-4 text-surface-500 gap-2">
+            <Loader2 size={18} className="animate-spin" />
+            <span className="text-sm font-medium">Loading more reviews...</span>
+          </div>
+        )}
+      </div>
+
       <ConfirmDialog
         isOpen={!!reviewToDelete}
         title="Delete Review"
