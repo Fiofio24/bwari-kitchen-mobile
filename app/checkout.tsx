@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { 
   View, 
   Text, 
@@ -71,32 +71,37 @@ export default function CheckoutScreen() {
   const { findItem } = useMenu();
   
   const [deliveryMethod, setDeliveryMethod] = useState<'delivery' | 'pickup'>('delivery'); 
+  
+  const [eatIn, setEatIn] = useState(false);
+  const [takeAway, setTakeAway] = useState(false);
+
   const [isProcessing, setIsProcessing] = useState(false);
   const [orderNote, setOrderNote] = useState('');
   const [noCutlery, setNoCutlery] = useState(false); 
   const [isAddressModalVisible, setIsAddressModalVisible] = useState(false); 
   const [promoCode, setPromoCode] = useState('');
-  const [promoResult, setPromoResult] = useState<{ discountAmount: number; message: string } | null>(null);
+  
+  const [promoResult, setPromoResult] = useState<{ discountAmount: number; message: string; type?: string } | null>(null);
+  
   const [applyingPromo, setApplyingPromo] = useState(false);
+  const [isLoadingFee, setIsLoadingFee] = useState(false);
+  const [isLoadingSettings, setIsLoadingSettings] = useState(true);
 
   const [paymentModalData, setPaymentModalData] = useState<{ url: string; reference: string } | null>(null);
 
   const [acceptsDelivery, setAcceptsDelivery] = useState(true);
   const [acceptsPickup, setAcceptsPickup] = useState(true);
-  const [isLoadingSettings, setIsLoadingSettings] = useState(true);
   
   const [branchName, setBranchName] = useState('Bwari Kitchen');
   const [branchAddress, setBranchAddress] = useState('Loading address...');
-  
-  // NEW: State to hold the dynamic support phone number
-  const [supportPhone, setSupportPhone] = useState('+2348123456789'); // Default fallback
+  const [supportPhone, setSupportPhone] = useState('+2348123456789'); 
 
   const { width } = useWindowDimensions();
   const cardWidth = width - scale(40); 
   const scrollViewRef = useRef<ScrollView>(null);
 
   useEffect(() => {
-    let intervalId: NodeJS.Timeout;
+    let intervalId: ReturnType<typeof setInterval>;
 
     const fetchSettings = async () => {
       try {
@@ -111,13 +116,12 @@ export default function CheckoutScreen() {
           if (branchInfo.name) setBranchName(branchInfo.name);
           if (branchInfo.address) setBranchAddress(branchInfo.address);
           
-          // Ready and waiting for Victor's update!
           if (branchInfo.supportPhone) {
             setSupportPhone(branchInfo.supportPhone);
           } else if (restaurantInfo && restaurantInfo.supportPhone) {
             setSupportPhone(restaurantInfo.supportPhone);
           } else if (branchInfo.phoneNumber) {
-            setSupportPhone(branchInfo.phoneNumber); // Fallback to regular phone for now
+            setSupportPhone(branchInfo.phoneNumber); 
           }
           
           setAcceptsDelivery(prev => {
@@ -144,8 +148,7 @@ export default function CheckoutScreen() {
             return prev;
           });
         }
-      } catch (err: any) {
-        // Fail silently during background polling
+      } catch {
       } finally {
         setIsLoadingSettings(false);
       }
@@ -173,18 +176,20 @@ export default function CheckoutScreen() {
     }
   };
 
+  // THE FIX: Cleaned! Just tracks state, no auto-filling text.
+  const handleDiningToggle = (type: 'eat_in' | 'take_away', value: boolean) => {
+    if (type === 'eat_in') {
+      setEatIn(value);
+      if (value) setTakeAway(false);
+    } else {
+      setTakeAway(value);
+      if (value) setEatIn(false);
+    }
+  };
+
+  // THE FIX: Cleaned! Just tracks state, no auto-filling text.
   const handleCutleryToggle = (newValue: boolean) => {
     setNoCutlery(newValue);
-    const CUTLERY_NOTE = "No cutlery required.";
-    
-    if (newValue) {
-      setOrderNote(prev => {
-        if (prev.includes(CUTLERY_NOTE)) return prev;
-        return prev.trim() ? `${prev.trim()} - ${CUTLERY_NOTE}` : CUTLERY_NOTE;
-      });
-    } else {
-      setOrderNote(prev => prev.replace(` - ${CUTLERY_NOTE}`, '').replace(CUTLERY_NOTE, '').trim());
-    }
   };
 
   const bottomNavHeight = scale(70) + Math.max(insets.bottom, scale(15));
@@ -194,14 +199,14 @@ export default function CheckoutScreen() {
       try {
         const decoded = decodeURIComponent(params.instantReorder as string);
         return JSON.parse(decoded);
-      } catch (e) {
+      } catch {
       }
     }
     if (params.selectedItems) {
       try {
         const selectedIds = JSON.parse(params.selectedItems as string);
         return cartItems.filter(item => selectedIds.includes(item.id));
-      } catch (e) {
+      } catch {
       }
     }
     return cartItems;
@@ -219,38 +224,69 @@ export default function CheckoutScreen() {
         setDeliveryDistanceKm(0);
         return;
       }
+      setIsLoadingFee(true);
       try {
         const res = await api.post('/api/addresses/delivery-fee', { addressId: activeAddress.id });
         setEstimatedDeliveryFee(res.data.deliveryFee);
         if (res.data.distanceKm !== undefined) {
           setDeliveryDistanceKm(Number(res.data.distanceKm));
         }
-      } catch (error: any) {
+      } catch {
         setEstimatedDeliveryFee(0);
         setDeliveryDistanceKm(0);
+      } finally {
+        setIsLoadingFee(false);
       }
     };
     fetchFee();
   }, [deliveryMethod, activeAddress?.id]);
 
-  const handleApplyPromo = async () => {
+  const validatePromo = useCallback(async (isAuto = false) => {
     if (!promoCode.trim()) return;
     setApplyingPromo(true);
     try {
       const res = await api.post('/api/promotions/validate', {
         code: promoCode.trim(),
         orderAmount: subtotal,
+        deliveryFee: estimatedDeliveryFee
       });
-      setPromoResult({ discountAmount: res.data.discountAmount, message: res.data.message });
+      setPromoResult({ 
+        discountAmount: res.data.discountAmount, 
+        message: res.data.message,
+        type: res.data.promo?.type 
+      });
     } catch (err: any) {
-      Alert.alert('Promo Code', err.response?.data?.message || 'Invalid promo code');
+      if (!isAuto) {
+        Alert.alert('Promo Code', err.response?.data?.message || 'Invalid promo code');
+      }
       setPromoResult(null);
     } finally {
       setApplyingPromo(false);
     }
-  };
+  }, [promoCode, subtotal, estimatedDeliveryFee]);
 
-  const total = subtotal + estimatedDeliveryFee - (promoResult?.discountAmount || 0); 
+  const handleApplyPromo = () => validatePromo(false);
+
+  const lastSubtotal = useRef(subtotal);
+  const lastFee = useRef(estimatedDeliveryFee);
+
+  useEffect(() => {
+    if (promoResult && promoCode) {
+      if (lastSubtotal.current !== subtotal || lastFee.current !== estimatedDeliveryFee) {
+        lastSubtotal.current = subtotal;
+        lastFee.current = estimatedDeliveryFee;
+        validatePromo(true);
+      }
+    }
+  }, [estimatedDeliveryFee, subtotal, promoResult, promoCode, validatePromo]);
+
+  const activeDiscountAmount = promoResult?.type === 'free_delivery' 
+    ? estimatedDeliveryFee 
+    : (promoResult?.discountAmount || 0);
+
+  const total = subtotal + estimatedDeliveryFee - activeDiscountAmount; 
+  
+  const isAnyLoading = isProcessing || isLoadingFee || applyingPromo || isLoadingSettings;
 
   const verifyPayment = async (reference: string, isAutoDetect: boolean = false) => {
     setPaymentModalData(null); 
@@ -293,11 +329,26 @@ export default function CheckoutScreen() {
   const executeOrderPlacement = async () => {
     setIsProcessing(true);
     try {
+      let finalNote = orderNote.trim();
+      
+      // THE FIX: Silently append the dining preference to the note before sending!
+      if (deliveryMethod === 'pickup') {
+        const diningPreference = eatIn ? 'Dining: Eat In' : (takeAway ? 'Dining: Take Away' : '');
+        if (diningPreference) {
+           finalNote = finalNote ? `${finalNote} | ${diningPreference}` : diningPreference;
+        }
+      }
+
+      // THE FIX: Silently append the cutlery preference to the note before sending!
+      if (noCutlery) {
+        finalNote = finalNote ? `${finalNote} | No Cutlery Required` : 'No Cutlery Required';
+      }
+
       const orderPayload: any = {
         orderType: deliveryMethod,
         paymentMethod: 'paystack',
         packages: buildOrderPackagesPayload(checkoutItems),
-        specialInstructions: orderNote || undefined,
+        specialInstructions: finalNote || undefined,
       };
 
       if (deliveryMethod === 'delivery' && activeAddress) {
@@ -327,7 +378,7 @@ export default function CheckoutScreen() {
 
       try {
         setPaymentModalData({ url: paymentUrl, reference: reference });
-      } catch (browserError) {
+      } catch {
         await Linking.openURL(paymentUrl);
       }
       
@@ -339,7 +390,6 @@ export default function CheckoutScreen() {
         errorMsg = err.message;
       }
       
-      // --- NEW: Dynamic phone number for the error intercept! ---
       if (errorMsg.toLowerCase().includes('radius') || errorMsg.toLowerCase().includes('deliver to this location')) {
         Alert.alert(
           'Out of Delivery Zone 🛵',
@@ -351,7 +401,6 @@ export default function CheckoutScreen() {
             },
             { 
               text: 'Call Kitchen', 
-              // Passing the dynamic state directly to the dialer
               onPress: () => Linking.openURL(`tel:${supportPhone}`) 
             }
           ]
@@ -542,6 +591,39 @@ export default function CheckoutScreen() {
 
           <View style={{ paddingHorizontal: scale(15), paddingBottom: scale(15) }}>
             <View style={[styles.divider, { backgroundColor: colors.border, marginBottom: scale(15) }]} />
+            
+            {deliveryMethod === 'pickup' && (
+              <>
+                <View style={styles.ecoRow}>
+                  <View style={styles.ecoTextWrap}>
+                    <Text style={[styles.ecoTitle, { color: colors.text }]}>Dining Preference</Text>
+                    <Text style={[styles.ecoSub, { color: colors.textMuted }]}>Eat in or Take away?</Text>
+                  </View>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(15) }}>
+                    <View style={{ alignItems: 'center' }}>
+                      <Text style={{ fontSize: scale(10), color: colors.textMuted, marginBottom: scale(4), fontWeight: 'bold' }}>EAT IN</Text>
+                      <Switch 
+                        value={eatIn} 
+                        onValueChange={(val) => handleDiningToggle('eat_in', val)} 
+                        trackColor={{ false: '#767577', true: '#81C784' }} 
+                        thumbColor={eatIn ? '#388E3C' : '#f4f3f4'} 
+                      />
+                    </View>
+                    <View style={{ alignItems: 'center' }}>
+                      <Text style={{ fontSize: scale(10), color: colors.textMuted, marginBottom: scale(4), fontWeight: 'bold' }}>TAKE AWAY</Text>
+                      <Switch 
+                        value={takeAway} 
+                        onValueChange={(val) => handleDiningToggle('take_away', val)} 
+                        trackColor={{ false: '#767577', true: '#81C784' }} 
+                        thumbColor={takeAway ? '#388E3C' : '#f4f3f4'} 
+                      />
+                    </View>
+                  </View>
+                </View>
+                <View style={[styles.divider, { backgroundColor: colors.border, marginVertical: scale(15) }]} />
+              </>
+            )}
+
             <View style={styles.ecoRow}>
               <View style={styles.ecoTextWrap}>
                 <Text style={[styles.ecoTitle, { color: colors.text }]}>No Cutlery Required</Text>
@@ -554,20 +636,6 @@ export default function CheckoutScreen() {
                 thumbColor={noCutlery ? '#388E3C' : '#f4f3f4'} 
               />
             </View>
-          </View>
-        </View>
-
-        <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>PAYMENT METHOD</Text>
-        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <View style={styles.paymentOption}>
-            <View style={[styles.paymentIconBox, { backgroundColor: '#F3E5F5' }]}>
-              <Ionicons name="card" size={scale(20)} color="#9C27B0" />
-            </View>
-            <View style={styles.paymentTextContainer}>
-              <Text style={[styles.paymentTitle, { color: colors.text }]}>Card, Bank Transfer or USSD</Text>
-              <Text style={[styles.paymentSub, { color: colors.textMuted }]}>Choose your preferred option on the next screen — secured by Paystack</Text>
-            </View>
-            <Ionicons name="radio-button-on" size={scale(24)} color={Colors.primary} />
           </View>
         </View>
 
@@ -585,9 +653,10 @@ export default function CheckoutScreen() {
             {applyingPromo ? <ActivityIndicator color="#FFF" size="small" /> : <Text style={{ color: '#FFF', fontWeight: 'bold' }}>Apply</Text>}
           </TouchableOpacity>
         </View>
-        {promoResult && (
+        
+        {promoResult && !applyingPromo && (
           <Text style={{ color: '#4CAF50', fontSize: scale(13), marginTop: -scale(18), marginBottom: scale(20), marginLeft: scale(5), fontWeight: '600' }}>
-            ✓ {promoResult.message} — ₦{promoResult.discountAmount.toLocaleString()} off
+            ✓ {promoResult.message} — {promoResult.type === 'free_delivery' ? 'Free Delivery' : `₦${promoResult.discountAmount.toLocaleString()} off`}
           </Text>
         )}
 
@@ -650,19 +719,47 @@ export default function CheckoutScreen() {
             </View>
             <View style={styles.summaryRow}>
               <Text style={[styles.summaryLabel, { color: colors.textMuted }]}>Delivery Fee</Text>
-              <Text style={[styles.summaryValue, { color: colors.text }]}>₦{estimatedDeliveryFee.toLocaleString()}</Text>
+              {isLoadingFee ? (
+                <ActivityIndicator size="small" color={colors.textMuted} />
+              ) : (
+                <Text style={[styles.summaryValue, { color: colors.text }]}>₦{estimatedDeliveryFee.toLocaleString()}</Text>
+              )}
             </View>
-            {promoResult && (
+            
+            {(promoResult || applyingPromo) && (
               <View style={styles.summaryRow}>
-                <Text style={[styles.summaryLabel, { color: '#4CAF50' }]}>Discount</Text>
-                <Text style={[styles.summaryValue, { color: '#4CAF50' }]}>-₦{promoResult.discountAmount.toLocaleString()}</Text>
+                <Text style={[styles.summaryLabel, { color: '#4CAF50' }]}>
+                  Discount {promoResult?.type === 'free_delivery' ? '(Free Delivery)' : ''}
+                </Text>
+                {applyingPromo ? (
+                  <ActivityIndicator size="small" color="#4CAF50" />
+                ) : (
+                  <Text style={[styles.summaryValue, { color: '#4CAF50' }]}>
+                    -₦{activeDiscountAmount.toLocaleString()}
+                  </Text>
+                )}
               </View>
             )}
+            
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
             <View style={styles.summaryRow}>
               <Text style={[styles.totalLabel, { color: colors.text }]}>Total</Text>
               <Text style={[styles.totalValue, { color: Colors.primary }]}>₦{total.toLocaleString()}</Text>
             </View>
+          </View>
+        </View>
+
+        <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>PAYMENT METHOD</Text>
+        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <View style={styles.paymentOption}>
+            <View style={[styles.paymentIconBox, { backgroundColor: '#F3E5F5' }]}>
+              <Ionicons name="card" size={scale(20)} color="#9C27B0" />
+            </View>
+            <View style={styles.paymentTextContainer}>
+              <Text style={[styles.paymentTitle, { color: colors.text }]}>Card, Bank Transfer or USSD</Text>
+              <Text style={[styles.paymentSub, { color: colors.textMuted }]}>Choose your preferred option on the next screen — secured by Paystack</Text>
+            </View>
+            <Ionicons name="radio-button-on" size={scale(24)} color={Colors.primary} />
           </View>
         </View>
       </ScrollView>
@@ -680,12 +777,18 @@ export default function CheckoutScreen() {
             <Text style={[styles.footerTotalLabel, { color: colors.textMuted }]}>Total Payment</Text>
             <Text style={[styles.footerTotalValue, { color: colors.text }]}>₦{total.toLocaleString()}</Text>
           </View>
-          <TouchableOpacity style={[styles.placeOrderBtn, { opacity: isProcessing ? 0.7 : 1 }]} onPress={handlePlaceOrder} disabled={isProcessing}>
-            {isProcessing ? (
-              <ActivityIndicator color="#FFF" />
-            ) : (
-              <Text style={styles.placeOrderText}>Place Order</Text>
-            )}
+          
+          <TouchableOpacity 
+            style={[styles.placeOrderBtn, { opacity: isAnyLoading ? 0.7 : 1 }]} 
+            onPress={handlePlaceOrder} 
+            disabled={isAnyLoading}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(8) }}>
+              {isAnyLoading && <ActivityIndicator color="#FFF" size="small" />}
+              <Text style={styles.placeOrderText}>
+                {isProcessing ? 'Processing...' : 'Place Order'}
+              </Text>
+            </View>
           </TouchableOpacity>
         </View>
       </View>

@@ -1,8 +1,9 @@
+// backend/src/controllers/order.controller.ts
 import { Request, Response } from 'express'
 import {
-    calculateDeliveryFee,
-    calculateDistance,
-    isWithinDeliveryRadius,
+  calculateDeliveryFee,
+  calculateDistance,
+  isWithinDeliveryRadius,
 } from '../lib/delivery'
 import { generateOrderNumber } from '../lib/orderNumber'
 import prisma from '../lib/prisma'
@@ -174,6 +175,8 @@ export const placeOrder = async (
       return
     }
 
+    const pkgQuantity = pkg.quantity && Number(pkg.quantity) > 0 ? Number(pkg.quantity) : 1
+
     let packageTotal = 0
     const validatedItems = []
 
@@ -184,6 +187,8 @@ export const placeOrder = async (
         })
         return
       }
+
+      const actualItemQuantity = item.quantity * pkgQuantity
 
       const menuItem = await prisma.menuItem.findFirst({
         where: {
@@ -221,7 +226,7 @@ export const placeOrder = async (
           : Number(menuItem.basePrice)
       }
 
-      const itemTotal = unitPrice * item.quantity
+      const itemTotal = unitPrice * actualItemQuantity
       packageTotal += itemTotal
 
       validatedItems.push({
@@ -229,7 +234,7 @@ export const placeOrder = async (
         itemName: matchedVariantLabel ? `${menuItem.name} (${matchedVariantLabel})` : menuItem.name,
         variantId: matchedVariantId,
         variantLabel: matchedVariantLabel,
-        quantity: item.quantity,
+        quantity: actualItemQuantity,
         unitPrice,
         totalPrice: itemTotal,
       })
@@ -256,7 +261,7 @@ export const placeOrder = async (
         } else {
           isCustom = false
           sourcePackageId = restaurantPackage.id
-          packagePrice = Number(restaurantPackage.totalPrice)
+          packagePrice = Number(restaurantPackage.totalPrice) * pkgQuantity
           packageName = restaurantPackage.name
         }
       }
@@ -268,7 +273,7 @@ export const placeOrder = async (
       packageId: sourcePackageId,
       originalPackageId,
       packageName,
-      totalPrice: packagePrice,
+      totalPrice: packagePrice, 
       isCustom,
       wasEdited,
       items: validatedItems,
@@ -324,26 +329,27 @@ export const placeOrder = async (
       return
     }
 
-    if (subtotal < Number(promo.minOrderAmount)) {
+    if (subtotal < Number(promo.minOrderAmount || 0)) {
       res.status(400).json({
-        message: `Minimum order amount for this code is ₦${Number(promo.minOrderAmount).toLocaleString()}`
+        message: `Minimum order amount for this code is ₦${Number(promo.minOrderAmount || 0).toLocaleString()}`
       })
       return
     }
 
-    switch (promo.type) {
-      case 'percentage':
-        discountAmount = (subtotal * Number(promo.value)) / 100
-        break
-      case 'fixed':
-        discountAmount = Number(promo.value)
-        break
-      case 'free_delivery':
-        discountAmount = deliveryFee
-        break
-      case 'bogo':
-        discountAmount = subtotal * 0.5
-        break
+    // THE FIX: Resilient, case-insensitive promo evaluation!
+    const pType = String(promo.type).toLowerCase()
+    
+    // Safely handles various database naming conventions for the value field
+    const pValue = Number(promo.value || (promo as any).discountValue || (promo as any).amount || 0)
+
+    if (pType.includes('percent')) {
+      discountAmount = (subtotal * pValue) / 100
+    } else if (pType.includes('fixed') || pType.includes('amount')) {
+      discountAmount = pValue
+    } else if (pType.includes('free_delivery') || pType.includes('freedelivery')) {
+      discountAmount = deliveryFee
+    } else if (pType.includes('bogo')) {
+      discountAmount = subtotal * 0.5
     }
 
     discountAmount = Math.min(discountAmount, subtotal + deliveryFee)
@@ -592,7 +598,7 @@ export const getOrder = async (
         select: {
           status: true,
           note: true,
-          changedByType: true,   // ← replaces the relation
+          changedByType: true,
           createdAt: true
         }
       },

@@ -7,7 +7,8 @@ export const validatePromoCode = async (
   req: Request,
   res: Response
 ): Promise<void> => {
-  const { code, orderAmount } = req.body
+  // THE FIX: Extract the deliveryFee sent from the mobile app (default to 0 if missing)
+  const { code, orderAmount, deliveryFee = 0 } = req.body
 
   if (!code || !orderAmount) {
     res.status(400).json({ message: 'Promo code and order amount are required' })
@@ -72,14 +73,17 @@ export const validatePromoCode = async (
       discountAmount = Number(promo.value)
       break
     case 'free_delivery':
-      discountAmount = Number(promo.value)
+      // THE FIX: Automatically sets the discount to cover the exact delivery fee
+      discountAmount = Number(deliveryFee)
       break
     case 'bogo':
       discountAmount = parseFloat(orderAmount) * 0.5
       break
   }
 
-  discountAmount = Math.min(discountAmount, parseFloat(orderAmount))
+  // Ensure the discount does not exceed the total cost of the food + the delivery
+  const maximumPossibleDiscount = parseFloat(orderAmount) + Number(deliveryFee)
+  discountAmount = Math.min(discountAmount, maximumPossibleDiscount)
   discountAmount = Math.round(discountAmount * 100) / 100
 
   res.status(200).json({
@@ -92,7 +96,7 @@ export const validatePromoCode = async (
       description: promo.description,
     },
     discountAmount,
-    finalAmount: parseFloat(orderAmount) - discountAmount,
+    finalAmount: (parseFloat(orderAmount) + Number(deliveryFee)) - discountAmount,
     currency: 'NGN',
   })
 }
@@ -227,8 +231,14 @@ export const createPromo = async (
     validFrom, validUntil,
   } = req.body
 
-  if (!type || !value) {
-    res.status(400).json({ message: 'Type and value are required' })
+  if (!type) {
+    res.status(400).json({ message: 'Type is required' })
+    return
+  }
+
+  // THE FIX: Allow creation without 'value' for Free Delivery
+  if ((type === 'percentage' || type === 'fixed') && !value) {
+    res.status(400).json({ message: 'Value is required for this promotion type' })
     return
   }
 
@@ -243,7 +253,6 @@ export const createPromo = async (
     return
   }
 
-  // Auto-generate a unique code, retrying on the rare collision
   let code = generatePromoCode(type)
   let existing = await prisma.promotion.findUnique({ where: { code } })
   let attempts = 0
@@ -264,7 +273,7 @@ export const createPromo = async (
       code,
       description: description || null,
       type,
-      value: parseFloat(value),
+      value: value ? parseFloat(value) : 0, // Fallback to 0 if not needed
       minOrderAmount: minOrderAmount ? parseFloat(minOrderAmount) : 0,
       maxUses: maxUses ? parseInt(maxUses) : null,
       perUserLimit: perUserLimit ? parseInt(perUserLimit) : 1,
@@ -307,7 +316,7 @@ export const updatePromo = async (
     where: { id },
     data: {
       ...(description !== undefined && { description }),
-      ...(value && { value: parseFloat(value) }),
+      ...(value !== undefined && value !== '' && { value: parseFloat(value) }),
       ...(minOrderAmount !== undefined && { minOrderAmount: parseFloat(minOrderAmount) }),
       ...(maxUses !== undefined && { maxUses: maxUses ? parseInt(maxUses) : null }),
       ...(perUserLimit && { perUserLimit: parseInt(perUserLimit) }),
