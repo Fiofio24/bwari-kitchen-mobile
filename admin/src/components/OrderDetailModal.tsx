@@ -13,6 +13,7 @@ export interface Order {
   status: string
   subtotal: number
   deliveryFee: number
+  discountAmount?: number // THE FIX: Added discountAmount to the interface
   totalAmount: number
   specialInstructions: string | null
   estimatedDeliveryTime: string | null
@@ -92,7 +93,7 @@ export default function OrderDetailModal({ order, onClose, onOrderUpdated }: Ord
 
     setActionLoading(true)
     try {
-      const res = await api.patch(`/api/admin/orders/${order.id}/assign-rider`, { riderId: selectedRiderId })
+      await api.patch(`/api/admin/orders/${order.id}/assign-rider`, { riderId: selectedRiderId })
       const detailRes = await api.get(`/api/admin/orders/${order.id}`)
       onOrderUpdated(detailRes.data.order)
       setSelectedRiderId('')
@@ -213,6 +214,15 @@ export default function OrderDetailModal({ order, onClose, onOrderUpdated }: Ord
                 <span>Delivery fee</span>
                 <span>{formatCurrency(order.deliveryFee)}</span>
               </div>
+              
+              {/* THE FIX: Dynamically show discount if greater than 0 */}
+              {!!order.discountAmount && order.discountAmount > 0 && (
+                <div className="flex justify-between text-green-600 font-medium">
+                  <span>Discount</span>
+                  <span>-{formatCurrency(order.discountAmount)}</span>
+                </div>
+              )}
+              
               <div className="flex justify-between font-semibold text-base text-surface-900 pt-1">
                 <span>Total</span>
                 <span>{formatCurrency(order.totalAmount)}</span>

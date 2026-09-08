@@ -72,9 +72,37 @@ export const placeOrder = async (
     return
   }
 
+  // THE FIX: 1. Manual Admin Override Check
   if (!branch.isOpen) {
-    res.status(400).json({ message: 'Restaurant is currently closed' })
+    res.status(400).json({ message: 'Restaurant is currently closed manually.' })
     return
+  }
+
+  // THE FIX: 2. Automatic Time-Based Check (Enforced on backend)
+  if (branch.openingTime && branch.closingTime) {
+    const now = new Date()
+    // Shift to West Africa Time (UTC+1) to prevent Vercel UTC mismatch
+    const watTime = new Date(now.getTime() + (60 * 60 * 1000))
+    const currentMins = watTime.getUTCHours() * 60 + watTime.getUTCMinutes()
+    
+    const [oH, oM] = branch.openingTime.split(':').map(Number)
+    const [cH, cM] = branch.closingTime.split(':').map(Number)
+    const openMins = oH * 60 + oM
+    const closeMins = cH * 60 + cM
+
+    let isTimeValid = true
+    if (closeMins < openMins) {
+      // Spans midnight (e.g., 20:00 to 02:00)
+      isTimeValid = currentMins >= openMins || currentMins <= closeMins
+    } else {
+      // Normal day (e.g., 08:00 to 22:00)
+      isTimeValid = currentMins >= openMins && currentMins <= closeMins
+    }
+
+    if (!isTimeValid) {
+      res.status(400).json({ message: 'Restaurant is outside of working hours' })
+      return
+    }
   }
 
   if (orderType === 'delivery' && !branch.acceptsDelivery) {
@@ -271,7 +299,7 @@ export const placeOrder = async (
 
     validatedPackages.push({
       packageId: sourcePackageId,
-      originalPackageId,
+      originalPackageId: originalPackageId,
       packageName,
       totalPrice: packagePrice, 
       isCustom,
@@ -336,10 +364,7 @@ export const placeOrder = async (
       return
     }
 
-    // THE FIX: Resilient, case-insensitive promo evaluation!
     const pType = String(promo.type).toLowerCase()
-    
-    // Safely handles various database naming conventions for the value field
     const pValue = Number(promo.value || (promo as any).discountValue || (promo as any).amount || 0)
 
     if (pType.includes('percent')) {

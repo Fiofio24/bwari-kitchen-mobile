@@ -92,6 +92,10 @@ export default function CheckoutScreen() {
   const [acceptsDelivery, setAcceptsDelivery] = useState(true);
   const [acceptsPickup, setAcceptsPickup] = useState(true);
   
+  // THE FIX: Added states for Store Open/Close Status
+  const [isStoreOpen, setIsStoreOpen] = useState(true);
+  const [storeClosedReason, setStoreClosedReason] = useState('');
+
   const [branchName, setBranchName] = useState('Bwari Kitchen');
   const [branchAddress, setBranchAddress] = useState('Loading address...');
   const [supportPhone, setSupportPhone] = useState('+2348123456789'); 
@@ -122,6 +126,50 @@ export default function CheckoutScreen() {
             setSupportPhone(restaurantInfo.supportPhone);
           } else if (branchInfo.phoneNumber) {
             setSupportPhone(branchInfo.phoneNumber); 
+          }
+
+          // THE FIX: Check Automatic Time & Manual Admin Toggle
+          let isTimeValid = true;
+          let timeMessage = '';
+
+          if (branchInfo.openingTime && branchInfo.closingTime) {
+            const now = new Date();
+            const currentMins = now.getHours() * 60 + now.getMinutes();
+            const [oH, oM] = branchInfo.openingTime.split(':').map(Number);
+            const [cH, cM] = branchInfo.closingTime.split(':').map(Number);
+            const openMins = oH * 60 + oM;
+            const closeMins = cH * 60 + cM;
+
+            if (closeMins < openMins) {
+              // Spans midnight
+              isTimeValid = currentMins >= openMins || currentMins <= closeMins;
+            } else {
+              // Normal day
+              isTimeValid = currentMins >= openMins && currentMins <= closeMins;
+            }
+
+            if (!isTimeValid) {
+              const formatTime = (timeStr: string) => {
+                const [h, m] = timeStr.split(':').map(Number);
+                const ampm = h >= 12 ? 'PM' : 'AM';
+                const hr12 = h % 12 || 12;
+                return `${hr12}:${m.toString().padStart(2, '0')} ${ampm}`;
+              };
+              timeMessage = `We are outside working hours (${formatTime(branchInfo.openingTime)} - ${formatTime(branchInfo.closingTime)}).`;
+            }
+          }
+
+          const manualOpen = branchInfo.isOpen !== false;
+
+          if (!manualOpen) {
+            setIsStoreOpen(false);
+            setStoreClosedReason("The restaurant is currently closed for new orders.");
+          } else if (!isTimeValid) {
+            setIsStoreOpen(false);
+            setStoreClosedReason(timeMessage);
+          } else {
+            setIsStoreOpen(true);
+            setStoreClosedReason('');
           }
           
           setAcceptsDelivery(prev => {
@@ -176,7 +224,6 @@ export default function CheckoutScreen() {
     }
   };
 
-  // THE FIX: Cleaned! Just tracks state, no auto-filling text.
   const handleDiningToggle = (type: 'eat_in' | 'take_away', value: boolean) => {
     if (type === 'eat_in') {
       setEatIn(value);
@@ -187,7 +234,6 @@ export default function CheckoutScreen() {
     }
   };
 
-  // THE FIX: Cleaned! Just tracks state, no auto-filling text.
   const handleCutleryToggle = (newValue: boolean) => {
     setNoCutlery(newValue);
   };
@@ -286,7 +332,9 @@ export default function CheckoutScreen() {
 
   const total = subtotal + estimatedDeliveryFee - activeDiscountAmount; 
   
+  // THE FIX: Ensure place order button is blocked when store is closed
   const isAnyLoading = isProcessing || isLoadingFee || applyingPromo || isLoadingSettings;
+  const isButtonDisabled = isAnyLoading || !isStoreOpen;
 
   const verifyPayment = async (reference: string, isAutoDetect: boolean = false) => {
     setPaymentModalData(null); 
@@ -327,11 +375,15 @@ export default function CheckoutScreen() {
   };
 
   const executeOrderPlacement = async () => {
+    if (!isStoreOpen) {
+      Alert.alert('Restaurant Closed', storeClosedReason);
+      return;
+    }
+    
     setIsProcessing(true);
     try {
       let finalNote = orderNote.trim();
       
-      // THE FIX: Silently append the dining preference to the note before sending!
       if (deliveryMethod === 'pickup') {
         const diningPreference = eatIn ? 'Dining: Eat In' : (takeAway ? 'Dining: Take Away' : '');
         if (diningPreference) {
@@ -339,7 +391,6 @@ export default function CheckoutScreen() {
         }
       }
 
-      // THE FIX: Silently append the cutlery preference to the note before sending!
       if (noCutlery) {
         finalNote = finalNote ? `${finalNote} | No Cutlery Required` : 'No Cutlery Required';
       }
@@ -414,6 +465,11 @@ export default function CheckoutScreen() {
   };
 
   const handlePlaceOrder = async () => {
+    if (!isStoreOpen) {
+      Alert.alert('Restaurant Closed', storeClosedReason);
+      return;
+    }
+    
     if (checkoutItems.length === 0) return;
 
     if (deliveryMethod === 'delivery' && !acceptsDelivery) {
@@ -481,6 +537,17 @@ export default function CheckoutScreen() {
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomNavHeight + scale(60) }]}>
         
+        {/* THE FIX: Closed Warning Banner */}
+        {!isStoreOpen && !isLoadingSettings && (
+          <View style={[styles.closedBanner, { backgroundColor: 'rgba(211, 47, 47, 0.1)', borderColor: 'rgba(211, 47, 47, 0.3)' }]}>
+            <Ionicons name="lock-closed" size={scale(24)} color="#D32F2F" />
+            <View style={{ marginLeft: scale(10), flex: 1 }}>
+              <Text style={{ color: '#D32F2F', fontWeight: 'bold', fontSize: scale(14) }}>Restaurant Closed</Text>
+              <Text style={{ color: '#D32F2F', fontSize: scale(12), marginTop: scale(2) }}>{storeClosedReason}</Text>
+            </View>
+          </View>
+        )}
+
         <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>ORDER FULFILLMENT</Text>
         
         {isLoadingSettings ? (
@@ -649,7 +716,7 @@ export default function CheckoutScreen() {
             onChangeText={(text) => { setPromoCode(text); setPromoResult(null); }}
             autoCapitalize="characters"
           />
-          <TouchableOpacity onPress={handleApplyPromo} disabled={applyingPromo || !promoCode.trim()} style={{ backgroundColor: Colors.primary, paddingHorizontal: scale(18), paddingVertical: scale(12), borderRadius: scale(12), opacity: applyingPromo || !promoCode.trim() ? 0.5 : 1 }}>
+          <TouchableOpacity onPress={handleApplyPromo} disabled={applyingPromo || !promoCode.trim() || !isStoreOpen} style={{ backgroundColor: Colors.primary, paddingHorizontal: scale(18), paddingVertical: scale(12), borderRadius: scale(12), opacity: (applyingPromo || !promoCode.trim() || !isStoreOpen) ? 0.5 : 1 }}>
             {applyingPromo ? <ActivityIndicator color="#FFF" size="small" /> : <Text style={{ color: '#FFF', fontWeight: 'bold' }}>Apply</Text>}
           </TouchableOpacity>
         </View>
@@ -779,14 +846,14 @@ export default function CheckoutScreen() {
           </View>
           
           <TouchableOpacity 
-            style={[styles.placeOrderBtn, { opacity: isAnyLoading ? 0.7 : 1 }]} 
+            style={[styles.placeOrderBtn, { opacity: isButtonDisabled ? 0.7 : 1 }]} 
             onPress={handlePlaceOrder} 
-            disabled={isAnyLoading}
+            disabled={isButtonDisabled}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(8) }}>
               {isAnyLoading && <ActivityIndicator color="#FFF" size="small" />}
               <Text style={styles.placeOrderText}>
-                {isProcessing ? 'Processing...' : 'Place Order'}
+                {isProcessing ? 'Processing...' : (!isStoreOpen ? 'Store Closed' : 'Place Order')}
               </Text>
             </View>
           </TouchableOpacity>
@@ -848,6 +915,7 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   headerRight: { flexDirection: 'row', gap: scale(10), alignItems: 'center' },
   scrollContent: { paddingTop: scale(20), paddingHorizontal: scale(20) },
+  closedBanner: { padding: scale(15), marginBottom: scale(20), borderRadius: scale(12), borderWidth: 1, flexDirection: 'row', alignItems: 'center' },
   sectionTitle: { fontSize: scale(12), fontWeight: 'bold', marginBottom: scale(10), marginLeft: scale(5), letterSpacing: 1 },
   methodToggleContainer: { flexDirection: 'row', borderRadius: scale(15), padding: scale(5), marginBottom: scale(15) },
   methodToggleBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: scale(12), borderRadius: scale(12) },

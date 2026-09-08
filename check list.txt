@@ -121,9 +121,10 @@ To Do List:
 101. (✅Done) in the customer app in checkout page make that when it is still loading trying to fetch from the admin wether deliery and pickup are available, the place order button should be disabled until it has successfully fetched 
 102. (✅Done) (Victor) on the promo specifically for free delivery promo type not other promos it should simply just apply delivery fee = 0 not a fix amount for free delivery, or better probably the promo should just calculate the delivery fee of that order and simply put discount = -actual delivery fee
 103. (Victor) the total number under total orders, pending orders, completed orders and canceled orders in the admin dashboard is not making sense to the actual total infact it seems they are just hardcoded numbers
-104. (Victor) in the admin orders page the summary of an order which i applied a promocode is not indicating that a promo code was applied
+104. (✅Done) (Victor) in the admin orders page the summary of an order which i applied a promocode is not indicating that a promo code was applied
 105. (Victor) in the admin orders page make that every pending order that have stayed or tha stays more than 30mins that order should have some kind of warning sign or flagged feature that tells admin to call that customer so they can confirm if they paid and it's still showing pending or they didn't pay and they changed their mind about the order
 106. in the customer app my orders page under active orders there should be a button that allows customer to cancel their pending order only pending orders after like 30mins and paystack still says payment pending
+107. The badges at the side bar should save to the database not the computer local storage so it can be accessible in different and same account in different systems
 
 Future updates:
 1. 

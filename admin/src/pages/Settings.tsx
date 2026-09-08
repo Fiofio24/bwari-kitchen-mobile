@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import LoadingButton from '../components/LoadingButton'
 import { showSuccess, showError, getErrorMessage } from '../lib/toast'
 import Layout from '../components/Layout'
@@ -38,6 +38,14 @@ export default function Settings() {
   const [savingBranch, setSavingBranch] = useState(false)
   const [togglingOpen, setTogglingOpen] = useState(false)
 
+  const [currentTime, setCurrentTime] = useState(new Date())
+
+  // Keep track of real time so the UI switches instantly at closing time
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 10000)
+    return () => clearInterval(timer)
+  }, [])
+
   const fetchAll = useCallback(async (isSilent = false) => {
     if (!isSilent) setLoading(true)
     try {
@@ -58,6 +66,7 @@ export default function Settings() {
   }, [])
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchAll(false)
   }, [fetchAll])
 
@@ -75,8 +84,8 @@ export default function Settings() {
       await api.patch('/api/admin/settings', { settings: settingsArray })
       showSuccess('Settings saved')
       fetchAll(true)
-    } catch (err: any) {
-      showError(getErrorMessage(err))
+    } catch (err) {
+      showError(getErrorMessage(err as Error))
     } finally {
       setSavingSettings(false)
     }
@@ -107,21 +116,51 @@ export default function Settings() {
       })
       showSuccess('Branch info saved')
       fetchAll(true)
-    } catch (err: any) {
-      showError(getErrorMessage(err))
+    } catch (err) {
+      showError(getErrorMessage(err as Error))
     } finally {
       setSavingBranch(false)
     }
   }
 
+  // Calculate if the current time is within working hours (ESLint memoization fixed)
+  const isTimeValid = useMemo(() => {
+    if (!branch?.openingTime || !branch?.closingTime) return true;
+    const currentMins = currentTime.getHours() * 60 + currentTime.getMinutes();
+    const [oH, oM] = branch.openingTime.split(':').map(Number);
+    const [cH, cM] = branch.closingTime.split(':').map(Number);
+    const openMins = oH * 60 + oM;
+    const closeMins = cH * 60 + cM;
+
+    if (closeMins < openMins) {
+      return currentMins >= openMins || currentMins <= closeMins;
+    }
+    return currentMins >= openMins && currentMins <= closeMins;
+  }, [branch, currentTime]);
+
+  const effectiveOpen = branch ? (branch.isOpen && isTimeValid) : false;
+
   const handleToggleOpen = async () => {
     setTogglingOpen(true)
     try {
+      // THE FIX: If the store is auto-closed by time, clicking "Open" bypasses it by extending the time
+      if (!effectiveOpen && branch && !isTimeValid) {
+        await api.patch('/api/admin/settings/branch/info', {
+          ...branch,
+          closingTime: '23:59',
+          isOpen: true
+        })
+        showSuccess('Automation Bypassed: Store forced open! (Closing time extended to 23:59)')
+        fetchAll(true)
+        return
+      }
+
+      // Normal manual toggle behavior
       const res = await api.patch('/api/admin/settings/branch/toggle-open')
       setBranch((prev) => prev ? { ...prev, isOpen: res.data.isOpen } : prev)
       showSuccess(res.data.message)
-    } catch (err: any) {
-      showError(getErrorMessage(err))
+    } catch (err) {
+      showError(getErrorMessage(err as Error))
     } finally {
       setTogglingOpen(false)
     }
@@ -139,19 +178,19 @@ export default function Settings() {
     <Layout>
       <h2 className="text-2xl font-bold text-gray-900 mb-6">Settings</h2>
 
-      {/* Restaurant Open/Closed Toggle */}
+      {/* Restaurant Open/Closed Toggle - Uses effectiveOpen for the display */}
       {branch && (
         <div className={`rounded-xl border p-4 mb-6 flex items-center justify-between flex-wrap gap-3 ${
-          branch.isOpen ? 'bg-green-50 border-green-100' : 'bg-red-50 border-red-100'
+          effectiveOpen ? 'bg-green-50 border-green-100' : 'bg-red-50 border-red-100'
         }`}>
           <div className="flex items-center gap-3">
-            <Power size={20} className={branch.isOpen ? 'text-green-600' : 'text-red-500'} />
+            <Power size={20} className={effectiveOpen ? 'text-green-600' : 'text-red-500'} />
             <div>
               <p className="font-medium">
-                Restaurant is currently {branch.isOpen ? 'open' : 'closed'}
+                Restaurant is currently {effectiveOpen ? 'open' : 'closed'}
               </p>
               <p className="text-sm text-gray-500">
-                {branch.isOpen ? 'Customers can place orders' : 'Customers cannot place new orders'}
+                {effectiveOpen ? 'Customers can place orders' : 'Customers cannot place new orders'}
               </p>
             </div>
           </div>
@@ -160,10 +199,10 @@ export default function Settings() {
             onClick={handleToggleOpen}
             variant="ghost"
             className={`px-4 py-2 rounded-lg text-white ${
-              branch.isOpen ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'
+              effectiveOpen ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'
             }`}
           >
-            {branch.isOpen ? 'Close Restaurant' : 'Open Restaurant'}
+            {effectiveOpen ? 'Close Restaurant' : 'Open Restaurant'}
           </LoadingButton>
         </div>
       )}

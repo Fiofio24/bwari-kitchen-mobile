@@ -21,6 +21,7 @@ import { useMenu } from '../context/MenuContext';
 import QuickEditPackage from '../components/QuickEditPackage';
 import TopNav from '../components/TopNav';
 import HomeIcon from '../components/HomeIcon';
+import api from './lib/api';
 import { scale } from '../constants/Sizes'; 
 
 const CartItemCard = ({ item, isSelected, onToggle, onIncrease, onDecrease, onRemove, onEdit, colors, isDark }: any) => {
@@ -229,6 +230,45 @@ export default function CartScreen() {
 
   const [editingItem, setEditingItem] = useState<any>(null);
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+  
+  // THE FIX: Added isStoreOpen state to block the checkout button
+  const [isStoreOpen, setIsStoreOpen] = useState(true);
+
+  // THE FIX: Actively fetch branch settings to determine if the store is open
+  useEffect(() => {
+    let intervalId: ReturnType<typeof setInterval>;
+
+    const fetchSettings = async () => {
+      try {
+        const res = await api.get('/api/menu/branch');
+        const branchInfo = res.data?.branch;
+        
+        if (branchInfo) {
+          let isTimeValid = true;
+          if (branchInfo.openingTime && branchInfo.closingTime) {
+            const now = new Date();
+            const currentMins = now.getHours() * 60 + now.getMinutes();
+            const [oH, oM] = branchInfo.openingTime.split(':').map(Number);
+            const [cH, cM] = branchInfo.closingTime.split(':').map(Number);
+            const openMins = oH * 60 + oM;
+            const closeMins = cH * 60 + cM;
+
+            if (closeMins < openMins) {
+              isTimeValid = currentMins >= openMins || currentMins <= closeMins;
+            } else {
+              isTimeValid = currentMins >= openMins && currentMins <= closeMins;
+            }
+          }
+          const manualOpen = branchInfo.isOpen !== false;
+          setIsStoreOpen(manualOpen && isTimeValid);
+        }
+      } catch (e) {}
+    };
+
+    fetchSettings();
+    intervalId = setInterval(fetchSettings, 10000);
+    return () => clearInterval(intervalId);
+  }, []);
 
   const isItemFullyAvailable = useCallback((item: any) => {
     if (!item.subItems || item.subItems.length === 0) {
@@ -352,13 +392,11 @@ export default function CartScreen() {
                         </Text>
                       </View>
                       
-                      {/* DYNAMIC MULTIPLIED SUB-ITEMS */}
                       {item.subItems && item.subItems.length > 0 && (
                         <View style={styles.subItemsList}>
                           {item.subItems.map((sub: any, subIdx: number) => {
                             const dbItem = sub.id ? findItem(sub.id) : null;
                             
-                            // Multiply base qty by package qty
                             const baseSubQty = sub.qty ?? sub.quantity ?? 1;
                             const mainPkgQty = item.quantity || 1;
                             const displayQty = baseSubQty * mainPkgQty;
@@ -369,7 +407,6 @@ export default function CartScreen() {
                                 ? sub.unitPrice
                                 : (dbItem?.basePrice ?? 0));
                                 
-                            // Multiply base unit price by the scaled up quantity
                             const displayPrice = unitPrice * displayQty;
                             const name = sub.name || sub.itemName || dbItem?.name || 'Item';
 
@@ -399,12 +436,18 @@ export default function CartScreen() {
               </View>
 
               <TouchableOpacity 
-                style={[styles.checkoutBtn, selectedIds.length === 0 && { opacity: 0.5, backgroundColor: '#999' }]} 
-                disabled={selectedIds.length === 0} 
+                style={[
+                  styles.checkoutBtn, 
+                  (selectedIds.length === 0 || !isStoreOpen) && { opacity: 0.5, backgroundColor: '#999' }
+                ]} 
+                disabled={selectedIds.length === 0 || !isStoreOpen} 
                 activeOpacity={0.8}
                 onPress={proceedToCheckout}
               >
-                <Text style={styles.checkoutText}>Order Now</Text>
+                {/* THE FIX: Button text and color dynamically updates to Kitchen Closed */}
+                <Text style={styles.checkoutText}>
+                  {!isStoreOpen ? 'Kitchen Closed' : 'Order Now'}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
