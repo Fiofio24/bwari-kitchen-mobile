@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "836333209350",
+    "project_id": "bwari-kitchen-3d8b0",
+    "storage_bucket": "bwari-kitchen-3d8b0.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:836333209350:android:0b7f00ea031dcc48a90087",
+        "android_client_info": {
+          "package_name": "com.fiowebin.bwarikitchen"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDloxgkT8R22qNn1CdCg_uMrdBZPvkeEzA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
