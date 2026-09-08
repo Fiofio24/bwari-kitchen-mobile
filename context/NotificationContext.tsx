@@ -1,4 +1,8 @@
 import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
+import { Platform, Alert } from 'react-native';
+import * as Device from 'expo-device';
+import * as Notifications from 'expo-notifications';
+import Constants from 'expo-constants';
 import api from '../app/lib/api';
 
 export interface AppNotification {
@@ -21,6 +25,16 @@ interface NotificationContextType {
   deleteNotification: (id: string) => Promise<void>;
 }
 
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+    shouldShowBanner: true, 
+    shouldShowList: true,   
+  }),
+});
+
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
@@ -28,7 +42,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  // We added a 'silent' parameter. If true, it won't trigger the loading spinner!
   const refresh = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     try {
@@ -43,16 +56,67 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   }, []);
 
   useEffect(() => {
-    // 1. Do a normal refresh on app launch
+    const registerPushToken = async () => {
+      if (Platform.OS === 'android') {
+        await Notifications.setNotificationChannelAsync('default', {
+          name: 'default',
+          importance: Notifications.AndroidImportance.MAX,
+          vibrationPattern: [0, 250, 250, 250],
+          lightColor: '#FF231F7C',
+        });
+      }
+
+      if (Device.isDevice) {
+        const { status: existingStatus } = await Notifications.getPermissionsAsync();
+        let finalStatus = existingStatus;
+        if (existingStatus !== 'granted') {
+          const { status } = await Notifications.requestPermissionsAsync();
+          finalStatus = status;
+        }
+        if (finalStatus !== 'granted') {
+          Alert.alert("Permission Denied", "You need to allow notifications in your phone settings!");
+          return; 
+        }
+        
+        try {
+          const projectId = Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
+          
+          if (!projectId) {
+            Alert.alert("Missing Project ID", "Expo needs an EAS Project ID to generate a token. You need to run 'eas init' in your terminal.");
+            return;
+          }
+
+          const tokenData = await Notifications.getExpoPushTokenAsync({ projectId });
+          
+          if (tokenData.data) {
+             console.log("PUSH TOKEN GENERATED:", tokenData.data);
+             // Alert.alert("Token Success!", "Your phone successfully generated a push token."); // Uncomment if you want to be annoyed by success popups
+             await api.patch('/api/auth/device-token', { deviceToken: tokenData.data });
+          }
+        } catch (error: any) {
+          console.warn('Push token generation failed:', error);
+          Alert.alert("Push Token Error", error?.message || "Failed to generate token");
+        }
+      } else {
+        Alert.alert("Emulator Detected", "Push notifications rarely work on emulators. You usually need a physical phone to test them.");
+      }
+    };
+
+    registerPushToken();
     refresh();
 
-    // 2. Set up a silent background poll every 30 seconds
     const intervalId = setInterval(() => {
-      refresh(true); // true = silent, no loading spinner!
+      refresh(true); 
     }, 30000);
 
-    // 3. Clean up the interval if the context unmounts
-    return () => clearInterval(intervalId);
+    const notificationListener = Notifications.addNotificationReceivedListener(notification => {
+      refresh(true); 
+    });
+
+    return () => {
+      clearInterval(intervalId);
+      notificationListener.remove(); 
+    };
   }, [refresh]);
 
   const markAsRead = async (id: string) => {

@@ -493,3 +493,26 @@ export const changePassword = async (
 
   res.status(200).json({ message: 'Password changed successfully' })
 }
+
+// ─────────────────────────────────────────
+// UPDATE DEVICE TOKEN (Push Notifications)
+// PATCH /api/auth/device-token
+// ─────────────────────────────────────────
+export const updateDeviceToken = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  const { deviceToken } = req.body
+
+  if (!deviceToken) {
+    res.status(400).json({ message: 'Device token is required' })
+    return
+  }
+
+  await prisma.user.update({
+    where: { id: req.user!.id },
+    data: { deviceToken },
+  })
+
+  res.status(200).json({ message: 'Device token updated successfully' })
+}

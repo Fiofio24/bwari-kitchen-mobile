@@ -6,6 +6,7 @@ import {
   logout,
   register,
   updateProfile,
+  updateDeviceToken, // <-- Added this import
 } from '../controllers/auth.controller'
 import { authenticate } from '../middleware/auth'
 
@@ -20,5 +21,6 @@ router.get('/me', authenticate, getMe)
 router.patch('/profile', authenticate, updateProfile)
 router.patch('/change-password', authenticate, changePassword)
 router.post('/logout', authenticate, logout)
+router.patch('/device-token', authenticate, updateDeviceToken) // <-- Added the route
 
 export default router

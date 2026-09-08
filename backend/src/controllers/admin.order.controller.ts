@@ -2,6 +2,35 @@ import { Request, Response } from 'express'
 import { logActivity } from '../lib/activityLog'
 import prisma from '../lib/prisma'
 
+// ─────────────────────────────────────────
+// HELPER: Send Expo Push Notification
+// ─────────────────────────────────────────
+const sendPushNotification = async (expoPushToken: string | null, title: string, body: string, data: any = {}) => {
+  if (!expoPushToken) return;
+  
+  const message = {
+    to: expoPushToken,
+    sound: 'default',
+    title,
+    body,
+    data,
+  };
+
+  try {
+    await fetch('https://exp.host/--/api/v2/push/send', {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Accept-encoding': 'gzip, deflate',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(message),
+    });
+  } catch (error) {
+    console.error('Error sending push notification:', error);
+  }
+};
+
 export const adminGetOrders = async (
   req: Request,
   res: Response
@@ -12,7 +41,6 @@ export const adminGetOrders = async (
   const skip = (pageNum - 1) * limitNum
 
   const where = {
-    // THE FIX: Splits the comma-separated statuses into an array for Prisma's 'in' operator
     ...(status && {
       status: { in: (status as string).split(',') as any }
     }),
@@ -136,9 +164,19 @@ export const updateOrderStatus = async (
     return
   }
 
+  // THE FIX: Grab the customer's device token and notification preferences!
   const order = await prisma.order.findUnique({
     where: { id },
-    select: { id: true, orderNumber: true, status: true, customerId: true, orderType: true }
+    select: { 
+      id: true, 
+      orderNumber: true, 
+      status: true, 
+      customerId: true, 
+      orderType: true,
+      customer: { 
+        select: { deviceToken: true, notifyOrderUpdates: true } 
+      } 
+    }
   })
 
   if (!order) {
@@ -157,6 +195,19 @@ export const updateOrderStatus = async (
       message: `Cannot change status from ${order.status} to ${status}`
     })
     return
+  }
+
+  const statusMessages: Record<string, string> = {
+    confirmed: `Your order ${order.orderNumber} has been confirmed and will be prepared shortly.`,
+    preparing: `Your order ${order.orderNumber} is being prepared.`,
+    ready: order.orderType === 'pickup'
+      ? `Your order ${order.orderNumber} is ready for pickup.`
+      : `Your order ${order.orderNumber} is ready and waiting for a rider.`,
+    picked_up: `Your order ${order.orderNumber} has been picked up by the rider.`,
+    on_the_way: `Your order ${order.orderNumber} is on the way to you.`,
+    delivered: `Your order ${order.orderNumber} has been delivered. Enjoy your meal!`,
+    cancelled: `Your order ${order.orderNumber} has been cancelled.`,
+    refunded: `Your order ${order.orderNumber} has been refunded.`,
   }
 
   await prisma.$transaction(async (tx) => {
@@ -178,19 +229,6 @@ export const updateOrderStatus = async (
       }
     })
 
-    const statusMessages: Record<string, string> = {
-      confirmed: `Your order ${order.orderNumber} has been confirmed and will be prepared shortly.`,
-      preparing: `Your order ${order.orderNumber} is being prepared.`,
-      ready: order.orderType === 'pickup'
-        ? `Your order ${order.orderNumber} is ready for pickup.`
-        : `Your order ${order.orderNumber} is ready and waiting for a rider.`,
-      picked_up: `Your order ${order.orderNumber} has been picked up by the rider.`,
-      on_the_way: `Your order ${order.orderNumber} is on the way to you.`,
-      delivered: `Your order ${order.orderNumber} has been delivered. Enjoy your meal!`,
-      cancelled: `Your order ${order.orderNumber} has been cancelled.`,
-      refunded: `Your order ${order.orderNumber} has been refunded.`,
-    }
-
     await tx.notification.create({
       data: {
         userId: order.customerId,
@@ -201,6 +239,16 @@ export const updateOrderStatus = async (
       }
     })
   })
+
+  // THE FIX: Trigger the Expo Push Notification!
+  if (order.customer?.deviceToken && order.customer?.notifyOrderUpdates) {
+    await sendPushNotification(
+      order.customer.deviceToken,
+      `Order ${status.charAt(0).toUpperCase() + status.slice(1).replace('_', ' ')}`,
+      statusMessages[status] || `Your order ${order.orderNumber} status has been updated to ${status}.`,
+      { orderId: id, route: '/my-orders' }
+    )
+  }
 
   res.status(200).json({
     message: `Order status updated to ${status}`,
@@ -230,9 +278,17 @@ export const assignRider = async (
     return
   }
 
+  // THE FIX: Grab device token for Rider alerts
   const order = await prisma.order.findUnique({
     where: { id },
-    select: { id: true, orderNumber: true, status: true, customerId: true, orderType: true }
+    select: { 
+      id: true, 
+      orderNumber: true, 
+      status: true, 
+      customerId: true, 
+      orderType: true,
+      customer: { select: { deviceToken: true, notifyDeliveryAlerts: true } }
+    }
   })
 
   if (!order) {
@@ -291,6 +347,16 @@ export const assignRider = async (
       }
     })
   })
+
+  // THE FIX: Push Notification for Rider Assignment
+  if (order.customer?.deviceToken && order.customer?.notifyDeliveryAlerts) {
+    await sendPushNotification(
+      order.customer.deviceToken,
+      'Rider Assigned 🛵',
+      `${rider.fullName} has been assigned to deliver your order ${order.orderNumber}.`,
+      { orderId: id, route: '/my-orders' }
+    )
+  }
 
   res.status(200).json({
     message: 'Rider assigned successfully',
@@ -354,7 +420,13 @@ export const adminCancelOrder = async (
 
   const order = await prisma.order.findUnique({
     where: { id },
-    select: { id: true, orderNumber: true, status: true, customerId: true }
+    select: { 
+      id: true, 
+      orderNumber: true, 
+      status: true, 
+      customerId: true,
+      customer: { select: { deviceToken: true, notifyOrderUpdates: true } }
+    }
   })
 
   if (!order) {
@@ -397,6 +469,16 @@ export const adminCancelOrder = async (
       }
     })
   ])
+
+  // THE FIX: Push Notification for Order Cancellation
+  if (order.customer?.deviceToken && order.customer?.notifyOrderUpdates) {
+    await sendPushNotification(
+      order.customer.deviceToken,
+      'Order Cancelled ❌',
+      `Your order ${order.orderNumber} has been cancelled by the restaurant.${reason ? ` Reason: ${reason}` : ''}`,
+      { orderId: id, route: '/my-orders' }
+    )
+  }
 
   res.status(200).json({ message: 'Order cancelled successfully' })
 

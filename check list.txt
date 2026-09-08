@@ -1,7 +1,7 @@
 To Do List:
 1. (✅Done)update the Sidebar.tsx under the "My Orders" button, the number badge should not be hardcoded as 4 it should actually show the numbers of active orders in the my-order.tsx page
 2. (✅Done)Correct the Home button on other pages from routing to welcome page instead they should rout to index.tsx the main home
-3. (Victor) there should be a admin control that switches the restaurant on and off for working hours manually and automatically so customers can't make order closing period
+3. (✅Done) (Victor) there should be a admin control that switches the restaurant on and off for working hours manually and automatically so customers can't make order closing period
 4. (✅Done)Make sure it's not all back button action that actually takes user the the previous page, e.g in case of where a user logs out back button shouldn't just suddenly take them back to the previous page with their account signed in
 5. (✅Done)fix when "offers & promo" button or any other button is clicked in the sidebar when navigating to the that page it either has a sort of faint overlay ash color cover the whole page or solid color blocking everything in that page 
 6. (victor✅) the rating stars is not reflection in admin dashboard after user rates an order
@@ -56,7 +56,7 @@ To Do List:
 47. (✅Done) In the favorite page it is not updating it's grid card with live data...when i added a package to fav when item was unavailable, after that item was available, in the fav page that grid card still shows that an item is not available in the package.
 48. (Victor) There should be an error message that says something like "This email is not registered with Bwari Kitchen" in caseses where a user without an account tries to login, also check there should be appropriate error massage that shows for various scenarios like bad network etc. 
 49. (Victor) Let us add delivery code on active orders so rider can confirm that order belongs to the customer by inserting code on rider page customer give...
-    (✅Done...i've updated the ui)we are adding a secure OTP system for order handoffs. Can you please:
+    (✅Done...i was meant to updated the ui)we are adding a secure OTP system for order handoffs. Can you please:
     *Generate a random 4-digit deliveryCode whenever an order is created successfully not pending oo and save it to the database.
     *Include that deliveryCode in the response when the frontend calls GET /api/orders.
     *Create a new endpoint for the Rider/Admin app where they can input this code to verify and successfully mark the order as 'Delivered' or 'Picked Up'."*
@@ -109,7 +109,7 @@ To Do List:
 81. (✅Done) i've added "latitude" and "logitude" for the user address and the delivery is working now but the backend is wrongly calculating the km of user from kitchen. I dropped a map pin in Lagos, but the /api/addresses/delivery-fee endpoint calculated distanceKm: 0.76 . Because it thinks Lagos is less than 1km away, the fee keeps defaulting to the 500 base minimum. please correct the formular logic to correctly calculate distanceKm.
 82. (✅Done) in the checkout page under pickup section change the hardcoded "Bwari Kitchen - Bwari Main Branch" and "No 1 Kitchen Avenue, Central FCT" to actually fetch the Restaurant Name, Branch Name and Address from the admin saved settings
 83. (✅Done) once delivery or pickup is turned off in the admin settings remove that option in the checkout page for placing order
-84. add a feature that tells customer the restaurant is closed when admin closes it or it reaches closing time
+84. (✅Done) add a feature that tells customer the restaurant is closed when admin closes it or it reaches closing time
 85. (✅Done) (Victor) Suggestion, in the admin dashboard on click on any of those overview it shout rout to their respective page e.g when i click on total orders it should go to orders page or click on cancelled orders it should also go to orders page but settled orders section etc
 86. (Victor) the fixed min delivery fee price of 500 that you set in your code is nice but can you make it flexible for the kitchen to decide that, they might want to use 1k. (Suggestion: just simply make that min delivery fee = delivery fee per km...so whatever admin set as delivery fee per km it will be the min delivery fee)
 87. (Victor) in the admin settings add whatsapp number and email address settings so i can connect it to the help page for customer service
@@ -125,6 +125,7 @@ To Do List:
 105. (Victor) in the admin orders page make that every pending order that have stayed or tha stays more than 30mins that order should have some kind of warning sign or flagged feature that tells admin to call that customer so they can confirm if they paid and it's still showing pending or they didn't pay and they changed their mind about the order
 106. in the customer app my orders page under active orders there should be a button that allows customer to cancel their pending order only pending orders after like 30mins and paystack still says payment pending
 107. The badges at the side bar should save to the database not the computer local storage so it can be accessible in different and same account in different systems
+108. in admin settings while trying to input a field within a liitle time it resets whatever admin have typed to what was there before
 
 Future updates:
 1. 
@@ -183,6 +184,7 @@ Changes Fio made in the admin
 18. Linked the "Total Revenue" StatCard directly to the Analytics page.
 19. Updated the `Promotions` page to hide the `value` input field when creating a "Free Delivery" promo, as it now calculates dynamically.
 20. Cleaned up ESLint errors, unused imports, and fixed strict-mode cascading renders (`setTimeout`) in the Promotions page.
+21. Fixed ESLint cascading render errors, `any` types, and `useMemo` dependency warnings in the Settings page, and implemented a smart override so manually opening the store after hours safely bypasses the automation by extending the closing time to 23:59.
 
 Changes Fio made in the backend
 1. Updated the `GET /api/admin/orders` endpoint to support dynamic sorting (`sort` and `sortBy` parameters) controlled by the frontend.
@@ -193,9 +195,13 @@ Changes Fio made in the backend
 6. Fixed a critical math bug in `order.controller.ts` where package quantities were ignored; now it strictly multiplies the package price and item quantities by the user's requested package quantity.
 7. Fixed a case-sensitivity bug in the promo validation switch statement, allowing the backend to correctly apply discounts regardless of DB enum casing.
 8. Updated the `validatePromoCode` and `createPromo` controllers to dynamically accept and discount the exact delivery fee for "Free Delivery" promos instead of relying on a hardcoded cap.
+9. Fixed the Prisma database connection pool exhaustion issue (`Can't reach database server`) by implementing a singleton pattern for the Prisma client during local development and strictly enforcing connection limits.
+10. Enforced the opening and closing time logic natively on the backend during order placement to physically block unauthorized API bypasses when the kitchen is closed.
 
 Changes Fio made in the Customer App
 1. Modified `checkout.tsx` to handle dynamic "Free Delivery" fee fetching by sending the live delivery fee directly to the backend for accurate discounting.
 2. Refactored `checkout.tsx` to dynamically fetch and display the Delivery Fee and Promo validation state with loading spinners, blocking checkout until math is verified.
 3. Added "Eat In" and "Take Away" toggle switches to `checkout.tsx` specifically for Pickup orders.
 4. Refactored the "No Cutlery" and Dining Preference toggles to silently append their instructions to the backend payload, preventing the text box from being cluttered or accidentally deleted by the user.
+5. Built a seamless, infinitely scrolling app-wide warning marquee in `_layout.tsx` that alerts users when the kitchen is closed, complete with smart context-awareness to match the background color and status bar theme of the active page.
+6. Wired the Cart and Checkout pages to actively poll the kitchen's status and instantly lock the checkout button if the kitchen closes automatically or manually.
