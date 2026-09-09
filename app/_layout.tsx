@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { Platform, View, Text, Animated, Easing } from 'react-native';
+import { Platform, View, Text, Animated, Easing, AppState, AppStateStatus } from 'react-native';
 import { Stack, useSegments, usePathname } from 'expo-router';
 import { useSafeRouter } from '../hooks/useSafeRouter';
 import { StatusBar } from 'expo-status-bar';
@@ -8,6 +8,7 @@ import { ThemeProvider, useTheme } from '../context/ThemeContext';
 import * as SplashScreen from 'expo-splash-screen';
 import * as SecureStore from 'expo-secure-store';
 import { Colors } from '../constants/Colors';
+import * as Notifications from 'expo-notifications';
 
 import { CartProvider } from '../context/CartContext';
 import { FavoriteProvider } from '../context/FavoriteContext';
@@ -19,7 +20,6 @@ import api from './lib/api';
 
 SplashScreen.preventAutoHideAsync();
 
-// THE FIX: Seamless Infinite Marquee that specifically accommodates the Search page
 function GlobalClosedTicker({ reason }: { reason: string }) {
   const insets = useSafeAreaInsets();
   const translateX = useRef(new Animated.Value(0)).current;
@@ -28,7 +28,6 @@ function GlobalClosedTicker({ reason }: { reason: string }) {
   
   const marqueeWidth = 750; 
 
-  // Smart sensing: ONLY the search page lacks the TopNav/Primary header.
   const isSearchPage = pathname === '/search';
   const statusBarBgColor = isSearchPage ? colors.background : Colors.primary;
 
@@ -81,9 +80,47 @@ function RootContent() {
   const pathname = usePathname();
   const { isDark } = useTheme();
 
-  // Smart Status Bar: Stays white (light) everywhere except the search page in light mode!
   const isSearchPage = pathname === '/search';
   const statusBarStyle = (isSearchPage && !isDark) ? "dark" : "light";
+
+  // --- NOTIFICATION ROUTING LOGIC ---
+  const lastNotificationResponse = Notifications.useLastNotificationResponse();
+
+  useEffect(() => {
+    if (appIsReady && lastNotificationResponse) {
+      const content = lastNotificationResponse.notification.request.content;
+      const data = content.data;
+      const title = content.title?.toLowerCase() || '';
+
+      if (data?.route) {
+        if (title.includes('cancelled') || title.includes('delivered') || title.includes('refunded')) {
+          router.push({
+            pathname: data.route as any,
+            params: { tab: 'past', highlightOrderId: data.orderId }
+          });
+        } else {
+          router.push({
+            pathname: data.route as any,
+            params: { tab: 'active', highlightOrderId: data.orderId }
+          });
+        }
+      }
+    }
+  }, [lastNotificationResponse, appIsReady]);
+
+  useEffect(() => {
+    Notifications.setBadgeCountAsync(0);
+
+    const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
+      if (nextAppState === 'active') {
+        Notifications.setBadgeCountAsync(0);
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, []);
 
   useEffect(() => {
     const fetchSettings = async () => {

@@ -11,6 +11,10 @@
       "resizeMode": "contain",
       "backgroundColor": "#d30000"
     },
+    "notification": {
+      "icon": "./assets/BK_logo_monochrome_notification.png",
+      "color": "#D32F2F" 
+    },
     "assetBundlePatterns": [
       "**/*"
     ],

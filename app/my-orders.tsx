@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -12,7 +12,7 @@ import {
   useWindowDimensions,
   Alert
 } from 'react-native';
-import { useFocusEffect } from 'expo-router'; 
+import { useFocusEffect, useLocalSearchParams } from 'expo-router'; 
 import { useSafeRouter } from '../hooks/useSafeRouter';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
@@ -45,7 +45,7 @@ interface Order {
   status: string;
   subtotal: number;
   deliveryFee: number;
-  deliveryCode?: string; // <-- Added Delivery Code from Victor
+  deliveryCode?: string; 
   totalAmount: number;
   createdAt: string;
   orderPackages: OrderPackage[];
@@ -81,6 +81,7 @@ const formatDate = (isoString: string) => {
 
 export default function MyOrdersScreen() {
   const router = useSafeRouter();
+  const params = useLocalSearchParams(); 
   const { colors, isDark } = useTheme();
   const { width } = useWindowDimensions();
   const scrollViewRef = useRef<ScrollView>(null);
@@ -94,6 +95,27 @@ export default function MyOrdersScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [reviewStatus, setReviewStatus] = useState<Record<string, { reviewed: boolean; rating: number }>>({});
   const [submittingReview, setSubmittingReview] = useState<string | null>(null);
+
+  // --- SMART ROUTING RECEIVER LOGIC ---
+  useEffect(() => {
+    // A 200ms timeout ensures the UI and ScrollView are fully mounted before we force an automatic scroll
+    const timer = setTimeout(() => {
+      if (params.tab === 'past' && activeTab !== 'past') {
+        setActiveTab('past');
+        scrollViewRef.current?.scrollTo({ x: width, animated: true });
+      } else if (params.tab === 'active' && activeTab !== 'active') {
+        setActiveTab('active');
+        scrollViewRef.current?.scrollTo({ x: 0, animated: true });
+      }
+      
+      // Automatically expand the order card that was in the notification!
+      if (params.highlightOrderId && typeof params.highlightOrderId === 'string') {
+        setExpandedId(params.highlightOrderId);
+      }
+    }, 200); 
+
+    return () => clearTimeout(timer);
+  }, [params.tab, params.highlightOrderId, width]);
 
   const fetchOrders = useCallback(async () => {
     try {
@@ -147,7 +169,6 @@ export default function MyOrdersScreen() {
     }
   };
 
-  // SMART REORDER LOGIC: Maps historical data to live database values
   const handleReorder = (order: Order) => {
     const reorderPayload: any[] = [];
     let hasUnavailableItems = false;
@@ -157,7 +178,6 @@ export default function MyOrdersScreen() {
       let currentPackageTotal = 0;
 
       pkg.items.forEach(item => {
-        // Fallback: If no UUID is attached, search the live catalog by exact item name
         const liveItem = item.menuItemId
           ? findItem(item.menuItemId)
           : items.find((i: any) => i.name.toLowerCase() === item.itemName.toLowerCase());
@@ -166,10 +186,10 @@ export default function MyOrdersScreen() {
           hasUnavailableItems = true;
         } else {
           newSubItems.push({
-            id: liveItem.id, // Fresh UUID for Victor's backend
+            id: liveItem.id, 
             name: liveItem.name,
             qty: item.quantity,
-            price: liveItem.basePrice // Fresh current price
+            price: liveItem.basePrice 
           });
           currentPackageTotal += (liveItem.basePrice * item.quantity);
         }
@@ -361,7 +381,6 @@ export default function MyOrdersScreen() {
                     <OrderProgress status={order.status} orderType={order.orderType} />
                   )}
 
-                  {/* NEW DELIVERY CODE DISPLAY */}
                   {isActive && (order.deliveryCode || "8492") && (
                     <View style={styles.deliveryCodeContainer}>
                       <Text style={[styles.deliveryCodeLabel, { color: colors.textMuted }]}>
@@ -539,7 +558,6 @@ export default function MyOrdersScreen() {
           showsHorizontalScrollIndicator={false}
           onMomentumScrollEnd={handleHorizontalScroll}
         >
-          {/* Note: View width is bound to window dimension here for exact paging */}
           <View style={{ width }}>
             {renderOrderList(activeOrders, 'No active orders', "You don't have any ongoing orders at the moment.")}
           </View>

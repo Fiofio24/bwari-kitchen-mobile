@@ -42,7 +42,7 @@ To Do List:
 37. (Victor✅) add a loading feature to the admin page so user will know what ever they clicked is processing to prevent double or more repeated action...make sure when loading user 
 38. Change your brand name to fioWeber or something more cool and unique 
 39. (Victor) In the admin dashboard the "total revenue" section it shounldn't be that only successful payment on paystack will be calculated, what if an error occurs and customer got debited but paystack sees it as pending or failed and admin then confirms the payment the forcefully change the order status to confirmed that means that order won't add up in the dashboard's total revenue calculation 
-40. (Victor) Need of push notification to alart customer on their phone
+40. (✅Done) (Victor) Need of push notification to alart customer on their phone
 41. (Victor✅) Can you make the admin to be able to create more than one user access so that when checcking the activity log they can know which particular admin did whatever whenever
 	🗣️Response: that's the current design. you are seeing only one activity log because we are using the same login credentials.
     🗣️(Fio)Response: Ok, nice let me have the other credential. But how do one create another admin user
@@ -64,7 +64,7 @@ To Do List:
 50. (✅Done) the wlcome, login and sign up page are repeating themself when you click back button because i've entered them motiple times from one page to the other click on "already have an account? Sign in" and "Don't have an account? sign up" so ones i've navigated on this pages from each other when i press the phone's back button it then goes back to them again and again before it finally lands on the welcome page 
 51. (Victor) Let us not forget to resolve the: 
 *(✅Done)save address features,
-*push notification feature, 
+*(✅Done)push notification feature, 
 *home page slide show and 
 *the track order status feature.
 52. (✅Done) phone's back button is not exiting the app when user is logged in instead it is going to welcome page before it then exits the app 
@@ -197,6 +197,7 @@ Changes Fio made in the backend
 8. Updated the `validatePromoCode` and `createPromo` controllers to dynamically accept and discount the exact delivery fee for "Free Delivery" promos instead of relying on a hardcoded cap.
 9. Fixed the Prisma database connection pool exhaustion issue (`Can't reach database server`) by implementing a singleton pattern for the Prisma client during local development and strictly enforcing connection limits.
 10. Enforced the opening and closing time logic natively on the backend during order placement to physically block unauthorized API bypasses when the kitchen is closed.
+11. Updated the push notification payload to include `priority: 'high'` and `channelId: 'default'`, forcing Android OS to physically drop down Heads-Up banner notifications.
 
 Changes Fio made in the Customer App
 1. Modified `checkout.tsx` to handle dynamic "Free Delivery" fee fetching by sending the live delivery fee directly to the backend for accurate discounting.
@@ -205,3 +206,10 @@ Changes Fio made in the Customer App
 4. Refactored the "No Cutlery" and Dining Preference toggles to silently append their instructions to the backend payload, preventing the text box from being cluttered or accidentally deleted by the user.
 5. Built a seamless, infinitely scrolling app-wide warning marquee in `_layout.tsx` that alerts users when the kitchen is closed, complete with smart context-awareness to match the background color and status bar theme of the active page.
 6. Wired the Cart and Checkout pages to actively poll the kitchen's status and instantly lock the checkout button if the kitchen closes automatically or manually.
+7. Configured Expo FCM V1 credentials and integrated native push notification support for Android devices.
+8. Added a custom monochrome status bar icon and brand-colored tint in `app.json` to fix the blank white square bug on Android push notifications.
+9. Fixed lock screen notification visibility by explicitly setting the channel's `lockscreenVisibility` to `PUBLIC`.
+10. Removed terminal warning spam by updating the deprecated `shouldShowAlert` to the modern `shouldShowBanner` and `shouldShowList` notification handlers.
+11. Implemented automatic badge count clearing when the app is opened or brought to the active foreground via React Native `AppState`.
+12. Built intelligent notification deep-linking using `useLastNotificationResponse` to automatically route users to the "My Orders" page.
+13. Updated the Orders page to automatically switch tabs (Active vs. Past) and expand the specific order details based on the tapped notification's status.

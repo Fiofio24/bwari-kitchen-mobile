@@ -14,6 +14,8 @@ const sendPushNotification = async (expoPushToken: string | null, title: string,
     title,
     body,
     data,
+    priority: 'high',       // <-- THE MAGIC FIX FOR BANNERS
+    channelId: 'default',   // <-- Connects to the MAX importance channel in your frontend
   };
 
   try {

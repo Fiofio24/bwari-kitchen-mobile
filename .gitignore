@@ -55,3 +55,7 @@ yarn-error.log*
 .env
 .env.local
 .env.production
+
+# Firebase Secret Keys
+bwari-kitchen-3d8b0-firebase-adminsdk-fbsvc-5bdba09111.json
+google-services.json

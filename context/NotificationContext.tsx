@@ -27,11 +27,10 @@ interface NotificationContextType {
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,
+    shouldShowBanner: true, 
+    shouldShowList: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
-    shouldShowBanner: true, 
-    shouldShowList: true,   
   }),
 });
 
@@ -62,7 +61,8 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
           name: 'default',
           importance: Notifications.AndroidImportance.MAX,
           vibrationPattern: [0, 250, 250, 250],
-          lightColor: '#FF231F7C',
+          lightColor: '#D32F2F',
+          lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC, // <-- ADD THIS LINE
         });
       }
 
