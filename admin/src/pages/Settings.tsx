@@ -4,7 +4,7 @@ import { showSuccess, showError, getErrorMessage } from '../lib/toast'
 import Layout from '../components/Layout'
 import api from '../lib/api'
 import useLivePolling from '../hooks/useLivePolling'
-import { Store, Banknote, Power, Save } from 'lucide-react'
+import { Store, Banknote, Power, Save, Share2, Mail } from 'lucide-react'
 
 interface AppSetting {
   id: string
@@ -22,6 +22,15 @@ interface Branch {
   latitude: number | null
   longitude: number | null
   phoneNumber: string | null
+  supportPhone: string | null
+  supportEmail: string | null
+  whatsappNumber: string | null
+  instagramUrl: string | null
+  facebookUrl: string | null
+  twitterUrl: string | null
+  tiktokUrl: string | null
+  threadsUrl: string | null
+  youtubeUrl: string | null
   openingTime: string | null
   closingTime: string | null
   isOpen: boolean
@@ -108,6 +117,15 @@ export default function Settings() {
         latitude: branch.latitude,
         longitude: branch.longitude,
         phoneNumber: branch.phoneNumber,
+        supportPhone: branch.supportPhone,
+        supportEmail: branch.supportEmail,
+        whatsappNumber: branch.whatsappNumber,
+        instagramUrl: branch.instagramUrl,
+        facebookUrl: branch.facebookUrl,
+        twitterUrl: branch.twitterUrl,
+        tiktokUrl: branch.tiktokUrl,
+        threadsUrl: branch.threadsUrl,
+        youtubeUrl: branch.youtubeUrl,
         openingTime: branch.openingTime,
         closingTime: branch.closingTime,
         acceptsPickup: branch.acceptsPickup,
@@ -208,139 +226,243 @@ export default function Settings() {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Branch Info Card */}
+        {/* Branch Info & Contact Settings Card */}
         {branch && (
-          <div className="bg-white rounded-xl border border-gray-100 p-5">
-            <div className="flex items-center gap-2 mb-4">
-              <Store size={18} className="text-brand-600" />
-              <h3 className="font-semibold">Branch Information</h3>
-            </div>
-
-            <div className="space-y-3">
-              <div>
-                <label className="block text-sm font-medium mb-1">Branch Name</label>
-                <input
-                  value={branch.name}
-                  onChange={(e) => handleBranchChange('name', e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                />
+          <div className="bg-white rounded-xl border border-gray-100 p-5 space-y-5">
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <Store size={18} className="text-brand-600" />
+                <h3 className="font-semibold">Branch Information</h3>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-1">Address</label>
-                <input
-                  value={branch.address}
-                  onChange={(e) => handleBranchChange('address', e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-3">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Landmark</label>
+                  <label className="block text-sm font-medium mb-1">Branch Name</label>
                   <input
-                    value={branch.landmark || ''}
-                    onChange={(e) => handleBranchChange('landmark', e.target.value)}
+                    value={branch.name}
+                    onChange={(e) => handleBranchChange('name', e.target.value)}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
                   />
                 </div>
+
                 <div>
-                  <label className="block text-sm font-medium mb-1">Area</label>
+                  <label className="block text-sm font-medium mb-1">Address</label>
                   <input
-                    value={branch.area || ''}
-                    onChange={(e) => handleBranchChange('area', e.target.value)}
+                    value={branch.address}
+                    onChange={(e) => handleBranchChange('address', e.target.value)}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
                   />
                 </div>
-              </div>
 
-              <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Landmark</label>
+                    <input
+                      value={branch.landmark || ''}
+                      onChange={(e) => handleBranchChange('landmark', e.target.value)}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Area</label>
+                    <input
+                      value={branch.area || ''}
+                      onChange={(e) => handleBranchChange('area', e.target.value)}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Latitude</label>
+                    <input
+                      type="number"
+                      step="0.000001"
+                      value={branch.latitude ?? ''}
+                      onChange={(e) => handleBranchChange('latitude', e.target.value)}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Longitude</label>
+                    <input
+                      type="number"
+                      step="0.000001"
+                      value={branch.longitude ?? ''}
+                      onChange={(e) => handleBranchChange('longitude', e.target.value)}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                    />
+                  </div>
+                </div>
+
                 <div>
-                  <label className="block text-sm font-medium mb-1">Latitude</label>
+                  <label className="block text-sm font-medium mb-1">Phone Number</label>
+                  <input
+                    value={branch.phoneNumber || ''}
+                    onChange={(e) => handleBranchChange('phoneNumber', e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Opening Time</label>
+                    <input
+                      type="time"
+                      value={branch.openingTime || ''}
+                      onChange={(e) => handleBranchChange('openingTime', e.target.value)}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Closing Time</label>
+                    <input
+                      type="time"
+                      value={branch.closingTime || ''}
+                      onChange={(e) => handleBranchChange('closingTime', e.target.value)}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">Delivery Radius (km)</label>
                   <input
                     type="number"
-                    step="0.000001"
-                    value={branch.latitude ?? ''}
-                    onChange={(e) => handleBranchChange('latitude', e.target.value)}
+                    value={branch.deliveryRadiusKm ?? ''}
+                    onChange={(e) => handleBranchChange('deliveryRadiusKm', e.target.value)}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Longitude</label>
-                  <input
-                    type="number"
-                    step="0.000001"
-                    value={branch.longitude ?? ''}
-                    onChange={(e) => handleBranchChange('longitude', e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                  />
+
+                <div className="flex gap-4 pt-1">
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={branch.acceptsPickup}
+                      onChange={(e) => handleBranchChange('acceptsPickup', e.target.checked)}
+                    />
+                    Accepts Pickup
+                  </label>
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={branch.acceptsDelivery}
+                      onChange={(e) => handleBranchChange('acceptsDelivery', e.target.checked)}
+                    />
+                    Accepts Delivery
+                  </label>
                 </div>
               </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">Phone Number</label>
-                <input
-                  value={branch.phoneNumber || ''}
-                  onChange={(e) => handleBranchChange('phoneNumber', e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Opening Time</label>
-                  <input
-                    type="time"
-                    value={branch.openingTime || ''}
-                    onChange={(e) => handleBranchChange('openingTime', e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Closing Time</label>
-                  <input
-                    type="time"
-                    value={branch.closingTime || ''}
-                    onChange={(e) => handleBranchChange('closingTime', e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">Delivery Radius (km)</label>
-                <input
-                  type="number"
-                  value={branch.deliveryRadiusKm ?? ''}
-                  onChange={(e) => handleBranchChange('deliveryRadiusKm', e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                />
-              </div>
-
-              <div className="flex gap-4 pt-1">
-                <label className="flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={branch.acceptsPickup}
-                    onChange={(e) => handleBranchChange('acceptsPickup', e.target.checked)}
-                  />
-                  Accepts Pickup
-                </label>
-                <label className="flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={branch.acceptsDelivery}
-                    onChange={(e) => handleBranchChange('acceptsDelivery', e.target.checked)}
-                  />
-                  Accepts Delivery
-                </label>
-              </div>
-
-              <LoadingButton loading={savingBranch} onClick={handleSaveBranch} className="w-full py-2.5 mt-2">
-                <Save size={16} />
-                Save Branch Info
-              </LoadingButton>
             </div>
+
+            {/* Support & Contact Channels */}
+            <div className="border-t pt-4">
+              <div className="flex items-center gap-2 mb-4">
+                <Mail size={18} className="text-brand-600" />
+                <h3 className="font-semibold">Support & Contact Channels</h3>
+              </div>
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Support Phone</label>
+                  <input
+                    value={branch.supportPhone || ''}
+                    onChange={(e) => handleBranchChange('supportPhone', e.target.value)}
+                    placeholder="e.g. +234..."
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Support Email</label>
+                  <input
+                    type="email"
+                    value={branch.supportEmail || ''}
+                    onChange={(e) => handleBranchChange('supportEmail', e.target.value)}
+                    placeholder="support@bwarikitchen.com"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">WhatsApp Number</label>
+                  <input
+                    value={branch.whatsappNumber || ''}
+                    onChange={(e) => handleBranchChange('whatsappNumber', e.target.value)}
+                    placeholder="e.g. +234..."
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Social Media Links */}
+            <div className="border-t pt-4">
+              <div className="flex items-center gap-2 mb-4">
+                <Share2 size={18} className="text-brand-600" />
+                <h3 className="font-semibold">Social Media Links</h3>
+              </div>
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Instagram URL</label>
+                  <input
+                    value={branch.instagramUrl || ''}
+                    onChange={(e) => handleBranchChange('instagramUrl', e.target.value)}
+                    placeholder="https://instagram.com/..."
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">X (Twitter) URL</label>
+                  <input
+                    value={branch.twitterUrl || ''}
+                    onChange={(e) => handleBranchChange('twitterUrl', e.target.value)}
+                    placeholder="https://x.com/..."
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Facebook URL</label>
+                  <input
+                    value={branch.facebookUrl || ''}
+                    onChange={(e) => handleBranchChange('facebookUrl', e.target.value)}
+                    placeholder="https://facebook.com/..."
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">TikTok URL</label>
+                  <input
+                    value={branch.tiktokUrl || ''}
+                    onChange={(e) => handleBranchChange('tiktokUrl', e.target.value)}
+                    placeholder="https://tiktok.com/@..."
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Threads URL</label>
+                  <input
+                    value={branch.threadsUrl || ''}
+                    onChange={(e) => handleBranchChange('threadsUrl', e.target.value)}
+                    placeholder="https://threads.net/@..."
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">YouTube URL</label>
+                  <input
+                    value={branch.youtubeUrl || ''}
+                    onChange={(e) => handleBranchChange('youtubeUrl', e.target.value)}
+                    placeholder="https://youtube.com/..."
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <LoadingButton loading={savingBranch} onClick={handleSaveBranch} className="w-full py-2.5 mt-4">
+              <Save size={16} />
+              Save Branch Info & Settings
+            </LoadingButton>
           </div>
         )}
 

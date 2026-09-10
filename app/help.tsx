@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { 
   View, 
   Text, 
@@ -20,8 +20,11 @@ import { useUser } from '../context/UserContext';
 import TopNav from '../components/TopNav';
 import { scale } from '../constants/Sizes'; 
 import HomeIcon from '../components/HomeIcon';
+import { useFocusEffect } from 'expo-router';
+import * as Clipboard from 'expo-clipboard';
+import api from './lib/api';
 
-const FAQ_DATA = [
+const FALLBACK_FAQS = [
   {
     id: '1',
     question: 'Where is my order?',
@@ -62,33 +65,122 @@ export default function HelpScreen() {
   
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
+  // Branch contact info and dynamic FAQs state
+  const [branchInfo, setBranchInfo] = useState({
+    whatsappNumber: '',
+    supportPhone: '',
+    phoneNumber: '',
+    supportEmail: '',
+  });
+  const [faqs, setFaqs] = useState(FALLBACK_FAQS);
+
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+
+      const fetchData = async () => {
+        try {
+          const [branchRes, faqRes] = await Promise.all([
+            api.get('/api/menu/branch').catch(() => null),
+            api.get('/api/faqs').catch(() => null),
+          ]);
+
+          if (!isActive) return;
+
+          if (branchRes) {
+            const bData = branchRes.data?.branch || branchRes.data;
+            if (bData) {
+              setBranchInfo({
+                whatsappNumber: bData.whatsappNumber || '',
+                supportPhone: bData.supportPhone || '',
+                phoneNumber: bData.phoneNumber || '',
+                supportEmail: bData.supportEmail || '',
+              });
+            }
+          }
+
+          if (faqRes && faqRes.data?.faqs && faqRes.data.faqs.length > 0) {
+            setFaqs(faqRes.data.faqs);
+          }
+        } catch (e) {
+          console.warn('Failed to load help screen data', e);
+        }
+      };
+
+      fetchData();
+
+      return () => {
+        isActive = false;
+      };
+    }, [])
+  );
+
   const toggleFaq = (id: string) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setExpandedId(expandedId === id ? null : id);
   };
 
-  const handleContact = (method: string) => {
-    if (Platform.OS === 'web') {
-      window.alert(`Opening ${method}...`);
-      return;
-    }
-    
+  const handleContact = async (method: string) => {
+    let targetUrl = '';
+    let fallbackValue = '';
+
     switch (method) {
-      case 'call':
-        Linking.openURL('tel:+2348000000000').catch(() => Alert.alert('Error', 'Unable to open dialer.'));
+      case 'call': {
+        const phoneToCall = branchInfo.supportPhone || branchInfo.phoneNumber;
+        if (!phoneToCall) {
+          Alert.alert('Notice', 'No phone number is currently available.');
+          return;
+        }
+        targetUrl = `tel:${phoneToCall.replace(/[^0-9+]/g, '')}`;
+        fallbackValue = phoneToCall;
         break;
-      case 'email':
-        Linking.openURL('mailto:support@bwarikitchen.com?subject=App Support').catch(() => Alert.alert('Error', 'Unable to open email client.'));
+      }
+      case 'email': {
+        const emailToUse = branchInfo.supportEmail;
+        if (!emailToUse) {
+          Alert.alert('Notice', 'No support email is currently available.');
+          return;
+        }
+        targetUrl = `mailto:${emailToUse}?subject=App Support`;
+        fallbackValue = emailToUse;
         break;
+      }
       case 'chat': {
-        const phone = '2349123901489';
+        const phoneToChat = branchInfo.whatsappNumber || branchInfo.supportPhone;
+        if (!phoneToChat) {
+          Alert.alert('Notice', 'No WhatsApp number is currently available.');
+          return;
+        }
+        const cleanPhone = phoneToChat.replace(/[^0-9]/g, '');
         const message = encodeURIComponent('Hi, I have enquiries/complaints.');
-        const whatsappUrl = `https://wa.me/${phone}?text=${message}`;
-        Linking.openURL(whatsappUrl).catch(() => Alert.alert('Error', 'Unable to open WhatsApp. Please make sure it is installed.'));
+        targetUrl = `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${message}`;
+        fallbackValue = phoneToChat;
         break;
       }
     }
+
+    if (!targetUrl) return;
+
+    if (Platform.OS === 'web') {
+      window.open(targetUrl, '_blank');
+      return;
+    }
+
+    try {
+      await Linking.openURL(targetUrl);
+    } catch {
+      await Clipboard.setStringAsync(fallbackValue);
+      Alert.alert(
+        'Copied to Clipboard',
+        `Could not open application automatically. "${fallbackValue}" has been copied to your clipboard.`,
+        [{ text: 'OK' }]
+      );
+    }
   };
+
+  const hasWhatsapp = Boolean(branchInfo.whatsappNumber || branchInfo.supportPhone);
+  const hasCall = Boolean(branchInfo.supportPhone || branchInfo.phoneNumber);
+  const hasEmail = Boolean(branchInfo.supportEmail);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -112,62 +204,70 @@ export default function HelpScreen() {
         
         <View style={styles.greetingSection}>
           <Text style={[styles.greetingTitle, { color: colors.text }]}>
-            Hi {userData.name.split(' ')[0]},
+            Hi {userData?.name ? userData.name.split(' ')[0] : 'there'},
           </Text>
           <Text style={[styles.greetingSub, { color: colors.textMuted }]}>
             How can we help you today?
           </Text>
         </View>
 
-        <View style={styles.contactGrid}>
-          <TouchableOpacity 
-            style={[styles.contactCard, { backgroundColor: isDark ? colors.surface : '#FFF9E6', borderColor: '#FFC107' }]}
-            activeOpacity={0.8}
-            onPress={() => handleContact('chat')}
-          >
-            <View style={[styles.contactIconBox, { backgroundColor: '#FFC107' }]}>
-              <Ionicons name="chatbubbles" size={scale(24)} color="#FFF" />
-            </View>
-            <Text style={[styles.contactTitle, { color: colors.text }]}>Chat us on WhatsApp</Text>
-            <Text style={[styles.contactSub, { color: colors.textMuted }]}>Chat with our team</Text>
-          </TouchableOpacity>
+        {(hasWhatsapp || hasCall) && (
+          <View style={styles.contactGrid}>
+            {hasWhatsapp && (
+              <TouchableOpacity 
+                style={[styles.contactCard, { backgroundColor: isDark ? colors.surface : '#FFF9E6', borderColor: '#FFC107' }]}
+                activeOpacity={0.8}
+                onPress={() => handleContact('chat')}
+              >
+                <View style={[styles.contactIconBox, { backgroundColor: '#FFC107' }]}>
+                  <Ionicons name="chatbubbles" size={scale(24)} color="#FFF" />
+                </View>
+                <Text style={[styles.contactTitle, { color: colors.text }]}>Chat us on WhatsApp</Text>
+                <Text style={[styles.contactSub, { color: colors.textMuted }]}>Chat with our team</Text>
+              </TouchableOpacity>
+            )}
 
-          <TouchableOpacity 
-            style={[styles.contactCard, { backgroundColor: isDark ? colors.surface : '#E8F5E9', borderColor: '#4CAF50' }]}
-            activeOpacity={0.8}
-            onPress={() => handleContact('call')}
-          >
-            <View style={[styles.contactIconBox, { backgroundColor: '#4CAF50' }]}>
-              <Ionicons name="call" size={scale(24)} color="#FFF" />
-            </View>
-            <Text style={[styles.contactTitle, { color: colors.text }]}>Call Us</Text>
-            <Text style={[styles.contactSub, { color: colors.textMuted }]}>Toll-free line</Text>
-          </TouchableOpacity>
-        </View>
+            {hasCall && (
+              <TouchableOpacity 
+                style={[styles.contactCard, { backgroundColor: isDark ? colors.surface : '#E8F5E9', borderColor: '#4CAF50' }]}
+                activeOpacity={0.8}
+                onPress={() => handleContact('call')}
+              >
+                <View style={[styles.contactIconBox, { backgroundColor: '#4CAF50' }]}>
+                  <Ionicons name="call" size={scale(24)} color="#FFF" />
+                </View>
+                <Text style={[styles.contactTitle, { color: colors.text }]}>Call Us</Text>
+                <Text style={[styles.contactSub, { color: colors.textMuted }]}>Toll-free line</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
 
-        <TouchableOpacity 
-          style={[styles.emailCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
-          activeOpacity={0.8}
-          onPress={() => handleContact('email')}
-        >
-          <View style={[styles.emailIconBox, { backgroundColor: 'rgba(211, 47, 47, 0.1)' }]}>
-            <Ionicons name="mail" size={scale(24)} color={Colors.primary} />
-          </View>
-          <View style={styles.emailTextWrap}>
-            <Text style={[styles.contactTitle, { color: colors.text }]}>Send an Email</Text>
-            <Text style={[styles.contactSub, { color: colors.textMuted }]}>support@bwarikitchen.com</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={scale(20)} color={colors.textMuted} />
-        </TouchableOpacity>
+        {hasEmail && (
+          <TouchableOpacity 
+            style={[styles.emailCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
+            activeOpacity={0.8}
+            onPress={() => handleContact('email')}
+          >
+            <View style={[styles.emailIconBox, { backgroundColor: 'rgba(211, 47, 47, 0.1)' }]}>
+              <Ionicons name="mail" size={scale(24)} color={Colors.primary} />
+            </View>
+            <View style={styles.emailTextWrap}>
+              <Text style={[styles.contactTitle, { color: colors.text }]}>Send an Email</Text>
+              <Text style={[styles.contactSub, { color: colors.textMuted }]}>{branchInfo.supportEmail}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={scale(20)} color={colors.textMuted} />
+          </TouchableOpacity>
+        )}
 
         <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>
           FREQUENTLY ASKED QUESTIONS
         </Text>
 
         <View style={[styles.faqContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          {FAQ_DATA.map((faq, index) => {
+          {faqs.map((faq: any, index: number) => {
             const isExpanded = expandedId === faq.id;
-            const isLast = index === FAQ_DATA.length - 1;
+            const isLast = index === faqs.length - 1;
 
             return (
               <TouchableOpacity 

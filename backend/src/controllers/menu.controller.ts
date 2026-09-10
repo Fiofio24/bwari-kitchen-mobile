@@ -405,6 +405,15 @@ export const getBranchInfo = async (
       latitude: true,
       longitude: true,
       phoneNumber: true,
+      supportPhone: true,     // <--- Updated
+      supportEmail: true,     // <--- Updated
+      whatsappNumber: true,   // <--- Updated
+      instagramUrl: true,     // <--- Updated
+      facebookUrl: true,      // <--- Updated
+      twitterUrl: true,       // <--- Updated
+      tiktokUrl: true,        // <--- Updated
+      threadsUrl: true,       // <--- Updated
+      youtubeUrl: true,       // <--- Updated
       openingTime: true,
       closingTime: true,
       isOpen: true,

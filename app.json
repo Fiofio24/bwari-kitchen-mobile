@@ -61,7 +61,30 @@
           "locationAlwaysAndWhenInUsePermission": "Allow Bwari Kitchen to use your location to find your delivery address."
         }
       ],
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "manifestQueries": {
+              "intent": [
+                {
+                  "action": "android.intent.action.VIEW",
+                  "data": {
+                    "scheme": "https"
+                  }
+                },
+                {
+                  "action": "android.intent.action.VIEW",
+                  "data": {
+                    "scheme": "http"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ]
     ],
     "scheme": "bwarikitchen",
     "owner": "fiofio24",

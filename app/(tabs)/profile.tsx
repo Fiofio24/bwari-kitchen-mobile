@@ -10,7 +10,8 @@ import {
   Share, 
   Image, 
   Alert,
-  ActivityIndicator
+  ActivityIndicator,
+  Linking
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker'; 
@@ -18,7 +19,7 @@ import { useFocusEffect } from 'expo-router';
 import { useTheme } from '../../context/ThemeContext';
 import { useUser } from '../../context/UserContext'; 
 import { useAddresses } from '../../context/AddressContext'; 
-import { useCart } from '../../context/CartContext'; // <-- ADDED THIS
+import { useCart } from '../../context/CartContext';
 import { Colors } from '../../constants/Colors';
 import { StatusBar } from 'expo-status-bar';
 import Sidebar from '../../components/Sidebar';
@@ -29,11 +30,15 @@ import ActionModal from '../../components/ActionModal';
 import { scale } from '../../constants/Sizes'; 
 import api from '../../app/lib/api';
 
+import * as Clipboard from 'expo-clipboard';
+
 export default function ProfileScreen() {
+  const [webViewUrl, setWebViewUrl] = useState<string | null>(null);
+
   const { colors, isDark, setThemeMode } = useTheme();
-  const { userData, updateAvatar, updateUserData, resetToDefault } = useUser(); // <-- ADDED updateUserData
+  const { userData, updateAvatar, updateUserData, resetToDefault } = useUser();
   const { setActiveAddress } = useAddresses() as any; 
-  const { clearCart } = useCart(); // <-- ADDED THIS (FIX FOR GHOST CART)
+  const { clearCart } = useCart();
   const router = useSafeRouter(); 
   
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -43,6 +48,16 @@ export default function ProfileScreen() {
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
   
   const [totalOrders, setTotalOrders] = useState<number | null>(null);
+
+  // Social media links state fetched from branch settings
+  const [socialLinks, setSocialLinks] = useState({
+    instagramUrl: '',
+    twitterUrl: '',
+    facebookUrl: '',
+    tiktokUrl: '',
+    threadsUrl: '',
+    youtubeUrl: '',
+  });
 
   const userStats = { points: 450, referralCode: "BWARI-SERIFF-99" };
 
@@ -69,7 +84,7 @@ export default function ProfileScreen() {
         }
       };
 
-      // FIX FOR ITEM 25: Sync the latest profile data from the backend
+      // Sync the latest profile data from the backend
       const fetchProfileData = async () => {
         try {
           const res = await api.get('/api/auth/me');
@@ -86,9 +101,31 @@ export default function ProfileScreen() {
           console.warn("Silent profile sync failed", e);
         }
       };
+
+      // Fetch branch social media links
+      const fetchBranchSocials = async () => {
+        try {
+          const res = await api.get('/api/menu/branch');
+          if (!isActive) return;
+          const branchData = res.data?.branch || res.data;
+          if (branchData) {
+            setSocialLinks({
+              instagramUrl: branchData.instagramUrl || '',
+              twitterUrl: branchData.twitterUrl || '',
+              facebookUrl: branchData.facebookUrl || '',
+              tiktokUrl: branchData.tiktokUrl || '',
+              threadsUrl: branchData.threadsUrl || '',
+              youtubeUrl: branchData.youtubeUrl || '',
+            });
+          }
+        } catch (e) {
+          console.warn("Failed to fetch branch social links", e);
+        }
+      };
       
       fetchOrdersCount();
       fetchProfileData();
+      fetchBranchSocials();
 
       return () => {
         isActive = false;
@@ -96,17 +133,54 @@ export default function ProfileScreen() {
     }, [])
   );
 
-  const onShareReferral = async () => {
+
+  const handleOpenLink = async (platform: string, url: string) => {
+    if (!url) return;
+    let cleanUrl = url.trim();
+
+    // Auto-correct common domain typos (like typing threads.com instead of threads.net)
+    if (platform === 'threads' && cleanUrl.includes('threads.com')) {
+      cleanUrl = cleanUrl.replace('threads.com', 'threads.net');
+    }
+
+    // If it's a handle or short link without http prefix, format it
+    if (!cleanUrl.startsWith('http://') && !cleanUrl.startsWith('https://')) {
+      cleanUrl = cleanUrl.replace(/^@/, '');
+      switch (platform) {
+        case 'instagram': cleanUrl = `https://instagram.com/${cleanUrl}`; break;
+        case 'twitter': cleanUrl = `https://x.com/${cleanUrl}`; break;
+        case 'facebook': cleanUrl = `https://facebook.com/${cleanUrl}`; break;
+        case 'tiktok': cleanUrl = `https://tiktok.com/@${cleanUrl}`; break;
+        case 'threads': cleanUrl = `https://threads.net/@${cleanUrl}`; break;
+        case 'youtube': cleanUrl = `https://youtube.com/@${cleanUrl}`; break;
+        default: cleanUrl = `https://${cleanUrl}`;
+      }
+    }
+
     try {
-      await Share.share({
-        message: `Use my code ${userStats.referralCode} to get ₦1,000 off your first meal at Bwari Kitchen! 🥘`,
-      });
-    } catch (error) { 
-      console.warn(error); 
+      await Linking.openURL(cleanUrl);
+    } catch {
+      await Clipboard.setStringAsync(cleanUrl);
+      Alert.alert(
+        'Link Copied',
+        `Could not open app automatically. The link has been copied to your clipboard.`,
+        [{ text: 'OK' }]
+      );
     }
   };
 
-  // FIX FOR ITEM 25: Actually upload the image to the backend!
+
+  // Feature Update
+  // const onShareReferral = async () => {
+  //   try {
+  //     await Share.share({
+  //       message: `Use my code ${userStats.referralCode} to get ₦1,000 off your first meal at Bwari Kitchen! 🥘`,
+  //     });
+  //   } catch (error) { 
+  //     console.warn(error); 
+  //   }
+  // };
+
   const handlePickImage = async () => {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
     
@@ -128,9 +202,8 @@ export default function ProfileScreen() {
 
     if (!result.canceled) {
       const localUri = result.assets[0].uri;
-      updateAvatar(localUri); // Instantly update locally for snappy UX
+      updateAvatar(localUri);
       
-      // Package the image for the backend
       const formData = new FormData();
       const filename = localUri.split('/').pop() || 'profile.jpg';
       const match = /\.(\w+)$/.exec(filename);
@@ -142,13 +215,11 @@ export default function ProfileScreen() {
         type,
       } as any);
 
-      // Send to your Supabase Storage bucket via the backend route
       try {
         const res = await api.post('/api/upload/profile-photo', formData, {
           headers: { 'Content-Type': 'multipart/form-data' }
         });
         
-        // If the backend returns the permanent URL, lock it into the context
         if (res.data && res.data.url) {
           updateAvatar(res.data.url);
         }
@@ -181,6 +252,9 @@ export default function ProfileScreen() {
       {rightElement ? rightElement : <Ionicons name="chevron-forward" size={scale(18)} color={colors.textMuted} />}
     </TouchableOpacity>
   );
+
+  // Check if at least one social media link exists
+  const hasAnySocialLink = Object.values(socialLinks).some((url) => url && url.trim().length > 0);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -242,29 +316,6 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        {/* Future update */}
-        {/* <TouchableOpacity 
-          style={[
-            styles.referralCard, 
-            { backgroundColor: isDark ? colors.surface : '#FFF9E6', borderColor: '#FFD700' }
-          ]} 
-          activeOpacity={0.9} 
-          onPress={onShareReferral}
-        >
-          <View style={styles.referralIconBox}>
-            <Ionicons name="gift" size={scale(30)} color="#FFD700" />
-          </View>
-          <View style={styles.referralTextContainer}>
-            <Text style={[styles.referralTitle, { color: colors.text }]}>
-              Refer & Earn ₦1,000
-            </Text>
-            <Text style={[styles.referralSub, { color: colors.textMuted }]}>
-              Invite friends to get free meals!
-            </Text>
-          </View>
-          <Ionicons name="share-social-outline" size={scale(24)} color={colors.primary} />
-        </TouchableOpacity> */}
-
         <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>ACCOUNT SETTINGS</Text>
         <View style={[styles.menuBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <ProfileMenuItem 
@@ -318,26 +369,65 @@ export default function ProfileScreen() {
           />
         </View>
 
-        <View style={styles.socialRow}>
-          <TouchableOpacity style={[styles.socialIcon, { backgroundColor: colors.border }]}>
-            <Ionicons name="logo-instagram" size={scale(20)} color={colors.text} />
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.socialIcon, { backgroundColor: colors.border }]}>
-            <Ionicons name="logo-x" size={scale(20)} color={colors.text} />
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.socialIcon, { backgroundColor: colors.border }]}>
-            <Ionicons name="logo-facebook" size={scale(20)} color={colors.text} />
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.socialIcon, { backgroundColor: colors.border }]}>
-            <Ionicons name="logo-tiktok" size={scale(20)} color={colors.text} />
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.socialIcon, { backgroundColor: colors.border }]}>
-            <Ionicons name="logo-threads" size={scale(20)} color={colors.text} />
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.socialIcon, { backgroundColor: colors.border }]}>
-            <Ionicons name="logo-youtube" size={scale(20)} color={colors.text} />
-          </TouchableOpacity>
-        </View>
+        {/* Conditionally render social row only if at least one link is configured */}
+        {hasAnySocialLink && (
+          <View style={styles.socialRow}>
+            {socialLinks.instagramUrl ? (
+              <TouchableOpacity 
+                style={[styles.socialIcon, { backgroundColor: colors.border }]}
+                onPress={() => handleOpenLink('instagram', socialLinks.instagramUrl)}
+              >
+                <Ionicons name="logo-instagram" size={scale(20)} color={colors.text} />
+              </TouchableOpacity>
+            ) : null}
+
+            {socialLinks.twitterUrl ? (
+              <TouchableOpacity 
+                style={[styles.socialIcon, { backgroundColor: colors.border }]}
+                onPress={() => handleOpenLink('twitter', socialLinks.twitterUrl)}
+              >
+                <Ionicons name="logo-x" size={scale(20)} color={colors.text} />
+              </TouchableOpacity>
+            ) : null}
+
+            {socialLinks.facebookUrl ? (
+              <TouchableOpacity 
+                style={[styles.socialIcon, { backgroundColor: colors.border }]}
+                onPress={() => handleOpenLink('facebook', socialLinks.facebookUrl)}
+              >
+                <Ionicons name="logo-facebook" size={scale(20)} color={colors.text} />
+              </TouchableOpacity>
+            ) : null}
+
+            {socialLinks.tiktokUrl ? (
+              <TouchableOpacity 
+                style={[styles.socialIcon, { backgroundColor: colors.border }]}
+                onPress={() => handleOpenLink('tiktok', socialLinks.tiktokUrl)}
+              >
+                <Ionicons name="logo-tiktok" size={scale(20)} color={colors.text} />
+              </TouchableOpacity>
+            ) : null}
+
+            {socialLinks.threadsUrl ? (
+              <TouchableOpacity 
+                style={[styles.socialIcon, { backgroundColor: colors.border }]}
+                onPress={() => handleOpenLink('threads', socialLinks.threadsUrl)}
+              >
+                <Ionicons name="logo-threads" size={scale(20)} color={colors.text} />
+              </TouchableOpacity>
+            ) : null}
+
+            {socialLinks.youtubeUrl ? (
+              <TouchableOpacity 
+                style={[styles.socialIcon, { backgroundColor: colors.border }]}
+                onPress={() => handleOpenLink('youtube', socialLinks.youtubeUrl)}
+              >
+                <Ionicons name="logo-youtube" size={scale(20)} color={colors.text} />
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        )}
+
         <Text style={[styles.versionText, { color: colors.textMuted }]}>Version 2.4.0 (Build 102)</Text>
       </ScrollView>
 
@@ -351,7 +441,7 @@ export default function ProfileScreen() {
           await SecureStore.deleteItemAsync('authToken'); 
           resetToDefault(); 
           if (setActiveAddress) setActiveAddress(null); 
-          clearCart(); // <-- GHOST CART DESTROYED
+          clearCart();
           router.replace('/welcome'); 
         }} 
         title="Sign Out"
@@ -369,7 +459,7 @@ export default function ProfileScreen() {
           await SecureStore.deleteItemAsync('authToken'); 
           resetToDefault(); 
           if (setActiveAddress) setActiveAddress(null); 
-          clearCart(); // <-- GHOST CART DESTROYED
+          clearCart();
           router.replace('/welcome'); 
         }} 
         title="Delete Account"
@@ -472,36 +562,6 @@ const styles = StyleSheet.create({
   statLabel: { 
     fontSize: scale(12), 
     marginTop: scale(2),
-  },
-  referralCard: { 
-    marginHorizontal: scale(20), 
-    padding: scale(15), 
-    borderRadius: scale(20), 
-    borderWidth: 1, 
-    borderStyle: 'dashed', 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    marginBottom: scale(25),
-  },
-  referralIconBox: { 
-    width: scale(50), 
-    height: scale(50), 
-    borderRadius: scale(25), 
-    backgroundColor: '#FFF', 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    marginRight: scale(15), 
-    elevation: 2,
-  },
-  referralTextContainer: { 
-    flex: 1,
-  },
-  referralTitle: { 
-    fontSize: scale(16), 
-    fontWeight: 'bold',
-  },
-  referralSub: { 
-    fontSize: scale(12),
   },
   sectionTitle: { 
     fontSize: scale(12), 

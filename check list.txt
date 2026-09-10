@@ -94,7 +94,7 @@ To Do List:
 66. (Victor) add "Notifications" in the admin dashboard menu
 67. (✅sesarch page Done remain QuickEditPackage)when on search page and QuickEditPackage.tsx user should be able to exit that page or modal by sliding down not only by clicking the back button or close icon
 68. (✅Done)on the preofile page the orders at the top that shows the total orders instead of just showing "0" when it is still fetching the total numbers of orders it should show a loading spinner and it shouldn't be that everytime user goes to profile that it will always want to reload and fetch it should only fetch when it sense that a +1 order exist so it will add
-69. (Victor) in admin settings there should be space to add social media handles link so the social media button in the profile page of customer app at the very end on click can navigate to the kitchen's social media page
+69. (✅Done) (Victor) in admin settings there should be space to add social media handles link so the social media button in the profile page of customer app at the very end on click can navigate to the kitchen's social media page
 70. (✅Atempted, not confirmed) For the app icon try and do dark and light mode for it
 71. (Victor) Work on the notification preferences page, make sure to remove any unecessary option
 72. (✅Done) Remove searchBar from the quick edit package page
@@ -112,11 +112,11 @@ To Do List:
 84. (✅Done) add a feature that tells customer the restaurant is closed when admin closes it or it reaches closing time
 85. (✅Done) (Victor) Suggestion, in the admin dashboard on click on any of those overview it shout rout to their respective page e.g when i click on total orders it should go to orders page or click on cancelled orders it should also go to orders page but settled orders section etc
 86. (Victor) the fixed min delivery fee price of 500 that you set in your code is nice but can you make it flexible for the kitchen to decide that, they might want to use 1k. (Suggestion: just simply make that min delivery fee = delivery fee per km...so whatever admin set as delivery fee per km it will be the min delivery fee)
-87. (Victor) in the admin settings add whatsapp number and email address settings so i can connect it to the help page for customer service
-88. (Victor) frontend is not seeing SupportPhone in the admin setting just like PhoneNumber. i need it so i can fetch the SupportPhone in the help page and else where this are currently the data the frontend has direct access to in the admin settings from '/api/menu/branch'
+87. (✅Done) (Victor) in the admin settings add whatsapp number and email address settings so i can connect it to the help page for customer service
+88. (✅Done) (Victor) frontend is not seeing SupportPhone in the admin setting just like PhoneNumber. i need it so i can fetch the SupportPhone in the help page and else where this are currently the data the frontend has direct access to in the admin settings from '/api/menu/branch'
     LOG  🔍 RAW BACKEND SETTINGS: {"branch": {"acceptsDelivery": true, "acceptsPickup": true, "address": "Law School Road, Bwari 901101, Federal Capital Territory", "area": "Bwari", "closingTime": "21:00", "deliveryRadiusKm": "20", "id": "main-branch", "isOpen": true, "landmark": "Opposite FGGC", "latitude": "9.278146", "longitude": "7.372765", "name": "Bwari Main Branch", "openingTime": "08:00", "phoneNumber": "+2348061608620"}}
 89. (✅Done) in the admin in orders page the order list is no longer showing as first come first serve format it's more like last come first server right now. please fix so it's first come first server 
-90. for every list in the admin page just make it a single list or if it must be in different list esspecially
+90. (✅Done) for every list in the admin page just make it a single list or if it must be in different list esspecially
 100. (✅Done) in the GET /api/admin/orders endpoint, can you make sure the updatedAt field is included in the JSON response? The frontend needs it to calculate the exact time an order was settled/cancelled!"
 101. (✅Done) in the customer app in checkout page make that when it is still loading trying to fetch from the admin wether deliery and pickup are available, the place order button should be disabled until it has successfully fetched 
 102. (✅Done) (Victor) on the promo specifically for free delivery promo type not other promos it should simply just apply delivery fee = 0 not a fix amount for free delivery, or better probably the promo should just calculate the delivery fee of that order and simply put discount = -actual delivery fee
@@ -213,3 +213,4 @@ Changes Fio made in the Customer App
 11. Implemented automatic badge count clearing when the app is opened or brought to the active foreground via React Native `AppState`.
 12. Built intelligent notification deep-linking using `useLastNotificationResponse` to automatically route users to the "My Orders" page.
 13. Updated the Orders page to automatically switch tabs (Active vs. Past) and expand the specific order details based on the tapped notification's status.
+14. Implemented dynamic social media and support channel routing in the Profile and Help screens, equipped with a robust clipboard fallback safety net to bypass aggressive Android intent restrictions.
