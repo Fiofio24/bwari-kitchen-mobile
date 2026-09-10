@@ -18,6 +18,7 @@ import { useFocusEffect } from 'expo-router';
 import { useTheme } from '../../context/ThemeContext';
 import { useUser } from '../../context/UserContext'; 
 import { useAddresses } from '../../context/AddressContext'; 
+import { useCart } from '../../context/CartContext'; // <-- ADDED THIS
 import { Colors } from '../../constants/Colors';
 import { StatusBar } from 'expo-status-bar';
 import Sidebar from '../../components/Sidebar';
@@ -30,8 +31,9 @@ import api from '../../app/lib/api';
 
 export default function ProfileScreen() {
   const { colors, isDark, setThemeMode } = useTheme();
-  const { userData, updateAvatar, resetToDefault } = useUser(); 
+  const { userData, updateAvatar, updateUserData, resetToDefault } = useUser(); // <-- ADDED updateUserData
   const { setActiveAddress } = useAddresses() as any; 
+  const { clearCart } = useCart(); // <-- ADDED THIS (FIX FOR GHOST CART)
   const router = useSafeRouter(); 
   
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -40,14 +42,10 @@ export default function ProfileScreen() {
   const [isSignOutModalVisible, setIsSignOutModalVisible] = useState(false);
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
   
-  // FIX: Start as null to distinguish between "loading" and "zero orders"
   const [totalOrders, setTotalOrders] = useState<number | null>(null);
 
   const userStats = { points: 450, referralCode: "BWARI-SERIFF-99" };
 
-  // FIX: Silent Background Fetching
-  // Shows a spinner ONLY on the very first load. On subsequent tab visits, 
-  // it shows the known number immediately while silently updating in the background.
   useFocusEffect(
     useCallback(() => {
       let isActive = true;
@@ -58,7 +56,6 @@ export default function ProfileScreen() {
           if (!isActive) return;
 
           const ordersList = res.data.orders || [];
-          
           const completedOrders = ordersList.filter((order: any) => {
             const status = order.status?.toLowerCase() || '';
             return !['pending', 'cancelled', 'refunded'].includes(status);
@@ -66,15 +63,32 @@ export default function ProfileScreen() {
 
           setTotalOrders(completedOrders.length);
         } catch (e) {
-          console.warn('Failed to load order count', e);
-          // Only fallback to 0 if we completely failed and have no previous data to show
           if (isActive && totalOrders === null) {
             setTotalOrders(0);
           }
         }
       };
+
+      // FIX FOR ITEM 25: Sync the latest profile data from the backend
+      const fetchProfileData = async () => {
+        try {
+          const res = await api.get('/api/auth/me');
+          if (!isActive) return;
+
+          if (res.data?.user) {
+            updateUserData({
+              name: res.data.user.fullName || userData.name,
+              email: res.data.user.email || userData.email,
+              avatarUri: res.data.user.profilePhotoUrl || userData.avatarUri
+            });
+          }
+        } catch (e) {
+          console.warn("Silent profile sync failed", e);
+        }
+      };
       
       fetchOrdersCount();
+      fetchProfileData();
 
       return () => {
         isActive = false;
@@ -92,6 +106,7 @@ export default function ProfileScreen() {
     }
   };
 
+  // FIX FOR ITEM 25: Actually upload the image to the backend!
   const handlePickImage = async () => {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
     
@@ -112,7 +127,35 @@ export default function ProfileScreen() {
     });
 
     if (!result.canceled) {
-      updateAvatar(result.assets[0].uri); 
+      const localUri = result.assets[0].uri;
+      updateAvatar(localUri); // Instantly update locally for snappy UX
+      
+      // Package the image for the backend
+      const formData = new FormData();
+      const filename = localUri.split('/').pop() || 'profile.jpg';
+      const match = /\.(\w+)$/.exec(filename);
+      const type = match ? `image/${match[1]}` : `image/jpeg`;
+      
+      formData.append('image', {
+        uri: localUri,
+        name: filename,
+        type,
+      } as any);
+
+      // Send to your Supabase Storage bucket via the backend route
+      try {
+        const res = await api.post('/api/upload/profile-photo', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        
+        // If the backend returns the permanent URL, lock it into the context
+        if (res.data && res.data.url) {
+          updateAvatar(res.data.url);
+        }
+      } catch (err) {
+        console.warn('Failed to upload profile photo:', err);
+        Alert.alert('Upload Error', 'Your profile picture could not be saved to the cloud. Please try again.');
+      }
     }
   };
 
@@ -199,7 +242,8 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        <TouchableOpacity 
+        {/* Future update */}
+        {/* <TouchableOpacity 
           style={[
             styles.referralCard, 
             { backgroundColor: isDark ? colors.surface : '#FFF9E6', borderColor: '#FFD700' }
@@ -219,7 +263,7 @@ export default function ProfileScreen() {
             </Text>
           </View>
           <Ionicons name="share-social-outline" size={scale(24)} color={colors.primary} />
-        </TouchableOpacity>
+        </TouchableOpacity> */}
 
         <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>ACCOUNT SETTINGS</Text>
         <View style={[styles.menuBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
@@ -307,6 +351,7 @@ export default function ProfileScreen() {
           await SecureStore.deleteItemAsync('authToken'); 
           resetToDefault(); 
           if (setActiveAddress) setActiveAddress(null); 
+          clearCart(); // <-- GHOST CART DESTROYED
           router.replace('/welcome'); 
         }} 
         title="Sign Out"
@@ -324,6 +369,7 @@ export default function ProfileScreen() {
           await SecureStore.deleteItemAsync('authToken'); 
           resetToDefault(); 
           if (setActiveAddress) setActiveAddress(null); 
+          clearCart(); // <-- GHOST CART DESTROYED
           router.replace('/welcome'); 
         }} 
         title="Delete Account"

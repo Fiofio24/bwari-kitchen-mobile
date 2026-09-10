@@ -63,10 +63,10 @@ To Do List:
     *Once you're done remove the hardcoded (|| "8492") so the real code (order.deliveryCode) can appear in the my-orders.tsx page
 50. (✅Done) the wlcome, login and sign up page are repeating themself when you click back button because i've entered them motiple times from one page to the other click on "already have an account? Sign in" and "Don't have an account? sign up" so ones i've navigated on this pages from each other when i press the phone's back button it then goes back to them again and again before it finally lands on the welcome page 
 51. (Victor) Let us not forget to resolve the: 
-*(✅Done)save address features,
-*(✅Done)push notification feature, 
-*home page slide show and 
-*the track order status feature.
+    *(✅Done)save address features,
+    *(✅Done)push notification feature, 
+    *home page slide show and 
+    *the track order status feature.
 52. (✅Done) phone's back button is not exiting the app when user is logged in instead it is going to welcome page before it then exits the app 
 53. (✅Done) in the details page the grid card under the dinner for you section...when i click those card's "+add" button it will act as the main "Add to cart - {prise}" button for that particular package details, instead it should actually add the recommended dinner package card to the card...right no matter what the recommendation is the dinner for you side when "+add" is clicked it adds the main package that owns that details page 
 54. Ask client if there's a no refund policy, if YES so i can update the FAQ in help.tsx to this 
@@ -128,7 +128,7 @@ To Do List:
 108. in admin settings while trying to input a field within a liitle time it resets whatever admin have typed to what was there before
 
 Future updates:
-1. 
+1. Referrer code feature
 
 Checked ✅:
 1. I updated components/DraggableOrderButton.tsx to only glow red when there's an active order (this triggers instantly after checkout).

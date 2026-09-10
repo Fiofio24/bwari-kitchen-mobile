@@ -22,6 +22,7 @@ import { scale } from '../constants/Sizes';
 import { useAddresses } from '../context/AddressContext';
 import { useTheme } from '../context/ThemeContext';
 import { useUser } from '../context/UserContext';
+import { useCart } from '../context/CartContext'; // <-- ADDED THIS
 import { useSafeRouter } from '../hooks/useSafeRouter';
 import ActionModal from './ActionModal';
 
@@ -60,6 +61,7 @@ export default function Sidebar({ visible, onClose, menuItems, profileOverride }
   const { colors, mode, setThemeMode, isDark } = useTheme();
   const { userData, resetToDefault } = useUser(); 
   const { setActiveAddress } = useAddresses(); 
+  const { clearCart } = useCart(); // <-- ADDED THIS (FIX FOR GHOST CART)
   const insets = useSafeAreaInsets();
   const router = useSafeRouter(); 
   
@@ -144,6 +146,7 @@ export default function Sidebar({ visible, onClose, menuItems, profileOverride }
     await SecureStore.deleteItemAsync('authToken');
     resetToDefault();
     setActiveAddress(null); 
+    clearCart(); // <-- GHOST CART DESTROYED
     
     setTimeout(() => {
       router.replace('/welcome');

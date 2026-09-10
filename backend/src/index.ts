@@ -15,6 +15,7 @@ import reviewRoutes from './routes/review'
 import promotionRoutes from './routes/promotion'
 import uploadRoutes from './routes/upload'
 import favoriteRoutes from './routes/favorite'
+import cartRoutes from './routes/cart';
 
 // Rider routes
 import riderRoutes from './routes/rider'
@@ -74,6 +75,7 @@ app.use('/api/reviews', reviewRoutes)
 app.use('/api/promotions', promotionRoutes)
 app.use('/api/upload', uploadRoutes)
 app.use('/api/favorites', favoriteRoutes)
+app.use('/api/cart', cartRoutes);
 
 // ─── Rider routes ─────────────────────────
 app.use('/api/rider', riderRoutes)

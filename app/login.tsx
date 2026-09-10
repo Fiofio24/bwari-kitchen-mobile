@@ -16,6 +16,7 @@ import { useTheme } from '../context/ThemeContext';
 import { Colors } from '../constants/Colors';
 import { StatusBar } from 'expo-status-bar';
 import { useUser } from '../context/UserContext';
+import { useCart } from '../context/CartContext'; // <-- ADDED THIS
 import HeroHeader from '../components/HeroHeader';
 import { useNotifications } from '../context/NotificationContext';
 import { useAddresses } from '../context/AddressContext';
@@ -32,6 +33,7 @@ export default function LoginScreen() {
   const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const { updateUserData } = useUser();
+  const { syncCloudCart } = useCart(); // <-- ADDED THIS
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -56,9 +58,19 @@ export default function LoginScreen() {
 
       const { token, user } = res.data;
 
+      // 1. Save Token
       await SecureStore.setItemAsync('authToken', token);
+      
+      // 2. Update User Data
       updateUserData({ name: user.fullName, email: user.email });
+      
+      // 3. FETCH THE CLOUD CART IMMEDIATELY! <-- THIS FIXES IT
+      await syncCloudCart(); 
+      
+      // 4. Refresh everything else
       await Promise.all([refreshNotifications(), refreshAddresses(), refreshFavorites()]);
+      
+      // 5. Navigate to Home
       router.replace('/(tabs)');
     } catch (err: any) {
       setErrorMessage(err.response?.data?.message || 'Login failed. Please check your credentials.');
@@ -71,13 +83,11 @@ export default function LoginScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar style="light" />
       
-      {/* REUSABLE HERO SECTION */}
       <HeroHeader 
         heightRatio={0.35}
         logoPaddingBottom={scale(35)} 
       />
 
-      {/* WHITE FORM SECTION (Overlapping) */}
       <View style={[styles.formSection, { backgroundColor: colors.background }]}>
         <SafeKeyboardWrapper
           contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + scale(40) }]}
@@ -86,7 +96,6 @@ export default function LoginScreen() {
             Welcome <Text style={{ color: Colors.primary }}>Back</Text> 
           </Text>
 
-          {/* EMAIL */}
           <View style={styles.inputGroup}>
             <Text style={[styles.inputLabel, { color: colors.text }]}>
               Email Address
@@ -104,7 +113,6 @@ export default function LoginScreen() {
             </View>
           </View>
 
-          {/* PASSWORD */}
           <View style={styles.inputGroup}>
             <Text style={[styles.inputLabel, { color: colors.text }]}>
               Password
@@ -134,7 +142,6 @@ export default function LoginScreen() {
             <Text style={{ color: '#D32F2F', fontSize: scale(12), marginBottom: scale(15), textAlign: 'center', fontWeight: '500' }}>{errorMessage}</Text>
           ) : null}
           
-          {/* SIGN IN BUTTON */}
           <TouchableOpacity 
             style={[
               styles.primaryBtn, 
@@ -156,7 +163,6 @@ export default function LoginScreen() {
             )}
           </TouchableOpacity>
 
-          {/* FOOTER LINK */}
           <View style={styles.footerContainer}>
             <Text style={[styles.footerText, { color: colors.textMuted }]}>
               Don&apos;t have an account?
@@ -167,7 +173,6 @@ export default function LoginScreen() {
               </Text>
             </TouchableOpacity>
           </View>
-
         </SafeKeyboardWrapper>
       </View>
     </View>
@@ -175,102 +180,22 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  headerSection: {
-    height: height * 0.35,
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 1,
-  },
-  logoImage: {
-    width: scale(300),
-    height: scale(220),
-  },
-  formSection: {
-    flex: 1,
-    paddingTop: scale(-30),
-    marginTop: scale(-100), 
-    zIndex: 10,
-    elevation: 30, 
-  },
-  scrollContent: {
-    paddingHorizontal: scale(25),
-    paddingTop: scale(120),
-    flexGrow: 1,
-  },
-  header: {
-    fontSize: scale(28),
-    marginBottom: scale(30),
-  },
-  inputGroup: {
-    marginBottom: scale(20),
-  },
-  inputLabel: {
-    fontSize: scale(14),
-    fontWeight: 'bold',
-    marginBottom: scale(10),
-    marginLeft: scale(5),
-  },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderRadius: scale(30),
-    paddingHorizontal: scale(20),
-    height: scale(56),
-  },
-  textInput: {
-    flex: 1,
-    fontSize: scale(15),
-    height: '100%',
-  },
-  eyeIcon: {
-    padding: scale(5),
-  },
-  forgotPasswordBtn: {
-    alignSelf: 'flex-end',
-    marginTop: scale(15), // Gave it a tiny bit more breathing room
-    marginRight: scale(5),
-    marginBottom: scale(10),
-  },
-  forgotPasswordText: {
-    fontSize: scale(12),
-    fontWeight: '600',
-  },
-  primaryBtn: {
-    height: scale(56),
-    borderRadius: scale(30),
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: scale(4),
-    },
-    shadowOpacity: 0.2,
-    shadowRadius: scale(5),
-    marginBottom: scale(30),
-  },
-  primaryBtnText: {
-    fontSize: scale(16),
-    fontWeight: 'bold',
-  },
-  footerContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 'auto',
-    paddingTop: scale(20),
-  },
-  footerText: {
-    fontSize: scale(14),
-  },
-  footerLink: {
-    fontSize: scale(14),
-    fontWeight: 'bold',
-    marginLeft: scale(5),
-  },
+  container: { flex: 1 },
+  headerSection: { height: height * 0.35, justifyContent: 'center', alignItems: 'center', zIndex: 1 },
+  logoImage: { width: scale(300), height: scale(220) },
+  formSection: { flex: 1, paddingTop: scale(-30), marginTop: scale(-100), zIndex: 10, elevation: 30 },
+  scrollContent: { paddingHorizontal: scale(25), paddingTop: scale(120), flexGrow: 1 },
+  header: { fontSize: scale(28), marginBottom: scale(30) },
+  inputGroup: { marginBottom: scale(20) },
+  inputLabel: { fontSize: scale(14), fontWeight: 'bold', marginBottom: scale(10), marginLeft: scale(5) },
+  inputWrapper: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: scale(30), paddingHorizontal: scale(20), height: scale(56) },
+  textInput: { flex: 1, fontSize: scale(15), height: '100%' },
+  eyeIcon: { padding: scale(5) },
+  forgotPasswordBtn: { alignSelf: 'flex-end', marginTop: scale(15), marginRight: scale(5), marginBottom: scale(10) },
+  forgotPasswordText: { fontSize: scale(12), fontWeight: '600' },
+  primaryBtn: { height: scale(56), borderRadius: scale(30), justifyContent: 'center', alignItems: 'center', elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: scale(4) }, shadowOpacity: 0.2, shadowRadius: scale(5), marginBottom: scale(30) },
+  primaryBtnText: { fontSize: scale(16), fontWeight: 'bold' },
+  footerContainer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 'auto', paddingTop: scale(20) },
+  footerText: { fontSize: scale(14) },
+  footerLink: { fontSize: scale(14), fontWeight: 'bold', marginLeft: scale(5) },
 });
