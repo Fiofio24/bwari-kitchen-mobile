@@ -169,7 +169,9 @@ export const updateBranch = async (
 ): Promise<void> => {
   const {
     name, address, landmark, area, latitude, longitude,
-    phoneNumber, openingTime, closingTime, isOpen,
+    phoneNumber, supportPhone, supportEmail, whatsappNumber,
+    instagramUrl, facebookUrl, twitterUrl, tiktokUrl, threadsUrl, youtubeUrl,
+    openingTime, closingTime, isOpen,
     acceptsPickup, acceptsDelivery, deliveryRadiusKm,
   } = req.body
 
@@ -201,6 +203,15 @@ export const updateBranch = async (
       ...(latitude && { latitude: parseFloat(latitude) }),
       ...(longitude && { longitude: parseFloat(longitude) }),
       ...(phoneNumber !== undefined && { phoneNumber }),
+      ...(supportPhone !== undefined && { supportPhone }),
+      ...(supportEmail !== undefined && { supportEmail }),
+      ...(whatsappNumber !== undefined && { whatsappNumber }),
+      ...(instagramUrl !== undefined && { instagramUrl }),
+      ...(facebookUrl !== undefined && { facebookUrl }),
+      ...(twitterUrl !== undefined && { twitterUrl }),
+      ...(tiktokUrl !== undefined && { tiktokUrl }),
+      ...(threadsUrl !== undefined && { threadsUrl }),
+      ...(youtubeUrl !== undefined && { youtubeUrl }),
       ...(openingTime && { openingTime }),
       ...(closingTime && { closingTime }),
       ...(isOpen !== undefined && { isOpen }),
@@ -218,7 +229,7 @@ export const updateBranch = async (
     action: 'update',
     targetType: 'Branch',
     targetId: 'main-branch',
-    description: `Updated branch information`,
+    description: `Updated branch information, social links, and contact settings`,
   })
 }
 

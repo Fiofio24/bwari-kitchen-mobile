@@ -30,6 +30,7 @@ import adminAnalyticsRoutes from './routes/admin.analytics'
 import adminReviewRoutes from './routes/admin.review'
 import adminPromotionRoutes from './routes/admin.promotion'
 import adminActivityLogRoutes from './routes/admin.activityLog'
+import faqRoutes from './routes/faq.routes';
 
 dotenv.config()
 
@@ -76,6 +77,7 @@ app.use('/api/promotions', promotionRoutes)
 app.use('/api/upload', uploadRoutes)
 app.use('/api/favorites', favoriteRoutes)
 app.use('/api/cart', cartRoutes);
+app.use('/api/faqs', faqRoutes);
 
 // ─── Rider routes ─────────────────────────
 app.use('/api/rider', riderRoutes)
