@@ -68,7 +68,7 @@ export default function Dashboard() {
     <Layout>
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
-          <h2 className="text-2xl font-bold text-surface-900">Dashboardzzz Overview</h2>
+          <h2 className="text-2xl font-bold text-surface-900">Dashboard Overview</h2>
           <p className="text-sm text-surface-400 mt-0.5">A snapshot of how Bwari Kitchen is doing</p>
         </div>
         <select
