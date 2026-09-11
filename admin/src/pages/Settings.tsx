@@ -3,7 +3,6 @@ import LoadingButton from '../components/LoadingButton'
 import { showSuccess, showError, getErrorMessage } from '../lib/toast'
 import Layout from '../components/Layout'
 import api from '../lib/api'
-import useLivePolling from '../hooks/useLivePolling'
 import { Store, Banknote, Power, Save, Share2, Mail } from 'lucide-react'
 
 interface AppSetting {
@@ -79,9 +78,6 @@ export default function Settings() {
     fetchAll(false)
   }, [fetchAll])
 
-  // Live poll settings and branch info every 15 seconds
-  useLivePolling(fetchAll, 15000)
-
   const handleSettingChange = (key: string, value: string) => {
     setSettings({ ...settings, [key]: value })
   }
@@ -107,6 +103,20 @@ export default function Settings() {
 
   const handleSaveBranch = async () => {
     if (!branch) return
+
+    // TASK 79: Client-Side Safety Net for Delivery Radius
+    if (branch.deliveryRadiusKm !== null) {
+      const radius = Number(branch.deliveryRadiusKm);
+      if (radius <= 0) {
+        showError('Delivery radius must be greater than 0.');
+        return;
+      }
+      if (radius > 100) {
+        showError('Delivery radius cannot exceed 100 km.');
+        return;
+      }
+    }
+
     setSavingBranch(true)
     try {
       await api.patch('/api/admin/settings/branch/info', {
@@ -141,7 +151,7 @@ export default function Settings() {
     }
   }
 
-  // Calculate if the current time is within working hours (ESLint memoization fixed)
+  // Calculate if the current time is within working hours
   const isTimeValid = useMemo(() => {
     if (!branch?.openingTime || !branch?.closingTime) return true;
     const currentMins = currentTime.getHours() * 60 + currentTime.getMinutes();
@@ -161,7 +171,6 @@ export default function Settings() {
   const handleToggleOpen = async () => {
     setTogglingOpen(true)
     try {
-      // THE FIX: If the store is auto-closed by time, clicking "Open" bypasses it by extending the time
       if (!effectiveOpen && branch && !isTimeValid) {
         await api.patch('/api/admin/settings/branch/info', {
           ...branch,
@@ -173,7 +182,6 @@ export default function Settings() {
         return
       }
 
-      // Normal manual toggle behavior
       const res = await api.patch('/api/admin/settings/branch/toggle-open')
       setBranch((prev) => prev ? { ...prev, isOpen: res.data.isOpen } : prev)
       showSuccess(res.data.message)
@@ -196,7 +204,7 @@ export default function Settings() {
     <Layout>
       <h2 className="text-2xl font-bold text-gray-900 mb-6">Settings</h2>
 
-      {/* Restaurant Open/Closed Toggle - Uses effectiveOpen for the display */}
+      {/* Restaurant Open/Closed Toggle */}
       {branch && (
         <div className={`rounded-xl border p-4 mb-6 flex items-center justify-between flex-wrap gap-3 ${
           effectiveOpen ? 'bg-green-50 border-green-100' : 'bg-red-50 border-red-100'

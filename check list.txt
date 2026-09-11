@@ -17,7 +17,7 @@ To Do List:
 16. (✅Done)creat a new component that appears when "sign out" is clicked that asks "Are you sure you want to sign out of Bwari kitchen?" the opions Yes and No
 17. for the package and menu images make a loading effect when their yet to fetch the actual image for that item also generally creat loading effects for any other thing like package details texts
 18. (✅Done)in the sign up page under password input section make that it will have a kind of must have features before the password will be accepted like showing message under "password must be up to 8-characters" etc
-19. (Victor)it's like cart packages are being saved to phone memory or something even when i created a new account on signig up successful the account already had items in the cart that i added when i was logged in on another account before
+19. (✅Done) (Victor)it's like cart packages are being saved to phone memory or something even when i created a new account on signig up successful the account already had items in the cart that i added when i was logged in on another account before
 20. (✅Done) in the promo page instead of the "copy code" button let it be copy icon so that there would be enough space in case of long promo code
 21. (✅Done) in the sidebar the sign out button does not have allowance for the phone's navigation bar 
 22. (✅Done)the location area in the home page at the very top should show the selected address not "Select Location" and on new opening of the app the location that will show there will be the default location 
@@ -25,7 +25,7 @@ To Do List:
 	🗣️Response: It is a frontend issue where only the item name is taken and put into the hardcoded message.  
 🚩  🗣️(Fio)Response: Ok
 24. (✅Done)(Suggestion single items shouldn't even have a details page) but if they must have when a menu item is searched and clicked after taking them to the details page for that single item, on the buttom bar it's suppose to say "add to package" not "add to cart" so the user can create a package with that menu item. but it is ok for it to say "add to car" when it was a combo package that was clicked. also on a single item details page after clicking the "add to package" an option list should slide from the bottom and show "add to existing package" in case they've already started creating package before they searched an item, second option should be "add to new package" then below the second option there should be a warning note to tell them that if they had an existing package before it will be lost.
-25. (Victor) the profile image for users is not saving in the data base after log out and login the profile image disappears 
+25. (✅Done) (Victor) the profile image for users is not saving in the data base after log out and login the profile image disappears 
 26. (Victor✅) the admin page is too sluggish it will frustrate them
 27. (✅Done) ON changing location on checkout page or home page the newly changed location shouldn't automatically change to default location onless they change it right from Manage Addresses page
 28. (✅Done) (Victor✅) In the admin menu page under items, the list of items is not scrollable to the right on mobile view. it should be just like the categories list is scrollable to the right on mobile view
@@ -101,10 +101,10 @@ To Do List:
 73. (Victor✅) in the admin settings page there should be control to disable dilivery or pickup on the checkout page so incase delivery riders have closed user won't be able to select delivery they'll have to come pickup
 74. (Victor) add a control in admin that allows them to edit the FAQ in help.tsx
 75. (Victor) in the admin page add like an error or warning sign on the packages and menu items so when an item or category is switched off admin can have a visual inducation on the packages that some items are unavailable so they can now edit the package for customers to see the updated package
-76. (Victor) in the admin page after setting a varient for a food item like rice then saved it actually reflects on the app but, when i click to edit that item i couldn't find the varient i previously saved i'll have to readd new varient to override the previous ones
+76. (✅Done) (Victor) in the admin page after setting a varient for a food item like rice then saved it actually reflects on the app but, when i click to edit that item i couldn't find the varient i previously saved i'll have to readd new varient to override the previous ones
 77. (Victor) the discount feature is not working in the item prizing 
 78. (✅Done-i was meant to add "latitude" and "logitude" instead of "coordinates") for customer address add coordinates and time stamp (createdAt) cuz the map i did also generates the coordinate for accuracy but it doesn't save in the admin page cuz backend doesn't recognise coordinate and creatAt
-79. (Victor) fix the server crash everytime delivery radius exceeds it's limit, it should handle the error safely without crashing it should restrict the admin and give the admin a warning not to exceed km.
+79. (✅Done) (Victor) fix the server crash everytime delivery radius exceeds it's limit, it should handle the error safely without crashing it should restrict the admin and give the admin a warning not to exceed km.
 80. (✅Done) (Victor) (maybe this is for me to handle but first the calculation needs to be working first) when customer's location is further than the delivery readius from rrestaurant to customer it should give an error or something. 
 81. (✅Done) i've added "latitude" and "logitude" for the user address and the delivery is working now but the backend is wrongly calculating the km of user from kitchen. I dropped a map pin in Lagos, but the /api/addresses/delivery-fee endpoint calculated distanceKm: 0.76 . Because it thinks Lagos is less than 1km away, the fee keeps defaulting to the 500 base minimum. please correct the formular logic to correctly calculate distanceKm.
 82. (✅Done) in the checkout page under pickup section change the hardcoded "Bwari Kitchen - Bwari Main Branch" and "No 1 Kitchen Avenue, Central FCT" to actually fetch the Restaurant Name, Branch Name and Address from the admin saved settings
@@ -125,7 +125,7 @@ To Do List:
 105. (Victor) in the admin orders page make that every pending order that have stayed or tha stays more than 30mins that order should have some kind of warning sign or flagged feature that tells admin to call that customer so they can confirm if they paid and it's still showing pending or they didn't pay and they changed their mind about the order
 106. in the customer app my orders page under active orders there should be a button that allows customer to cancel their pending order only pending orders after like 30mins and paystack still says payment pending
 107. The badges at the side bar should save to the database not the computer local storage so it can be accessible in different and same account in different systems
-108. in admin settings while trying to input a field within a liitle time it resets whatever admin have typed to what was there before
+108. (✅Done) in admin settings while trying to input a field within a liitle time it resets whatever admin have typed to what was there before
 
 Future updates:
 1. Referrer code feature

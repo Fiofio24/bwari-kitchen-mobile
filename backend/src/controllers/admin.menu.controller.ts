@@ -217,7 +217,12 @@ export const adminGetMenuItems = async (
         sortOrder: true,
         createdAt: true,
         category: { select: { id: true, name: true } },
-        branch: { select: { id: true, name: true } }
+        branch: { select: { id: true, name: true } },
+        // THE FIX: Added the variants block here so they don't disappear on initial load
+        variants: { 
+          select: { id: true, label: true, price: true, sortOrder: true }, 
+          orderBy: { sortOrder: 'asc' } 
+        },
       }
     }),
     prisma.menuItem.count({ where })
